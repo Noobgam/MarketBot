@@ -187,8 +187,6 @@ namespace CSGOTM
             var message = e.Message;
 
             Message x = JsonConvert.DeserializeObject<Message>(message);
-            Console.WriteLine(x.type);
-            //Console.WriteLine(x.data);
             switch (x.type)
             {
                 case "newitem":
@@ -196,9 +194,11 @@ namespace CSGOTM
                     break;
                 case "history_go":
                     break;
-                case "history_cs":
+                case "newitems_go":
                     break;
                 default:
+                    Console.WriteLine(x.type);
+                    Console.WriteLine(x.data);
                     break;
             }
         }
@@ -207,11 +207,8 @@ namespace CSGOTM
         {
             while (!close)
             {
-                Console.ForegroundColor = ConsoleColor.Blue;
-                Console.WriteLine("ping");
-                Console.ForegroundColor = ConsoleColor.White;
                 socket.Send("ping");
-                Thread.Sleep(3000);
+                Thread.Sleep(30000);
             }
         }
 
