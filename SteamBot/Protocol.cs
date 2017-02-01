@@ -24,6 +24,7 @@ namespace CSGOTM
     public class CSGOTMProtocol
     {
         public SortedSet<string> Codes;
+        public SteamBot.Bot Parent;
         string Api = "";
         public CSGOTMProtocol()
         {
@@ -33,6 +34,17 @@ namespace CSGOTM
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public CSGOTMProtocol(SortedSet<string> temp, string api = "6AL09F5z8m98GPwSPN0ew2P7saRr8uI")
         {
+            //Open connection.
+            Codes = temp;
+            Api = api;
+            socket.Opened += Open;
+            socket.Closed += Error;
+            socket.MessageReceived += Msg;
+            socket.Open();
+        }
+        public CSGOTMProtocol(SteamBot.Bot p, SortedSet<string> temp, string api = "6AL09F5z8m98GPwSPN0ew2P7saRr8uI")
+        {
+            Parent = p;
             //Open connection.
             Codes = temp;
             Api = api;

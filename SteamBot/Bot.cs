@@ -122,6 +122,7 @@ namespace SteamBot
         public SortedSet<string> SecurityCodesForOffers;
 
         public CSGOTM.CSGOTMProtocol Connection;
+        public CSGOTM.Logic Logic = null;
 
         public bool CheckOffer(TradeOffer offer)
         {
@@ -158,7 +159,8 @@ namespace SteamBot
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
             SecurityCodesForOffers = new SortedSet<string>();
-            Connection = new CSGOTM.CSGOTMProtocol(SecurityCodesForOffers);
+            Connection = new CSGOTM.CSGOTMProtocol(this, SecurityCodesForOffers);
+            Logic = new CSGOTM.Logic(Connection);
             SecurityCodesForOffers.Add("Andr3w is hu3s0s");
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails

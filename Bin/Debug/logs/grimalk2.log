@@ -4212,3 +4212,7 @@
 [<3 Noobgam 2017-02-01 03:17:33] INFO: Downloading Schema...
 [<3 Noobgam 2017-02-01 03:17:33] SUCCESS: Schema Downloaded!
 [<3 Noobgam 2017-02-01 03:17:33] SUCCESS: Steam Bot Logged In Completely!
+[<3 Noobgam 2017-02-01 15:25:11] INFO: Connecting...
+[<3 Noobgam 2017-02-01 15:25:11] SUCCESS: Done Loading Bot!
+[<3 Noobgam 2017-02-01 15:25:18] ERROR: Login Error: AccountLogonDeniedNeedTwoFactorCode
+[<3 Noobgam 2017-02-01 15:25:20] SUCCESS: Generated 2FA code.
