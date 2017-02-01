@@ -31,7 +31,7 @@ public class Message
     public string data;
 }
 
-public class Trade_Result
+public class TradeResult
 {
     public string result;
     public string id;
@@ -41,12 +41,13 @@ public class HistoryItem
 {
     public string i_classid;
     public string i_instanceid;
-    public string name;
-    public double price;
-    public double date; //date is just hour and minute atm.
+    public string i_market_hash_name;
+    public string i_market_name;
+    public double price; //price is measured in kopeykas?  
+    public string timesold;
 }
 
-public class auth
+public class Auth
 {
     public string wsAuth;
     public string success;
