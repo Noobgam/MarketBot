@@ -30,7 +30,7 @@ namespace CSGOTM
         {
 
         }
-        bool died = false;
+        bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public CSGOTMProtocol(SortedSet<string> temp, string api = "6AL09F5z8m98GPwSPN0ew2P7saRr8uI")
         {
@@ -53,52 +53,7 @@ namespace CSGOTM
             socket.MessageReceived += Msg;
             socket.Open();
         }
-
-        #region JsonParsers
-        public class Pair<T, U>
-        {
-            public Pair() { }
-
-            public Pair(T first, U second)
-            {
-                this.First = first;
-                this.Second = second;
-            }
-
-            public T First { get; set; }
-            public U Second { get; set; }
-        };
-        public class NewItem
-        {
-            public string i_quality;
-            public string i_name_color;
-            public string i_classid;
-            public string i_instanceid;
-            public string i_market_hash_name;
-            public string i_market_name;
-            public double ui_price;
-            public string app;
-        }
-        public class Message
-        {
-            public string type;
-            public string data;
-        }
-        public class Trade_Result
-        {
-            public string result;
-            public string id;
-        }
-        public class HistoryItem
-        {
-            public string i_classid;
-            public string i_instanceid;
-            public string name;
-            public double price;
-            public double date; //date is just hour and minute atm.
-        }
-        #endregion JsonParsers
-
+        
         public readonly string[] search = { "<div class=\\\"price\\\"", "<div class=\\\"name\\\"" };
 
         public class Dummy
@@ -186,11 +141,6 @@ namespace CSGOTM
         }
 
         bool close = false;
-        class auth
-        {
-            public string wsAuth;
-            public string success;
-        }
 
         void Msg(object sender, MessageReceivedEventArgs e)
         {
@@ -246,6 +196,7 @@ namespace CSGOTM
 
         void Open(object sender, EventArgs e)
         {
+            died = false;
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Connection opened!");
             Console.ForegroundColor = ConsoleColor.White;
@@ -258,7 +209,23 @@ namespace CSGOTM
         {
             Console.ForegroundColor = ConsoleColor.Red;
             Console.WriteLine("Error");
+            died = true;
+            ReOpen();
             Console.ForegroundColor = ConsoleColor.White;
+        }
+
+        void ReOpen()
+        {
+            for (int i = 0; !died && i < 10; ++i)
+            {
+                socket = new WebSocket("wss://wsn.dota2.net/wsn/");
+                socket.Opened += Open;
+                socket.Closed += Error;
+                socket.MessageReceived += Msg;
+                socket.Open();
+                Thread.Sleep(5000);
+                Console.WriteLine("Trying to reconnect for the %d-th time", i + 1);
+            }
         }
     }
 }
