@@ -1,0 +1,6 @@
+D:\Work\Work\Bot2\SteamBot\Bin\Release\SteamBot.exe.config
+D:\Work\Work\Bot2\SteamBot\Bin\Release\SteamBot.exe
+D:\Work\Work\Bot2\SteamBot\Bin\Release\SteamBot.pdb
+D:\Work\Work\Bot2\SteamBot\SteamBot\obj\Release\ExampleBot.csprojResolveAssemblyReference.cache
+D:\Work\Work\Bot2\SteamBot\SteamBot\obj\Release\SteamBot.exe
+D:\Work\Work\Bot2\SteamBot\SteamBot\obj\Release\SteamBot.pdb

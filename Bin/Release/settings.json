@@ -1,0 +1,26 @@
+{
+"Admins":["234567"],
+"ApiKey":"Steam API Key goes here!",
+"mainLog": "syslog.log",
+"UseSeparateProcesses": "false",
+"AutoStartAllBots": "true",
+"Bots": [
+        {
+            "Username":"grimalk2",
+            "Password":"Novice1998",
+            "ApiKey":"3D81F0137C4360EBD89E3B76E683CB87",
+            "DisplayName":"<3 Noobgam",
+            "ChatResponse":"",
+            "logFile": "grimalk2.log",
+            "BotControlClass": "SteamBot.SimpleUserHandler",
+            "MaximumTradeTime":180,
+            "MaximumActionGap":30,
+            "DisplayNamePrefix":"",
+            "TradePollingInterval":800,
+            "ConsoleLogLevel":"Success",
+            "FileLogLevel":"Info",
+            "AutoStart": "true",
+            "SchemaLang":"en"
+        }
+    ]
+}

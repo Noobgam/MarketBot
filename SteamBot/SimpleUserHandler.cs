@@ -97,12 +97,14 @@ namespace SteamBot
             switch (offer.OfferState)
             {
                 case TradeOfferState.TradeOfferStateAccepted:
-                    if (Bot.TradeCount <= 1000)
+                    {
+                        if (Bot.TradeCount <= 1000)
+                            break;
+                        Bot.SecurityCodesForOffers.Remove(offer.Message);
+                        //Log.Info($"Trade offer {offer.TradeOfferId} has been completed!");
+                        //SendChatMessage("Trade completed, thank you!");
                         break;
-                    Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    //Log.Info($"Trade offer {offer.TradeOfferId} has been completed!");
-                    //SendChatMessage("Trade completed, thank you!");
-                    break;
+                    }
                 case TradeOfferState.TradeOfferStateActive:
                     if (Bot.TradeCount <= 1000)
                     {
@@ -111,7 +113,7 @@ namespace SteamBot
                     }
                     var their = offer.Items.GetTheirItems();
                     var my = offer.Items.GetMyItems();
-                    if (!Bot.CheckOffer(offer)) //if the offer is bad we decline it. 
+                    if (my.Count > 0 && !Bot.CheckOffer(offer)) //if the offer is bad we decline it. 
                     {
                         offer.Decline();
                         Console.ForegroundColor = ConsoleColor.Red;
@@ -144,19 +146,21 @@ namespace SteamBot
                     break;
                 case TradeOfferState.TradeOfferStateNeedsConfirmation:
                     Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    Bot.AcceptAllMobileTradeConfirmations(); //will it work? I guess it is supposed to...
+                    //Bot.AcceptAllMobileTradeConfirmations(); //will it work? I guess it is supposed to...
                     break;
                 case TradeOfferState.TradeOfferStateInEscrow:
                     Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    Bot.AcceptAllMobileTradeConfirmations(); //UHHHHHHHH????
+                    //Bot.AcceptAllMobileTradeConfirmations(); //UHHHHHHHH????
                     //Trade is still active but incomplete
                     break;
                 case TradeOfferState.TradeOfferStateCountered:
                     Log.Info($"Trade offer {offer.TradeOfferId} was countered");
                     break;
                 case TradeOfferState.TradeOfferStateCanceled:
+                    Bot.SecurityCodesForOffers.Remove(offer.Message);
                     break;
                 case TradeOfferState.TradeOfferStateDeclined:
+                    Bot.SecurityCodesForOffers.Remove(offer.Message);
                     break;
                 default:
                     Log.Info($"Trade offer {offer.TradeOfferId} failed");

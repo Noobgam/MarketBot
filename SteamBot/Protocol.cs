@@ -26,7 +26,7 @@ namespace CSGOTM
     {
         public SortedSet<string> Codes;
         public SteamBot.Bot Parent;
-        string Api = "QXl02G48h7brPy41pBM7BKDyjRuLFbA";
+        string Api = "Nh20UnxmHo2Ty3ED1Cj3VA83N53wB1S";
         public CSGOTMProtocol()
         {
 
@@ -45,7 +45,6 @@ namespace CSGOTM
         public CSGOTMProtocol(SteamBot.Bot p, SortedSet<string> temp)
         {
             Parent = p;
-            //Open connection.
             Codes = temp;
             socket.Opened += Open;
             socket.Closed += Error;
@@ -69,8 +68,6 @@ namespace CSGOTM
             return dummy.s;
         }
 
-        bool close = false;
-
         static string DecodeEncodedNonAsciiCharacters(string value)
         {
             return Regex.Replace(
@@ -91,6 +88,9 @@ namespace CSGOTM
             {
                 case "newitems_go":
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
+                    newItem.ui_price *= 100;
+                    //if (newItem.ui_price < 100)
+                        //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                     break;
                 case "history_go":
                     char[] trimming = { '[', ']' };
@@ -102,11 +102,20 @@ namespace CSGOTM
                     historyItem.i_instanceid = arr[1];
                     historyItem.i_market_hash_name = arr[2];
                     historyItem.timesold = arr[3];
-                    historyItem.price = Double.Parse(arr[4]);
+                    historyItem.price = Int32.Parse(arr[4]);
                     historyItem.i_market_name = arr[5];
+                    break;
+                case "invcache_go":
+                    Console.WriteLine("Inventory was cached");
+                    break;
+                case "money":
+                    //Console.ForegroundColor = ConsoleColor.Yellow;
+                    //Console.WriteLine("Current balance: %f", Double.Parse(x.data.Split('<')[0]));
+                    //Console.ForegroundColor = ConsoleColor.White;
                     break;
                 default:
                     Console.WriteLine(x.type);
+                    x.data = DecodeEncodedNonAsciiCharacters(x.data);
                     Console.WriteLine(x.data);
                     break;
             }
@@ -114,9 +123,124 @@ namespace CSGOTM
 
         void pinger()
         {
-            while (!close)
+            while (!died)
             {
                 socket.Send("ping");
+                Thread.Sleep(30000);
+            }
+        }
+
+        TMTrade[] GetTradeList()
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/Trades/?key=" + Api);
+                JArray json = JArray.Parse(a);
+                TMTrade[] arr = new TMTrade[json.Count];
+                int iter = 0;
+                foreach (var thing in json)
+                {
+                    //Console.WriteLine("{0}", thing);
+                    TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
+                    arr[iter++] = xx;
+                }
+                return arr;
+            }
+        }
+
+        bool UpdateInventory()
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/UpdateInventory/?key=" + Api);
+                JObject json = JObject.Parse(a);
+                //foreach (var thing in json)
+                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+                //cout<<;
+                if (json["success"] == null)
+                    return false;
+                else if ((bool)json["success"])
+                    return true;
+                else
+                    return false;
+            }
+        }
+
+        bool TakeItems()
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/ItemRequest/in/1/?key=" + Api);
+                JObject json = JObject.Parse(a);
+                //foreach (var thing in json)
+                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+                //cout<<;
+                if (json["success"] == null)
+                    return false;
+                else if ((bool)json["success"])
+                {
+                    Codes.Add((string)json["secret"]);
+                    return true;
+                }
+                else
+                    return false;
+            }
+        }
+
+        bool GiveItems(string botID)
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/ItemRequest/out/" + botID + "/?key=" + Api);
+                JObject json = JObject.Parse(a);
+                //foreach (var thing in json)
+                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+                //cout<<;
+                if (json["success"] == null)
+                    return false;
+                else if ((bool)json["success"])
+                {
+                    Codes.Add((string)json["secret"]);
+                    return true;
+                }
+                else
+                    return false;
+            }
+            
+        }
+
+        void HandleTrades()
+        {
+            while (!died)
+            {
+                TMTrade[] arr = GetTradeList();
+                UpdateInventory();
+                for (int i = 0; i < arr.Length; ++i)
+                {
+                    if (arr[i].ui_status == "2")
+                    {
+                        UpdateInventory();
+                        TakeItems();   
+                    }
+                    else if (arr[i].ui_status == "4")
+                    {
+                        UpdateInventory();
+                        GiveItems(arr[i].ui_bid);
+                    }
+                }
+                //once per 30 seconds we check trade list
                 Thread.Sleep(30000);
             }
         }
@@ -147,9 +271,11 @@ namespace CSGOTM
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("Connection opened!");
             Console.ForegroundColor = ConsoleColor.White;
-            Thread ping = new Thread(new ThreadStart(pinger));
             Auth();
+            Thread ping = new Thread(new ThreadStart(pinger));
             ping.Start();
+            Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
+            tradeHandler.Start();
         }
 
         void Error(object sender, EventArgs e)
@@ -172,6 +298,47 @@ namespace CSGOTM
                 socket.Open();
                 Thread.Sleep(5000);
                 Console.WriteLine("Trying to reconnect for the %d-th time", i + 1);
+            }
+        }
+
+        //returns whether trade was successful
+        bool Buy(string ClasssId, string InstanceId, int price) 
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+                JObject parsed = JObject.Parse(a);
+                foreach (var pair in parsed)
+                    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                if (parsed["result"] == null)
+                    return false;
+                else if ((string)parsed["result"] == "ok")
+                    return true;
+                else
+                    return false;
+            }
+        }
+
+        bool Sell(string ClasssId, string InstanceId, int price)
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+                JObject parsed = JObject.Parse(a);
+                foreach (var pair in parsed)
+                    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                if (parsed["result"] == null)
+                    return false;
+                else if ((string)parsed["result"] == "ok")
+                    return true;
+                else
+                    return false;
             }
         }
     }

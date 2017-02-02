@@ -159,10 +159,8 @@ namespace SteamBot
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
             SecurityCodesForOffers = new SortedSet<string>();
-            SecurityCodesForOffers.Add("Andr3w is hu3s0s");
             Connection = new CSGOTM.CSGOTMProtocol(this, SecurityCodesForOffers);
             Logic = new CSGOTM.Logic(Connection);
-            Thread.Sleep(1000000);
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
             {

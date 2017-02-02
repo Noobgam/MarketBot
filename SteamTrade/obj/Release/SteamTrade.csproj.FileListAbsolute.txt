@@ -1,0 +1,13 @@
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\SteamTrade.dll
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\SteamTrade.pdb
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\Newtonsoft.Json.dll
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\protobuf-net.dll
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\SteamAuth.dll
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\SteamKit2.dll
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\Newtonsoft.Json.xml
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\protobuf-net.pdb
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\protobuf-net.xml
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\SteamAuth.pdb
+D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Release\SteamKit2.xml
+D:\Work\Work\Bot2\SteamBot\SteamTrade\obj\Release\SteamTrade.dll
+D:\Work\Work\Bot2\SteamBot\SteamTrade\obj\Release\SteamTrade.pdb
