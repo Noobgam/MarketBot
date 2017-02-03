@@ -88,7 +88,8 @@ namespace CSGOTM
             {
                 case "newitems_go":
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
-                    newItem.ui_price *= 100;
+                    //newItem.ui_price *= 100;
+                    Parent.Logic.WantToBuy(newItem);
                     //if (newItem.ui_price < 100)
                         //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                     break;
@@ -104,6 +105,7 @@ namespace CSGOTM
                     historyItem.timesold = arr[3];
                     historyItem.price = Int32.Parse(arr[4]);
                     historyItem.i_market_name = arr[5];
+                    Parent.Logic.ProcessItem(historyItem);
                     break;
                 case "invcache_go":
                     Console.WriteLine("Inventory was cached");

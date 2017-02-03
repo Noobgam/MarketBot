@@ -28,7 +28,6 @@ namespace CSGOTM
     {
         public const int MAXSIZE = 50;
         public CSGOTMProtocol Protocol;
-        int tmp = 0;
         public Logic()
         {
 
@@ -36,10 +35,6 @@ namespace CSGOTM
         public Logic(CSGOTMProtocol Pr1)
         {
             Protocol = Pr1;
-        }
-        public void Hello()
-        {
-            Console.WriteLine(++tmp);
         }
 
 
