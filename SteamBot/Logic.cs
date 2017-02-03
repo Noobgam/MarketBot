@@ -26,7 +26,7 @@ namespace CSGOTM
 
     public class Logic
     {
-        public int MAXSIZE = 50;
+        public const int MAXSIZE = 50;
         public CSGOTMProtocol Protocol;
         int tmp = 0;
         public Logic()
@@ -84,7 +84,7 @@ namespace CSGOTM
             if (!dataBase.ContainsKey(item.i_market_name))
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
-            HistoryItem oldest = (HistoryItem) salesHistory.sales[0];
+            HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             if (salesHistory.cnt == MAXSIZE && item.ui_price < 0.85 * salesHistory.median && salesHistory.median - item.ui_price > 400) //TODO какое-то условие на время
                 return true;
             return false;
@@ -100,3 +100,4 @@ namespace CSGOTM
             //TODO
         }
     }
+}
