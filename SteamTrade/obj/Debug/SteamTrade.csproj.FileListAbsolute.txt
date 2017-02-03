@@ -12,3 +12,17 @@ D:\Work\Work\Bot2\SteamBot\SteamTrade\bin\Debug\SteamKit2.xml
 D:\Work\Work\Bot2\SteamBot\SteamTrade\obj\Debug\SteamTrade.dll
 D:\Work\Work\Bot2\SteamBot\SteamTrade\obj\Debug\SteamTrade.pdb
 D:\Work\Work\Bot2\SteamBot\SteamTrade\obj\Debug\SteamTrade.csprojResolveAssemblyReference.cache
+D:\Bot\new\steambot\SteamTrade\bin\Debug\SteamTrade.dll
+D:\Bot\new\steambot\SteamTrade\bin\Debug\SteamTrade.pdb
+D:\Bot\new\steambot\SteamTrade\bin\Debug\Newtonsoft.Json.dll
+D:\Bot\new\steambot\SteamTrade\bin\Debug\protobuf-net.dll
+D:\Bot\new\steambot\SteamTrade\bin\Debug\SteamAuth.dll
+D:\Bot\new\steambot\SteamTrade\bin\Debug\SteamKit2.dll
+D:\Bot\new\steambot\SteamTrade\bin\Debug\Newtonsoft.Json.xml
+D:\Bot\new\steambot\SteamTrade\bin\Debug\protobuf-net.pdb
+D:\Bot\new\steambot\SteamTrade\bin\Debug\protobuf-net.xml
+D:\Bot\new\steambot\SteamTrade\bin\Debug\SteamAuth.pdb
+D:\Bot\new\steambot\SteamTrade\bin\Debug\SteamKit2.xml
+D:\Bot\new\steambot\SteamTrade\obj\Debug\SteamTrade.csprojResolveAssemblyReference.cache
+D:\Bot\new\steambot\SteamTrade\obj\Debug\SteamTrade.dll
+D:\Bot\new\steambot\SteamTrade\obj\Debug\SteamTrade.pdb

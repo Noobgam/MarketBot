@@ -4418,3 +4418,13 @@
 [<3 Noobgam 2017-02-02 03:33:43] INFO: Trade offer 1827079591 failed
 [<3 Noobgam 2017-02-02 03:33:43] INFO: Trade offer 1827041521 failed
 [<3 Noobgam 2017-02-02 03:34:51] SUCCESS: Confirmed Trade with GalaxyJLK. (Confirmation ID #1813453834)
+[<3 Noobgam 2017-02-02 19:29:14] INFO: Connecting...
+[<3 Noobgam 2017-02-02 19:29:14] SUCCESS: Done Loading Bot!
+[<3 Noobgam 2017-02-02 19:29:15] ERROR: Login Error: AccountLogonDeniedNeedTwoFactorCode
+[<3 Noobgam 2017-02-02 19:29:16] SUCCESS: Generated 2FA code.
+[<3 Noobgam 2017-02-02 19:29:22] SUCCESS: User Authenticated!
+[<3 Noobgam 2017-02-02 19:29:22] INFO: Downloading Schema...
+[<3 Noobgam 2017-02-02 19:29:23] SUCCESS: Schema Downloaded!
+[<3 Noobgam 2017-02-02 19:29:23] SUCCESS: Steam Bot Logged In Completely!
+[<3 Noobgam 2017-02-02 19:29:23] INFO: Trade offer 1827079591 failed
+[<3 Noobgam 2017-02-02 19:29:24] INFO: Trade offer 1827041521 failed

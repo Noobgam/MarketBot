@@ -18,9 +18,12 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
+using System.Collections;
 
 namespace CSGOTM
 {
+
+
     public class Logic
     {
         public CSGOTMProtocol Protocol;
@@ -37,5 +40,63 @@ namespace CSGOTM
         {
             Console.WriteLine(++tmp);
         }
+
+
+        public class SalesHistory
+        {
+            public ArrayList sales = new ArrayList();
+            public int median;
+            public int cnt = 0;
+            public int MAXSIZE = 50;
+
+            public SalesHistory(HistoryItem item)
+            {
+                cnt = 1;
+                sales.Add(item);
+            }
+        }
+
+        public Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
+
+        public void ProcessItem(HistoryItem item)
+        {
+            if (dataBase.ContainsKey(item.i_market_name))
+            {
+                SalesHistory salesHistory = dataBase[item.i_market_name];
+                if (dataBase[item.i_market_name].cnt == dataBase[item.i_market_name].MAXSIZE)
+                    dataBase[item.i_market_name].sales.RemoveAt(0);
+                else
+                    dataBase[item.i_market_name].cnt++;
+                dataBase[item.i_market_name].sales.Add(item);
+            }
+            else
+            {
+                SalesHistory salesHistory = new SalesHistory(item);
+                salesHistory.sales.Add(item);
+                dataBase.Add(item.i_market_name, salesHistory);
+            }
+
+            //find new median
+        }
+
+        public bool WantToBuy(NewItem item)
+        {
+            if (!dataBase.ContainsKey(item.i_market_name))
+                return false;
+            SalesHistory salesHistory = dataBase[item.i_market_name];
+            HistoryItem oldest = (HistoryItem) salesHistory.sales[0];
+            if (salesHistory.cnt == salesHistory.MAXSIZE && item.ui_price < 0.85 * salesHistory.median && salesHistory.median - item.ui_price > 400) //TODO какое-то условие на время
+                return true;
+            return false;
+        }
+
+        public void LoadDataBase()
+        {
+            //TODO
+        }
+
+        public void SaveDataBase()
+        {
+            //TODO
+        }
     }
-}

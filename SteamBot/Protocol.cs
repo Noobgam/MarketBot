@@ -341,5 +341,11 @@ namespace CSGOTM
                     return false;
             }
         }
+
+        bool hasStickers(string ClasssId, string InstanceId)
+        {
+            //TODO
+            return false;
+        }
     }
 }
