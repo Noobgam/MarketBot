@@ -345,7 +345,7 @@ namespace CSGOTM
         bool hasStickers(string ClasssId, string InstanceId)
         {
             //TODO
-            return false;
+            return true;
         }
     }
 }
