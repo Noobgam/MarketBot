@@ -158,10 +158,9 @@ namespace CSGOTM
 
         public Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
-        bool hasStickers(string ClasssId, string InstanceId)
+        bool hasStickers(string ClassId, string InstanceId)
         {
-            //TODO
-            return true;
+            return unStickered.Contains(ClassId + '_' + InstanceId);
         }
 
         public void ProcessItem(HistoryItem item)
