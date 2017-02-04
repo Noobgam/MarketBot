@@ -31,6 +31,7 @@ namespace CSGOTM
         public CSGOTMProtocol Protocol;
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
+        private const string DATABASEPATH = "database.txt";
         public Logic()
         {
 
@@ -44,6 +45,9 @@ namespace CSGOTM
                     Thread parser = new Thread(new ThreadStart(ParsingCycle));
                     parser.Start();
                 }
+            LoadDataBase();
+            Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
+            saver.Start();
         }
 
         void ParsingCycle()
@@ -63,6 +67,72 @@ namespace CSGOTM
                     Console.ForegroundColor = ConsoleColor.White;
                 }
                 Thread.Sleep(20000);
+            }
+        }
+
+        void SaveDataBaseCycle()
+        {
+            while (true)
+            {
+                if (SaveDataBase())
+                {
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine("Saved new DB");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine("Couldn\'t save DB");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+                Thread.Sleep(20000);
+            }
+        }
+
+        public bool LoadDataBase()
+        {
+            try
+            {
+                string[] lines = File.ReadAllLines(DATABASEPATH);
+                foreach (var line in lines)
+                {
+                    string[] words = line.Split(';');
+                    SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject(words[1]);
+                    dataBase.Add(words[0], salesHistory);
+                }
+                Console.WriteLine("Loaded " + lines.Length + "items");
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Could not load DB, check whether DB name is correct (\'" + DATABASEPATH + "\'):");
+                Console.WriteLine(e.Message);
+                return false;
+            }
+        }
+
+        public bool SaveDataBase()
+        {
+            try
+            {
+                if (File.Exists(DATABASEPATH))
+                    File.Delete(DATABASEPATH);
+                string[] lines = new string[dataBase.Count];
+                int id = 0;
+                foreach (KeyValuePair<string, SalesHistory> kvp in dataBase)
+                {
+                    string line = kvp.Key + ";" + JsonConvert.SerializeObject(kvp.Value);
+                    lines[id++] = line;
+                }
+                File.WriteAllLines(DATABASEPATH, lines);
+                return true;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("Could not save DB, check whether DB name is correct (\'database.txt\'). Maybe this file is write-protected?:");
+                Console.WriteLine(e.Message);
+                return false;
             }
         }
 
@@ -160,11 +230,14 @@ namespace CSGOTM
 
         bool hasStickers(string ClassId, string InstanceId)
         {
-            return unStickered.Contains(ClassId + '_' + InstanceId);
+            return !unStickered.Contains(ClassId + '_' + InstanceId);
         }
 
         public void ProcessItem(HistoryItem item)
         {
+            if (!hasStickers(item.i_classid, item.i_instanceid))
+                return;
+            Console.WriteLine(item.i_market_name);
             if (dataBase.ContainsKey(item.i_market_name))
             {
                 SalesHistory salesHistory = dataBase[item.i_market_name];
@@ -182,6 +255,7 @@ namespace CSGOTM
             }
 
             //find new median
+
         }
 
         public bool WantToBuy(NewItem item)
@@ -193,16 +267,6 @@ namespace CSGOTM
             if (salesHistory.cnt == MAXSIZE && item.ui_price < 0.85 * salesHistory.median && salesHistory.median - item.ui_price > 400) //TODO какое-то условие на время
                 return true;
             return false;
-        }
-
-        public void LoadDataBase()
-        {
-            //TODO
-        }
-
-        public void SaveDataBase()
-        {
-            //TODO
         }
     }
 }
