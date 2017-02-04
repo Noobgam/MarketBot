@@ -98,7 +98,11 @@ namespace CSGOTM
                 foreach (var line in lines)
                 {
                     string[] words = line.Split(';');
-                    SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject(words[1]);
+                    SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject<SalesHistory>(words[1]);
+                    //for (int i = 0; i < salesHistory.cnt; i++)
+                    //{
+                    //    salesHistory.sales[i] = ((JObject) salesHistory.sales[i]).ToObject<HistoryItem>();
+                    //}
                     dataBase.Add(words[0], salesHistory);
                 }
                 Console.WriteLine("Loaded " + lines.Length + "items");
@@ -215,7 +219,7 @@ namespace CSGOTM
 
         public class SalesHistory
         {
-            public ArrayList sales = new ArrayList();
+            public List<HistoryItem> sales = new List<HistoryItem>();
             public int median;
             public int cnt = 0;
 
@@ -238,9 +242,10 @@ namespace CSGOTM
             if (!hasStickers(item.i_classid, item.i_instanceid))
                 return;
             Console.WriteLine(item.i_market_name);
+            SalesHistory salesHistory;
             if (dataBase.ContainsKey(item.i_market_name))
             {
-                SalesHistory salesHistory = dataBase[item.i_market_name];
+                salesHistory = dataBase[item.i_market_name];
                 if (dataBase[item.i_market_name].cnt == MAXSIZE)
                     dataBase[item.i_market_name].sales.RemoveAt(0);
                 else
@@ -249,13 +254,16 @@ namespace CSGOTM
             }
             else
             {
-                SalesHistory salesHistory = new SalesHistory(item);
+                salesHistory = new SalesHistory(item);
                 salesHistory.sales.Add(item);
                 dataBase.Add(item.i_market_name, salesHistory);
             }
 
-            //find new median
-
+            int[] a = new int[salesHistory.cnt];
+            for (int i = 0; i < salesHistory.cnt; i++)
+                a[i] = salesHistory.sales[i].price;
+            Array.Sort(a);
+            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
         }
 
         public bool WantToBuy(NewItem item)
