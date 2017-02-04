@@ -84,6 +84,7 @@ namespace CSGOTM
                 return;
             var message = e.Message;
             Message x = JsonConvert.DeserializeObject<Message>(message);
+            //Console.WriteLine(x.type);
             switch (x.type)
             {
                 case "newitems_go":
@@ -94,19 +95,29 @@ namespace CSGOTM
                         //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                     break;
                 case "history_go":
-                    char[] trimming = { '[', ']' };
-                    x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
-                    string[] arr = x.data.Split(',');
-                    HistoryItem historyItem = new HistoryItem();
-                    historyItem.i_classid = arr[0];
-                    historyItem.i_instanceid = arr[1];
-                    historyItem.i_market_hash_name = arr[2];
-                    historyItem.timesold = arr[3];
-                    historyItem.price = Int32.Parse(arr[4]);
-                    historyItem.i_market_name = arr[5];
-                    Parent.Logic.ProcessItem(historyItem);
+                    try
+                    {
+                        char[] trimming = { '[', ']' };
+                        x.data = DecodeEncodedNonAsciiCharacters(x.data);
+                        x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
+                        string[] arr = x.data.Split(',');
+                        HistoryItem historyItem = new HistoryItem();
+                        historyItem.i_classid = arr[0];
+                        historyItem.i_instanceid = arr[1];
+                        historyItem.i_market_hash_name = arr[2];
+                        historyItem.timesold = arr[3];
+                        historyItem.price = Int32.Parse(arr[4]);
+                        historyItem.i_market_name = arr[5];
+                        Parent.Logic.ProcessItem(historyItem);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.ForegroundColor = ConsoleColor.Red;
+                        Console.WriteLine(ex.Message);
+                        Console.ForegroundColor = ConsoleColor.White;
+                    }
                     break;
+
                 case "invcache_go":
                     Console.WriteLine("Inventory was cached");
                     break;
@@ -314,7 +325,9 @@ namespace CSGOTM
                 string a = myWebClient.DownloadString("https://csgo.tm/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
                 JObject parsed = JObject.Parse(a);
                 foreach (var pair in parsed)
+                {
                     Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                }
                 if (parsed["result"] == null)
                     return false;
                 else if ((string)parsed["result"] == "ok")
@@ -342,12 +355,6 @@ namespace CSGOTM
                 else
                     return false;
             }
-        }
-
-        bool hasStickers(string ClasssId, string InstanceId)
-        {
-            //TODO
-            return true;
         }
     }
 }
