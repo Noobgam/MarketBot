@@ -1,4 +1,7 @@
 ﻿
+using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+
 public class Pair<T, U>
 {
     public Pair() { }
@@ -80,4 +83,33 @@ public class Auth
 {
     public string wsAuth;
     public string success;
+}
+
+public class Inventory
+{
+    public class SteamItem
+    {
+        public string ui_id;
+        public string i_market_hash_name;
+        public string i_market_name;
+        public string i_name;
+        public string i_name_color;
+        public string i_rarity;
+        public List<JObject> i_descriptions;
+        public int ui_status;
+        public string he_name;
+        public int ui_price;
+        public int min_price;
+        public bool ui_price_text;
+        public bool min_price_text;
+        public string i_classid;
+        public string i_instanceid;
+        public bool ui_new;
+        public int position;
+        public string wear;
+        public int tradable;
+        public double i_market_price;
+        public string i_market_price_text;
+    }
+    public List<SteamItem> content;
 }

@@ -143,48 +143,6 @@ namespace CSGOTM
             }
         }
 
-        TMTrade[] GetTradeList()
-        {
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/Trades/?key=" + Api);
-                JArray json = JArray.Parse(a);
-                TMTrade[] arr = new TMTrade[json.Count];
-                int iter = 0;
-                foreach (var thing in json)
-                {
-                    //Console.WriteLine("{0}", thing);
-                    TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
-                    arr[iter++] = xx;
-                }
-                return arr;
-            }
-        }
-
-        bool UpdateInventory()
-        {
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/UpdateInventory/?key=" + Api);
-                JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                //cout<<;
-                if (json["success"] == null)
-                    return false;
-                else if ((bool)json["success"])
-                    return true;
-                else
-                    return false;
-            }
-        }
-
         bool TakeItems()
         {
             using (WebClient myWebClient = new WebClient())
@@ -314,7 +272,7 @@ namespace CSGOTM
             }
         }
 
-        //returns whether trade was successful
+        //Interface starts here:
         bool Buy(string ClasssId, string InstanceId, int price) 
         {
             using (WebClient myWebClient = new WebClient())
@@ -354,6 +312,53 @@ namespace CSGOTM
                     return true;
                 else
                     return false;
+            }
+        }
+        
+        public Inventory GetSteamInventory()
+        {
+            return null;
+        }
+
+        bool UpdateInventory()
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/UpdateInventory/?key=" + Api);
+                JObject json = JObject.Parse(a);
+                //foreach (var thing in json)
+                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+                //cout<<;
+                if (json["success"] == null)
+                    return false;
+                else if ((bool)json["success"])
+                    return true;
+                else
+                    return false;
+            }
+        }
+        
+        TMTrade[] GetTradeList()
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/Trades/?key=" + Api);
+                JArray json = JArray.Parse(a);
+                TMTrade[] arr = new TMTrade[json.Count];
+                int iter = 0;
+                foreach (var thing in json)
+                {
+                    //Console.WriteLine("{0}", thing);
+                    TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
+                    arr[iter++] = xx;
+                }
+                return arr;
             }
         }
     }
