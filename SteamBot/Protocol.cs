@@ -90,7 +90,8 @@ namespace CSGOTM
                 case "newitems_go":
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
                     //newItem.ui_price *= 100;
-                    Parent.Logic.WantToBuy(newItem);
+                    if (Parent.Logic.WantToBuy(newItem))
+                        Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
                     //if (newItem.ui_price < 100)
                         //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                     break;

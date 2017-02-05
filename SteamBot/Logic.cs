@@ -57,16 +57,16 @@ namespace CSGOTM
                 if (ParseNewDatabase())
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Finished parsing new DB");
+                    //Console.WriteLine("Finished parsing new DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Couldn\'t parse new DB");
+                    //Console.WriteLine("Couldn\'t parse new DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
-                Thread.Sleep(20000);
+                Thread.Sleep(60000);
             }
         }
 
@@ -77,16 +77,16 @@ namespace CSGOTM
                 if (SaveDataBase())
                 {
                     Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Saved new DB");
+                    //Console.WriteLine("Saved new DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
                 else
                 {
                     Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Couldn\'t save DB");
+                    //Console.WriteLine("Couldn\'t save DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
-                Thread.Sleep(20000);
+                Thread.Sleep(60000);
             }
         }
 
@@ -241,7 +241,7 @@ namespace CSGOTM
         {
             if (!hasStickers(item.i_classid, item.i_instanceid))
                 return;
-            Console.WriteLine(item.i_market_name);
+            //Console.WriteLine(item.i_market_name);
             SalesHistory salesHistory;
             if (dataBase.ContainsKey(item.i_market_name))
             {
@@ -255,7 +255,6 @@ namespace CSGOTM
             else
             {
                 salesHistory = new SalesHistory(item);
-                salesHistory.sales.Add(item);
                 dataBase.Add(item.i_market_name, salesHistory);
             }
 
@@ -272,8 +271,11 @@ namespace CSGOTM
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (salesHistory.cnt == MAXSIZE && item.ui_price < 0.85 * salesHistory.median && salesHistory.median - item.ui_price > 400) //TODO какое-то условие на время
+            if (salesHistory.cnt >= 13 && item.ui_price * 100 < 0.82 * salesHistory.median && salesHistory.median - item.ui_price * 100 > 500)
+            {//TODO какое-то условие на время
+                Console.Write(salesHistory.median - item.ui_price * 100 + " ");
                 return true;
+            }
             return false;
         }
     }
