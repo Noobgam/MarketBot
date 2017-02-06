@@ -27,7 +27,7 @@ namespace CSGOTM
 
     public class Logic
     {
-        public const int MAXSIZE = 50;
+        public const int MAXSIZE = 100;
         public CSGOTMProtocol Protocol;
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";

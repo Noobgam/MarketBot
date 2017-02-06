@@ -252,7 +252,7 @@ namespace CSGOTM
             Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
             tradeHandler.Start();
             Thread getInventory = new Thread(new ThreadStart(GetSteamInventory));
-            getInventory.Start();
+            //getInventory.Start();
         }
 
         void Error(object sender, EventArgs e)
