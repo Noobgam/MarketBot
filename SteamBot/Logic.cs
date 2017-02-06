@@ -32,6 +32,8 @@ namespace CSGOTM
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
+        public Queue<Inventory.SteamItem> toBeSold;
+
         public Logic()
         {
 
@@ -48,8 +50,24 @@ namespace CSGOTM
             LoadDataBase();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
             saver.Start();
+            Thread seller = new Thread(new ThreadStart(SellFromQueue));
+            seller.Start();
         }
-
+        
+        void SellFromQueue()
+        {
+            while (true)
+            {
+                if (toBeSold != null && toBeSold.Count != 0)
+                    if (dataBase.ContainsKey(toBeSold.Peek().i_market_name))
+                    {
+                        Protocol.Sell(toBeSold.Peek().i_classid, toBeSold.Peek().i_instanceid, dataBase[toBeSold.Peek().i_market_name].median);
+                        toBeSold.Dequeue();
+                    }
+                Thread.Sleep(1000);
+            }
+        }
+       
         void ParsingCycle()
         {
             while (true)

@@ -251,6 +251,8 @@ namespace CSGOTM
             ping.Start();
             Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
             tradeHandler.Start();
+            Thread getInventory = new Thread(new ThreadStart(GetSteamInventory));
+            getInventory.Start();
         }
 
         void Error(object sender, EventArgs e)
@@ -319,9 +321,26 @@ namespace CSGOTM
             }
         }
         
-        public Inventory GetSteamInventory()
+        public void GetSteamInventory()
         {
-            return null;
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://market.csgo.com/api/GetInv/?key=" + Api);
+                Console.WriteLine(a);
+                CSGOTM.Inventory inventory = JsonConvert.DeserializeObject<CSGOTM.Inventory>(a);
+                if (inventory != null)
+                {
+                    foreach (CSGOTM.Inventory.SteamItem item in inventory.content)
+                    {
+                        Parent.Logic.toBeSold.Enqueue(item);
+                        Console.WriteLine(item.i_market_name);
+                    }
+                }
+            }
+            Thread.Sleep(60000);
         }
 
         bool UpdateInventory()
