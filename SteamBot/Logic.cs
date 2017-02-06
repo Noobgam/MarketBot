@@ -99,13 +99,11 @@ namespace CSGOTM
                 {
                     string[] words = line.Split(';');
                     SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject<SalesHistory>(words[1]);
-                    //for (int i = 0; i < salesHistory.cnt; i++)
-                    //{
-                    //    salesHistory.sales[i] = ((JObject) salesHistory.sales[i]).ToObject<HistoryItem>();
-                    //}
+                    if (salesHistory.cnt >= 13)
+                        Console.WriteLine(words[0]);
                     dataBase.Add(words[0], salesHistory);
                 }
-                Console.WriteLine("Loaded " + lines.Length + "items");
+                Console.WriteLine("Loaded " + lines.Length + " items.");
                 return true;
             }
             catch (Exception e)
@@ -267,13 +265,15 @@ namespace CSGOTM
 
         public bool WantToBuy(NewItem item)
         {
+            if (!hasStickers(item.i_classid, item.i_instanceid))
+                return false;
             if (!dataBase.ContainsKey(item.i_market_name))
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (salesHistory.cnt >= 13 && item.ui_price * 100 < 0.82 * salesHistory.median && salesHistory.median - item.ui_price * 100 > 500)
+            if (item.ui_price < 10000 && salesHistory.cnt >= 13 && item.ui_price < 0.82 * salesHistory.median && salesHistory.median - item.ui_price > 500)
             {//TODO какое-то условие на время
-                Console.Write(salesHistory.median - item.ui_price * 100 + " ");
+                Console.Write(salesHistory.median - item.ui_price + " ");
                 return true;
             }
             return false;

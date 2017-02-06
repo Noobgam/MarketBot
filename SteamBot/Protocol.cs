@@ -89,9 +89,12 @@ namespace CSGOTM
             {
                 case "newitems_go":
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
-                    //newItem.ui_price *= 100;
+                    newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Parent.Logic.WantToBuy(newItem))
+                    {
+                        Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                         Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
+                    }
                     //if (newItem.ui_price < 100)
                         //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                     break;
@@ -128,9 +131,9 @@ namespace CSGOTM
                     //Console.ForegroundColor = ConsoleColor.White;
                     break;
                 default:
-                    Console.WriteLine(x.type);
+                    //Console.WriteLine(x.type);
                     x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    Console.WriteLine(x.data);
+                    //Console.WriteLine(x.data);
                     break;
             }
         }

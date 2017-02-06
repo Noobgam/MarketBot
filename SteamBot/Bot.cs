@@ -161,7 +161,7 @@ namespace SteamBot
             SecurityCodesForOffers = new SortedSet<string>();
             Connection = new CSGOTM.CSGOTMProtocol(this, SecurityCodesForOffers);
             Logic = new CSGOTM.Logic(Connection);
-            Thread.Sleep(100000000);
+            //Thread.Sleep(100000000);
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
             {
