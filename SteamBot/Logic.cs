@@ -32,7 +32,7 @@ namespace CSGOTM
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
-        public Queue<Inventory.SteamItem> toBeSold;
+        public Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
 
         public Logic()
         {
@@ -58,7 +58,7 @@ namespace CSGOTM
         {
             while (true)
             {
-                if (toBeSold != null && toBeSold.Count != 0)
+                if (toBeSold != null && toBeSold.Count != 0) //??
                     if (dataBase.ContainsKey(toBeSold.Peek().i_market_name))
                     {
                         Protocol.Sell(toBeSold.Peek().i_classid, toBeSold.Peek().i_instanceid, dataBase[toBeSold.Peek().i_market_name].median);
