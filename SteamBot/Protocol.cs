@@ -329,11 +329,15 @@ namespace CSGOTM
                 myQueryStringCollection.Add("q", "");
                 myWebClient.QueryString = myQueryStringCollection;
                 string a = myWebClient.DownloadString("https://market.csgo.com/api/GetInv/?key=" + Api);
-                Console.WriteLine(a);
-                CSGOTM.Inventory inventory = JsonConvert.DeserializeObject<CSGOTM.Inventory>(a);
-                if (inventory != null)
+                JObject json = JObject.Parse(a);
+                if (json["ok"] != null && (bool)json["ok"] == false)
+                    return;                  
+                List<Inventory.SteamItem> inv = json["data"].ToObject<List<Inventory.SteamItem>>();
+                Inventory inventory = new Inventory();
+                inventory.content = inv;
+                if (inventory.content != null)
                 {
-                    foreach (CSGOTM.Inventory.SteamItem item in inventory.content)
+                    foreach (var item in inventory.content)
                     {
                         Parent.Logic.toBeSold.Enqueue(item);
                         Console.WriteLine(item.i_market_name);
