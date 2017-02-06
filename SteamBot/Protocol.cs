@@ -277,7 +277,7 @@ namespace CSGOTM
         }
 
         //Interface starts here:
-        bool Buy(string ClasssId, string InstanceId, int price) 
+        public bool Buy(string ClasssId, string InstanceId, int price) 
         {
             using (WebClient myWebClient = new WebClient())
             {
@@ -299,7 +299,7 @@ namespace CSGOTM
             }
         }
 
-        bool Sell(string ClasssId, string InstanceId, int price)
+        public bool Sell(string ClasssId, string InstanceId, int price)
         {
             using (WebClient myWebClient = new WebClient())
             {
