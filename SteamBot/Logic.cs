@@ -52,18 +52,40 @@ namespace CSGOTM
             saver.Start();
             Thread seller = new Thread(new ThreadStart(SellFromQueue));
             seller.Start();
+            Thread adder = new Thread(new ThreadStart(AddNewItems));
+            adder.Start();
+        }
+
+        void AddNewItems()
+        {
+            while (true)
+            {
+                if (toBeSold.Count == 0)
+                {
+                    Inventory inventory = Protocol.GetSteamInventory();
+                    foreach (Inventory.SteamItem item in inventory.content)
+                    {
+                        Console.WriteLine(item.i_market_name + " is going to be sold.");
+                        toBeSold.Enqueue(item);
+                    }
+                }
+                Thread.Sleep(60000);
+            }
         }
         
         void SellFromQueue()
         {
             while (true)
             {
-                if (toBeSold != null && toBeSold.Count != 0) //??
-                    if (dataBase.ContainsKey(toBeSold.Peek().i_market_name))
+                if (toBeSold.Count != 0)
+                {
+                    Inventory.SteamItem item = toBeSold.Peek();
+                    if (dataBase.ContainsKey(item.i_market_name))
                     {
-                        Protocol.Sell(toBeSold.Peek().i_classid, toBeSold.Peek().i_instanceid, dataBase[toBeSold.Peek().i_market_name].median);
+                        //Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
                         toBeSold.Dequeue();
                     }
+                }
                 Thread.Sleep(1000);
             }
         }

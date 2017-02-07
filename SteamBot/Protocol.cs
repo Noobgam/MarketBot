@@ -251,7 +251,6 @@ namespace CSGOTM
             ping.Start();
             Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
             tradeHandler.Start();
-            Thread getInventory = new Thread(new ThreadStart(GetSteamInventory));
         }
 
         void Error(object sender, EventArgs e)
@@ -309,8 +308,8 @@ namespace CSGOTM
                 myWebClient.QueryString = myQueryStringCollection;
                 string a = myWebClient.DownloadString("https://csgo.tm/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
                 JObject parsed = JObject.Parse(a);
-                foreach (var pair in parsed)
-                    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+                //foreach (var pair in parsed)
+                    //Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
                 if (parsed["result"] == null)
                     return false;
                 else if ((string)parsed["result"] == "ok")
