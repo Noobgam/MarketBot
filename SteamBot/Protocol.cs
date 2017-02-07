@@ -26,7 +26,7 @@ namespace CSGOTM
     {
         public SortedSet<string> Codes;
         public SteamBot.Bot Parent;
-        string Api = "Nh20UnxmHo2Ty3ED1Cj3VA83N53wB1S";
+        string Api = "5gget2u8B096IK48lJMyX6d91s2t05n";
         public CSGOTMProtocol()
         {
 
@@ -159,6 +159,7 @@ namespace CSGOTM
 
         bool TakeItems()
         {
+            Console.WriteLine("Taking items");
             using (WebClient myWebClient = new WebClient())
             {
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
@@ -183,6 +184,7 @@ namespace CSGOTM
 
         bool GiveItems(string botID)
         {
+            Console.WriteLine("Giving items");
             using (WebClient myWebClient = new WebClient())
             {
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
@@ -265,6 +267,8 @@ namespace CSGOTM
             Auth();
             Thread ping = new Thread(new ThreadStart(pinger));
             ping.Start();
+            Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
+            tradeHandler.Start();
         }
 
         void Error(object sender, EventArgs e)
@@ -278,7 +282,7 @@ namespace CSGOTM
 
         void ReOpen()
         {
-            for (int i = 0; !died && i < 10; ++i)
+            for (int i = 0; died && i < 10; ++i)
             {
                 socket = new WebSocket("wss://wsn.dota2.net/wsn/");
                 socket.Opened += Open;
