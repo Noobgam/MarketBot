@@ -212,18 +212,24 @@ namespace CSGOTM
             {
                 TMTrade[] arr = GetTradeList();
                 UpdateInventory();
+                bool had = false;
+                bool gone = false;
                 for (int i = 0; i < arr.Length; ++i)
                 {
-                    if (arr[i].ui_status == "2")
-                    {
-                        UpdateInventory();
-                        TakeItems();
-                    }
-                    else if (arr[i].ui_status == "4")
+                    if (arr[i].ui_status == "4")
                     {
                         UpdateInventory();
                         GiveItems(arr[i].ui_bid);
+                        gone = true;
+                        Parent.Logic.doNotSell = true;
+                        break;
                     }
+                    had |= arr[i].ui_status == "2";
+                }
+                if (had && !gone)
+                {
+                    UpdateInventory();
+                    TakeItems();
                 }
                 //once per 30 seconds we check trade list
                 Thread.Sleep(30000);
