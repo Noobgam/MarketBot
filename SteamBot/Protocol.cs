@@ -80,7 +80,6 @@ namespace CSGOTM
 
         void Msg(object sender, MessageReceivedEventArgs e)
         {
-            SetOrder("1923037342", "0", 97);
             if (e.Message == "pong")
                 return;
             var message = e.Message;
