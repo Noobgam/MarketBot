@@ -33,7 +33,7 @@ namespace CSGOTM
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         public Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
-        public Boolean doNotSell = false; // True when we don`t want to sell.  
+        public bool doNotSell = false; // True when we don`t want to sell.  
         public Logic()
         {
 
@@ -60,7 +60,9 @@ namespace CSGOTM
         {
             while (true)
             {
-                if (!doNotSell && toBeSold.Count == 0)
+                if (doNotSell)
+                    doNotSell = false;
+                else if (toBeSold.Count == 0)
                 {
                     Inventory inventory = Protocol.GetSteamInventory();
                     foreach (Inventory.SteamItem item in inventory.content)
@@ -80,11 +82,9 @@ namespace CSGOTM
                 if (toBeSold.Count != 0)
                 {
                     Inventory.SteamItem item = toBeSold.Peek();
-                    if (dataBase.ContainsKey(item.i_market_name))
-                    {
-                        //Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
-                        toBeSold.Dequeue();
-                    }
+                    if (dataBase.ContainsKey(item.i_market_name))                   
+                        Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
+                    toBeSold.Dequeue();                 
                 }
                 Thread.Sleep(1000);
             }
@@ -139,9 +139,8 @@ namespace CSGOTM
                 {
                     string[] words = line.Split(';');
                     SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject<SalesHistory>(words[1]);
-                    if (salesHistory.cnt >= 15)
-                        Console.WriteLine(words[0]);
-                    dataBase.Add(words[0], salesHistory);
+                    if (words[0] != "")     
+                        dataBase.Add(words[0], salesHistory);
                 }
                 Console.WriteLine("Loaded " + lines.Length + " items.");
                 return true;
@@ -311,9 +310,9 @@ namespace CSGOTM
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (item.ui_price < 18000 && salesHistory.cnt >= 15 && item.ui_price < 0.82 * salesHistory.median && salesHistory.median - item.ui_price > 500)
+            if (item.ui_price < 20000 && salesHistory.cnt >= 17 && item.ui_price < 0.82 * salesHistory.median && salesHistory.median - item.ui_price > 500)
             {//TODO какое-то условие на время
-                Console.Write(salesHistory.median - item.ui_price + " ");
+                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
