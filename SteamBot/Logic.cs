@@ -32,6 +32,7 @@ namespace CSGOTM
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
+        private const string DATABASETEMPPATH = "databaseTemp.txt";
         public Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         public bool doNotSell = false; // True when we don`t want to sell.  
         public Logic()
@@ -104,6 +105,7 @@ namespace CSGOTM
                         }
                     }
                 }
+                Console.WriteLine(toBeSold.Count);
                 Thread.Sleep(1000);
             }
         }
@@ -176,7 +178,7 @@ namespace CSGOTM
             try
             {
                 if (File.Exists(DATABASEPATH))
-                    File.Delete(DATABASEPATH);
+                    File.Move(DATABASEPATH, DATABASETEMPPATH);
                 string[] lines = new string[dataBase.Count];
                 int id = 0;
                 foreach (KeyValuePair<string, SalesHistory> kvp in dataBase)
@@ -185,6 +187,7 @@ namespace CSGOTM
                     lines[id++] = line;
                 }
                 File.WriteAllLines(DATABASEPATH, lines);
+                File.Delete(DATABASETEMPPATH);
                 return true;
             }
             catch (Exception e)
