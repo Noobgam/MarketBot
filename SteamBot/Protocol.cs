@@ -274,6 +274,7 @@ namespace CSGOTM
             ping.Start();
             Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
             tradeHandler.Start();
+            //andrew is gay
         }
 
         void Error(object sender, EventArgs e)
