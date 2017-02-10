@@ -95,8 +95,6 @@ namespace CSGOTM
                         Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                         Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
                     }
-                    //if (newItem.ui_price < 100)
-                    //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                     break;
                 case "history_go":
                     try
@@ -212,26 +210,33 @@ namespace CSGOTM
         {
             while (!died)
             {
-                TMTrade[] arr = GetTradeList();
-                UpdateInventory();
-                bool had = false;
-                bool gone = false;
-                for (int i = 0; i < arr.Length; ++i)
+                try
                 {
-                    if (arr[i].ui_status == "4")
+                    TMTrade[] arr = GetTradeList();
+                    UpdateInventory();
+                    bool had = false;
+                    bool gone = false;
+                    for (int i = 0; i < arr.Length; ++i)
+                    {
+                        if (arr[i].ui_status == "4")
+                        {
+                            UpdateInventory();
+                            GiveItems(arr[i].ui_bid);
+                            gone = true;
+                            Parent.Logic.doNotSell = true;
+                            break;
+                        }
+                        had |= arr[i].ui_status == "2";
+                    }
+                    if (had && !gone)
                     {
                         UpdateInventory();
-                        GiveItems(arr[i].ui_bid);
-                        gone = true;
-                        Parent.Logic.doNotSell = true;
-                        break;
+                        TakeItems();
                     }
-                    had |= arr[i].ui_status == "2";
                 }
-                if (had && !gone)
+                catch (Exception ex)
                 {
-                    UpdateInventory();
-                    TakeItems();
+
                 }
                 //once per 30 seconds we check trade list
                 Thread.Sleep(30000);
@@ -377,43 +382,57 @@ namespace CSGOTM
 
         bool UpdateInventory()
         {
-            using (WebClient myWebClient = new WebClient())
+            try
             {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/UpdateInventory/?key=" + Api);
-                JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                //cout<<;
-                if (json["success"] == null)
-                    return false;
-                else if ((bool)json["success"])
-                    return true;
-                else
-                    return false;
+                using (WebClient myWebClient = new WebClient())
+                {
+                    NameValueCollection myQueryStringCollection = new NameValueCollection();
+                    myQueryStringCollection.Add("q", "");
+                    myWebClient.QueryString = myQueryStringCollection;
+                    string a = myWebClient.DownloadString("https://csgo.tm/api/UpdateInventory/?key=" + Api);
+                    JObject json = JObject.Parse(a);
+                    //foreach (var thing in json)
+                    //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+                    //cout<<;
+                    if (json["success"] == null)
+                        return false;
+                    else if ((bool)json["success"])
+                        return true;
+                    else
+                        return false;
+                }
+            }
+            catch (Exception ex)
+            {
+                return false;
             }
         }
 
         TMTrade[] GetTradeList()
         {
-            using (WebClient myWebClient = new WebClient())
+            try
             {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/Trades/?key=" + Api);
-                JArray json = JArray.Parse(a);
-                TMTrade[] arr = new TMTrade[json.Count];
-                int iter = 0;
-                foreach (var thing in json)
+                using (WebClient myWebClient = new WebClient())
                 {
-                    //Console.WriteLine("{0}", thing);
-                    TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
-                    arr[iter++] = xx;
+                    NameValueCollection myQueryStringCollection = new NameValueCollection();
+                    myQueryStringCollection.Add("q", "");
+                    myWebClient.QueryString = myQueryStringCollection;
+                    string a = myWebClient.DownloadString("https://csgo.tm/api/Trades/?key=" + Api);
+                    JArray json = JArray.Parse(a);
+                    TMTrade[] arr = new TMTrade[json.Count];
+                    int iter = 0;
+                    foreach (var thing in json)
+                    {
+                        //Console.WriteLine("{0}", thing);
+                        TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
+                        arr[iter++] = xx;
+                    }
+                    return arr;
                 }
-                return arr;
+            }
+            catch
+            {
+                return null;
             }
         }
     }
