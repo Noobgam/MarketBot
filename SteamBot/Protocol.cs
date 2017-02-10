@@ -35,17 +35,22 @@ namespace CSGOTM
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public CSGOTMProtocol(SortedSet<string> temp)
         {
-            //Open connection.
             Codes = temp;
-            socket.Opened += Open;
-            socket.Closed += Error;
-            socket.MessageReceived += Msg;
-            socket.Open();
+            Thread starter = new Thread(new ThreadStart(StartUp));
+            starter.Start();
         }
         public CSGOTMProtocol(SteamBot.Bot p, SortedSet<string> temp)
         {
             Parent = p;
             Codes = temp;
+            Thread starter = new Thread(new ThreadStart(StartUp));
+            starter.Start();
+        }
+
+        private void StartUp()
+        {
+            while (Parent.Logic == null)
+                Thread.Sleep(10);
             socket.Opened += Open;
             socket.Closed += Error;
             socket.MessageReceived += Msg;
