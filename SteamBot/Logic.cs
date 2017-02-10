@@ -64,12 +64,21 @@ namespace CSGOTM
                     doNotSell = false;
                 else if (toBeSold.Count == 0)
                 {
-                    Inventory inventory = Protocol.GetSteamInventory();
-                    foreach (Inventory.SteamItem item in inventory.content)
+                    try
                     {
-                        Console.WriteLine(item.i_market_name + " is going to be sold.");
-                        toBeSold.Enqueue(item);
+                        Inventory inventory = Protocol.GetSteamInventory();
+                        foreach (Inventory.SteamItem item in inventory.content)
+                        {
+                            Console.WriteLine(item.i_market_name + " is going to be sold.");
+                            toBeSold.Enqueue(item);
+                        }
                     }
+                    catch(Exception ex)
+                    {
+
+                    }
+
+                    
                 }
                 Thread.Sleep(60000);
             }
@@ -81,10 +90,19 @@ namespace CSGOTM
             {
                 if (toBeSold.Count != 0)
                 {
-                    Inventory.SteamItem item = toBeSold.Peek();
-                    if (dataBase.ContainsKey(item.i_market_name))                   
-                        Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
-                    toBeSold.Dequeue();                 
+                    Inventory.SteamItem item = toBeSold.Dequeue();
+                    if (dataBase.ContainsKey(item.i_market_name))
+                    {
+                        try
+                        {
+                            if (!Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median))
+                                toBeSold.Enqueue(item);
+                        }
+                        catch(Exception ex)
+                        {
+
+                        }
+                    }
                 }
                 Thread.Sleep(1000);
             }
