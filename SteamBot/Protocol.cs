@@ -94,6 +94,7 @@ namespace CSGOTM
             {
                 case "newitems_go":
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
+                    getBestOrder(newItem.i_classid, newItem.i_instanceid);
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Parent.Logic.WantToBuy(newItem))
                     {
@@ -414,6 +415,23 @@ namespace CSGOTM
             }
         }
 
+        int getBestOrder(string classid, string instanceid)
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                string a = myWebClient.DownloadString("https://csgo.tm/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
+                JObject x = JObject.Parse(a);
+                JArray thing = (JArray)x["buy_offers"];
+                if (thing.Count == 0)
+                    return 49;
+                else
+                    return int.Parse(((string)thing[0]["o_price"]));
+            }
+        }
+        
         TMTrade[] GetTradeList()
         {
             try
