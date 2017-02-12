@@ -367,7 +367,7 @@ namespace CSGOTM
             }
         }
 
-        bool SetOrder(string classid, string instanceid, int price)
+        public bool SetOrder(string classid, string instanceid, int price)
         {
             using (WebClient myWebClient = new WebClient())
             {
@@ -415,7 +415,7 @@ namespace CSGOTM
             }
         }
 
-        int getBestOrder(string classid, string instanceid)
+        public int getBestOrder(string classid, string instanceid)
         {
             using (WebClient myWebClient = new WebClient())
             {

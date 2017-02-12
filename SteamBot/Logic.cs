@@ -27,13 +27,15 @@ namespace CSGOTM
 
     public class Logic
     {
-        public const int MAXSIZE = 100;
+        public const int MAXSIZE = 120;
+        public const int MINSIZE = 25;
         public CSGOTMProtocol Protocol;
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         private const string DATABASETEMPPATH = "databaseTemp.txt";
         public Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
+        public Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         public bool doNotSell = false; // True when we don`t want to sell.  
         public Logic()
         {
@@ -55,6 +57,25 @@ namespace CSGOTM
             seller.Start();
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
+            Thread setter = new Thread(new ThreadStart(setNewOrder));
+        }
+
+        void setNewOrder()
+        {
+            if (needOrder.Count != 0)
+            {
+                HistoryItem item = needOrder.Dequeue();
+                int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
+                Thread.Sleep(1000);
+
+                SalesHistory history = dataBase[item.i_market_name];
+                if (price < 1000 && history.median * 0.8 > price)
+                {
+                    Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
+                    Console.WriteLine("Settled order for " + item.i_market_name);
+                }
+            }
+            Thread.Sleep(1000);
         }
 
         void AddNewItems()
@@ -62,7 +83,10 @@ namespace CSGOTM
             while (true)
             {
                 if (doNotSell)
+                {
                     doNotSell = false;
+                    Thread.Sleep(500000);
+                }
                 else if (toBeSold.Count == 0)
                 {
                     try
@@ -74,14 +98,14 @@ namespace CSGOTM
                             toBeSold.Enqueue(item);
                         }
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
 
                     }
 
-                    
+
                 }
-                Thread.Sleep(60000);
+                Thread.Sleep(500000);
             }
         }
         
@@ -96,8 +120,7 @@ namespace CSGOTM
                     {
                         try
                         {
-                            if (!Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median))
-                                toBeSold.Enqueue(item);
+                            Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
                         }
                         catch(Exception ex)
                         {
@@ -105,7 +128,6 @@ namespace CSGOTM
                         }
                     }
                 }
-                Console.WriteLine(toBeSold.Count);
                 Thread.Sleep(1000);
             }
         }
@@ -321,6 +343,11 @@ namespace CSGOTM
                 a[i] = salesHistory.sales[i].price;
             Array.Sort(a);
             dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
+
+            if (salesHistory.cnt >= MINSIZE)
+            {
+                needOrder.Enqueue(item);
+            }
         }
 
         public bool WantToBuy(NewItem item)
@@ -331,7 +358,7 @@ namespace CSGOTM
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (item.ui_price < 20000 && salesHistory.cnt >= 17 && item.ui_price < 0.82 * salesHistory.median && salesHistory.median - item.ui_price > 500)
+            if (item.ui_price < 20000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600)
             {//TODO какое-то условие на время
                 Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
                 return true;
