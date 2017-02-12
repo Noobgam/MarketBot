@@ -425,7 +425,7 @@ namespace CSGOTM
                 string a = myWebClient.DownloadString("https://csgo.tm/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
                 JObject x = JObject.Parse(a);
                 JArray thing = (JArray)x["buy_offers"];
-                if (thing.Count == 0)
+                if (thing == null || thing.Count == 0)
                     return 49;
                 else
                     return int.Parse(((string)thing[0]["o_price"]));
