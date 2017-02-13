@@ -90,7 +90,7 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-
+                        Console.WriteLine("Handled ex");
                     }
                     
                 }

@@ -417,18 +417,25 @@ namespace CSGOTM
 
         public int getBestOrder(string classid, string instanceid)
         {
-            using (WebClient myWebClient = new WebClient())
+            try
             {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-                JObject x = JObject.Parse(a);
-                JArray thing = (JArray)x["buy_offers"];
-                if (thing == null || thing.Count == 0)
-                    return 49;
-                else
-                    return int.Parse(((string)thing[0]["o_price"]));
+                using (WebClient myWebClient = new WebClient())
+                {
+                    NameValueCollection myQueryStringCollection = new NameValueCollection();
+                    myQueryStringCollection.Add("q", "");
+                    myWebClient.QueryString = myQueryStringCollection;
+                    string a = myWebClient.DownloadString("https://csgo.tm/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
+                    JObject x = JObject.Parse(a);
+                    JArray thing = (JArray)x["buy_offers"];
+                    if (thing == null || thing.Count == 0)
+                        return 49;
+                    else
+                        return int.Parse(((string)thing[0]["o_price"]));
+                }
+            }
+            catch (Exception ex)
+            {
+                throw ex;
             }
         }
         
