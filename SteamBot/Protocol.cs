@@ -98,8 +98,8 @@ namespace CSGOTM
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Parent.Logic.WantToBuy(newItem))
                     {
-                        Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
-                        //Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
+                        //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
+                        Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
                     }
                     break;
                 case "history_go":
