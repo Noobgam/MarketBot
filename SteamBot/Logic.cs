@@ -57,25 +57,45 @@ namespace CSGOTM
             seller.Start();
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
-            Thread setter = new Thread(new ThreadStart(setNewOrder));
+            //Thread setter = new Thread(new ThreadStart(setNewOrder));
+            //setter.Start();
         }
 
         void setNewOrder()
         {
-            if (needOrder.Count != 0)
+            while (true)
             {
-                HistoryItem item = needOrder.Dequeue();
-                int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                Thread.Sleep(1000);
-
-                SalesHistory history = dataBase[item.i_market_name];
-                if (price < 1000 && history.median * 0.8 > price)
+                if (needOrder.Count != 0)
                 {
-                    Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                    Console.WriteLine("Settled order for " + item.i_market_name);
+                    HistoryItem item = needOrder.Dequeue();
+                    try
+                    {
+                        int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
+                        Thread.Sleep(1000);
+
+                        SalesHistory history = dataBase[item.i_market_name];
+                        Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
+                        if (price < 20000 && history.median * 0.8 > price)
+                        {
+                            try
+                            {
+                                Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
+                                Console.WriteLine("Settled order for " + item.i_market_name);
+                            }
+                            catch (Exception ex)
+                            {
+
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+
+                    }
+                    
                 }
+                Thread.Sleep(1000);
             }
-            Thread.Sleep(1000);
         }
 
         void AddNewItems()
@@ -231,24 +251,30 @@ namespace CSGOTM
                     myQueryStringCollection.Add("q", "");
                     myWebClient.QueryString = myQueryStringCollection;
                     Dictionary<string, int> mapping = new Dictionary<string, int>();
-                    string[] lines;
-                    {
-                        JObject things = JObject.Parse(myWebClient.DownloadString("https://csgo.tm/itemdb/current_730.json"));
-                        string db = (string)things["db"];
-                        string database = myWebClient.DownloadString("https://csgo.tm/itemdb/" + db);
-                        lines = database.Split('\n');
+                    try {
+                        string[] lines;
+                        {
+                            JObject things = JObject.Parse(myWebClient.DownloadString("https://csgo.tm/itemdb/current_730.json"));
+                            string db = (string)things["db"];
+                            string database = myWebClient.DownloadString("https://csgo.tm/itemdb/" + db);
+                            lines = database.Split('\n');
+                        }
+                        string[] indexes = lines[0].Split(';');
+                        int id = 0;
+                        foreach (var str in indexes)
+                            mapping[str] = id++;
+                        for (id = 1; id < lines.Length - 1; ++id)
+                        {
+                            string[] item = lines[id].Split(';');
+                            if (item[mapping["c_stickers"]] == "0")
+                                unStickered.Add(item[mapping["c_classid"]] + "_" + item[mapping["c_instanceid"]]);
+                        }
+                        SaveNonStickeredBase();
                     }
-                    string[] indexes = lines[0].Split(';');
-                    int id = 0;
-                    foreach (var str in indexes)
-                        mapping[str] = id++;
-                    for(id = 1; id < lines.Length - 1; ++id)
+                    catch (Exception ex)
                     {
-                        string[] item = lines[id].Split(';');
-                        if (item[mapping["c_stickers"]] == "0")
-                            unStickered.Add(item[mapping["c_classid"]] + "_" + item[mapping["c_instanceid"]]);
+
                     }
-                    SaveNonStickeredBase();
                 }
                 return true;
             }
@@ -344,10 +370,10 @@ namespace CSGOTM
             Array.Sort(a);
             dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
 
-            if (salesHistory.cnt >= MINSIZE)
-            {
-                needOrder.Enqueue(item);
-            }
+            //if (salesHistory.cnt >= MINSIZE)
+            //{
+            //    needOrder.Enqueue(item);
+           // }
         }
 
         public bool WantToBuy(NewItem item)
@@ -358,7 +384,7 @@ namespace CSGOTM
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (item.ui_price < 20000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600)
+            if (item.ui_price < 30000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600)
             {//TODO какое-то условие на время
                 Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
                 return true;
