@@ -129,7 +129,23 @@ namespace SteamTrade
             // If the request is a GET request return now the response. If not go on. Because then we need to apply data to the request.
             if (isGetMethod || string.IsNullOrEmpty(dataString))
             {
-                return request.GetResponse() as HttpWebResponse;
+                try
+                {
+                    return request.GetResponse() as HttpWebResponse;
+                }
+                catch (WebException ex)
+                {
+                    //this is thrown if response code is not 200
+                    if (fetchError)
+                    {
+                        var resp = ex.Response as HttpWebResponse;
+                        if (resp != null)
+                        {
+                            return resp;
+                        }
+                    }
+                    throw;
+                }
             }
 
             // Write the data to the body for POST and other methods.
