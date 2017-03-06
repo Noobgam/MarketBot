@@ -93,79 +93,8 @@ namespace SteamBot
 
         public override void OnTradeOfferUpdated(TradeOffer offer)
         {
-            Bot.TradeCount++;
-            switch (offer.OfferState)
-            {
-                case TradeOfferState.TradeOfferStateAccepted:
-                    {
-                        if (Bot.TradeCount <= 1000)
-                            break;
-                        Bot.SecurityCodesForOffers.Remove(offer.Message);
-                        //Log.Info($"Trade offer {offer.TradeOfferId} has been completed!");
-                        //SendChatMessage("Trade completed, thank you!");
-                        break;
-                    }
-                case TradeOfferState.TradeOfferStateActive:
-                    if (Bot.TradeCount <= 1000)
-                    {
-                        offer.Decline();
-                        break;
-                    }
-                    var their = offer.Items.GetTheirItems();
-                    var my = offer.Items.GetMyItems();
-                    if (my.Count > 0 && !Bot.CheckOffer(offer)) //if the offer is bad we decline it. 
-                    {
-                        offer.Decline();
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Offer failed.");
-                        Console.WriteLine("[Reason]: Invalid trade request.");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    else if (offer.Accept().Accepted)
-                    {
-                        Console.ForegroundColor = ConsoleColor.Yellow;
-                        Console.WriteLine("Offer completed.");
-                        if (their.Count != 0)
-                            Console.WriteLine("Received: " + their.Count + " items.");
-                        if (my.Count != 0)
-                            Console.WriteLine("Lost:     " + my.Count + " items.");
-                        Console.ForegroundColor = ConsoleColor.White;
-                        if (offer.Items.GetMyItems().Count != 0)
-                        {
-                            Thread.Sleep(1000);
-                            Bot.AcceptAllMobileTradeConfirmations();
-                        }
-                    }
-                    else
-                    {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine("Offer failed.");
-                        Console.WriteLine("[Reason]: Unknown error.");
-                        Console.ForegroundColor = ConsoleColor.White;
-                    }
-                    break;
-                case TradeOfferState.TradeOfferStateNeedsConfirmation:
-                    Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    //Bot.AcceptAllMobileTradeConfirmations(); //will it work? I guess it is supposed to...
-                    break;
-                case TradeOfferState.TradeOfferStateInEscrow:
-                    Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    //Bot.AcceptAllMobileTradeConfirmations(); //UHHHHHHHH????
-                    //Trade is still active but incomplete
-                    break;
-                case TradeOfferState.TradeOfferStateCountered:
-                    Log.Info($"Trade offer {offer.TradeOfferId} was countered");
-                    break;
-                case TradeOfferState.TradeOfferStateCanceled:
-                    Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    break;
-                case TradeOfferState.TradeOfferStateDeclined:
-                    Bot.SecurityCodesForOffers.Remove(offer.Message);
-                    break;
-                default:
-                    Log.Info($"Trade offer {offer.TradeOfferId} failed");
-                    break;
-            }
+            Bot.Connection.EnqueueOffer(offer);
+            //Console.WriteLine("Enqueued offer");
         }
 
         public override void OnTradeAccept() 
