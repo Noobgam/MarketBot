@@ -94,11 +94,11 @@ namespace CSGOTM
             {
                 case "newitems_go":
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
-                    getBestOrder(newItem.i_classid, newItem.i_instanceid);
+                    //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Parent.Logic.WantToBuy(newItem))
                     {
-                        //Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
+                       Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                         Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
                     }
                     break;

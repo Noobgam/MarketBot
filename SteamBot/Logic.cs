@@ -28,7 +28,7 @@ namespace CSGOTM
     public class Logic
     {
         public const int MAXSIZE = 120;
-        public const int MINSIZE = 25;
+        public const int MINSIZE = 15;
         public CSGOTMProtocol Protocol;
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
@@ -36,6 +36,7 @@ namespace CSGOTM
         private const string DATABASETEMPPATH = "databaseTemp.txt";
         public Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         public Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
+        public SortedSet<string> blackList = new SortedSet<string>();
         public bool doNotSell = false; // True when we don`t want to sell.  
         public Logic()
         {
@@ -57,8 +58,11 @@ namespace CSGOTM
             seller.Start();
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
-            //Thread setter = new Thread(new ThreadStart(setNewOrder));
-            //setter.Start();
+            Thread setter = new Thread(new ThreadStart(setNewOrder));
+            setter.Start();
+            blackList.Add("Dual Berettas | Городской шок (Немного поношенное)");
+            blackList.Add("P90 | Азимов (Закаленное в боях)");
+            blackList.Add("SSG 08 | Кислотный градиент (Прямо с завода)");
         }
 
         void setNewOrder()
@@ -201,7 +205,7 @@ namespace CSGOTM
                 {
                     string[] words = line.Split(';');
                     SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject<SalesHistory>(words[1]);
-                    if (words[0] != "")     
+                    if (words[0] != "" && !blackList.Contains(words[0]))
                         dataBase.Add(words[0], salesHistory);
                 }
                 Console.WriteLine("Loaded " + lines.Length + " items.");
@@ -368,12 +372,12 @@ namespace CSGOTM
             for (int i = 0; i < salesHistory.cnt; i++)
                 a[i] = salesHistory.sales[i].price;
             Array.Sort(a);
-            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
+            dataBase[item.i_market_name].median = a[(int)(salesHistory.cnt * 0.5)];
 
-            //if (salesHistory.cnt >= MINSIZE)
-            //{
-            //    needOrder.Enqueue(item);
-           // }
+            if (salesHistory.cnt >= MINSIZE)
+            {
+                needOrder.Enqueue(item);
+            }
         }
 
         public bool WantToBuy(NewItem item)
@@ -384,7 +388,7 @@ namespace CSGOTM
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (item.ui_price < 30000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600)
+            if (item.ui_price < 30000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
             {//TODO какое-то условие на время
                 Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
                 return true;
