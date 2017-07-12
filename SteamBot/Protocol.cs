@@ -27,6 +27,7 @@ namespace CSGOTM
         public SortedSet<string> Codes;
         public Queue<TradeOffer> QueuedOffers;
         public SteamBot.Bot Parent;
+        public Logic Logic;
         string Api = "5gget2u8B096IK48lJMyX6d91s2t05n";
         public CSGOTMProtocol()
         {
@@ -53,7 +54,7 @@ namespace CSGOTM
 
         private void StartUp()
         {
-            while (Parent.Logic == null)
+            while (Logic == null)
                 Thread.Sleep(10);
             socket.Opened += Open;
             socket.Closed += Error;
@@ -89,81 +90,87 @@ namespace CSGOTM
 
         public bool HandleOffer(TradeOffer offer)
         {
-            Parent.TradeCount++;
-            switch (offer.OfferState)
-            {
-                case TradeOfferState.TradeOfferStateAccepted:
-                    {
-                        if (Parent.TradeCount <= 1000)
-                            return false;
-                        Parent.SecurityCodesForOffers.Remove(offer.Message);
-                        return false;
-                    }
-                case TradeOfferState.TradeOfferStateActive:
-                    {
-                        if (Parent.TradeCount <= 1000)
+            try {
+                Parent.TradeCount++;
+                switch (offer.OfferState)
+                {
+                    case TradeOfferState.TradeOfferStateAccepted:
                         {
-                            offer.Decline();
+                            if (Parent.TradeCount <= 1000)
+                                return false;
+                            Parent.SecurityCodesForOffers.Remove(offer.Message);
                             return false;
                         }
-                        var their = offer.Items.GetTheirItems();
-                        var my = offer.Items.GetMyItems();
-                        if (my.Count > 0 && !Parent.CheckOffer(offer)) //if the offer is bad we decline it. 
+                    case TradeOfferState.TradeOfferStateActive:
                         {
-                            offer.Decline();
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Offer failed.");
-                            Console.WriteLine("[Reason]: Invalid trade request.");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            return false;
-                        }
-                        else if (offer.Accept().Accepted)
-                        {
-                            Console.ForegroundColor = ConsoleColor.Yellow;
-                            Console.WriteLine("Offer completed.");
-                            if (their.Count != 0)
-                                Console.WriteLine("Received: " + their.Count + " items.");
-                            if (my.Count != 0)
-                                Console.WriteLine("Lost:     " + my.Count + " items.");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            if (offer.Items.GetMyItems().Count != 0)
+                            if (Parent.TradeCount <= 1000)
                             {
-                                Thread.Sleep(1000);
-                                Parent.AcceptAllMobileTradeConfirmations();
+                                offer.Decline();
+                                return false;
+                            }
+                            var their = offer.Items.GetTheirItems();
+                            var my = offer.Items.GetMyItems();
+                            if (my.Count > 0 && !Parent.CheckOffer(offer)) //if the offer is bad we decline it. 
+                            {
+                                offer.Decline();
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Offer failed.");
+                                Console.WriteLine("[Reason]: Invalid trade request.");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                return false;
+                            }
+                            else if (offer.Accept().Accepted)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine("Offer completed.");
+                                if (their.Count != 0)
+                                    Console.WriteLine("Received: " + their.Count + " items.");
+                                if (my.Count != 0)
+                                    Console.WriteLine("Lost:     " + my.Count + " items.");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                if (offer.Items.GetMyItems().Count != 0)
+                                {
+                                    Thread.Sleep(1000);
+                                    Parent.AcceptAllMobileTradeConfirmations();
+                                    return true;
+                                }
                                 return true;
                             }
-                            return true;
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Offer failed.");
+                                Console.WriteLine("[Reason]: Unknown error.");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                return false;
+                            }
                         }
-                        else
-                        {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine("Offer failed.");
-                            Console.WriteLine("[Reason]: Unknown error.");
-                            Console.ForegroundColor = ConsoleColor.White;
-                            return false;
-                        }
-                    }
-                case TradeOfferState.TradeOfferStateNeedsConfirmation:
-                    Parent.SecurityCodesForOffers.Remove(offer.Message);
-                    return false;
+                    case TradeOfferState.TradeOfferStateNeedsConfirmation:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
                     //Parent.AcceptAllMobileTradeConfirmations(); //will it work? I guess it is supposed to...
-                case TradeOfferState.TradeOfferStateInEscrow:
-                    Parent.SecurityCodesForOffers.Remove(offer.Message);
-                    return false;
+                    case TradeOfferState.TradeOfferStateInEscrow:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
                     //Parent.AcceptAllMobileTradeConfirmations(); //UHHHHHHHH????
                     //Trade is still active but incomplete
-                case TradeOfferState.TradeOfferStateCountered:
-                    Parent.Log.Info($"Trade offer {offer.TradeOfferId} was countered");
-                    return false;
-                case TradeOfferState.TradeOfferStateCanceled:
-                    Parent.SecurityCodesForOffers.Remove(offer.Message);
-                    return false;
-                case TradeOfferState.TradeOfferStateDeclined:
-                    Parent.SecurityCodesForOffers.Remove(offer.Message);
-                    return false;
-                default:
-                    Parent.Log.Info($"Trade offer {offer.TradeOfferId} failed");
-                    return false;
+                    case TradeOfferState.TradeOfferStateCountered:
+                        Parent.Log.Info($"Trade offer {offer.TradeOfferId} was countered");
+                        return false;
+                    case TradeOfferState.TradeOfferStateCanceled:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
+                    case TradeOfferState.TradeOfferStateDeclined:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
+                    default:
+                        Parent.Log.Info($"Trade offer {offer.TradeOfferId} failed");
+                        Parent.Log.Info($"Number of trades: {Parent.TradeCount}");
+                        return false;
+                }
+            }
+            catch (Exception e){
+                return false;
             }
         }
 
@@ -201,9 +208,9 @@ namespace CSGOTM
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
                     //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
-                    if (Parent.Logic.WantToBuy(newItem))
+                    if (Logic.WantToBuy(newItem))
                     {
-                       Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
+                        Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
                         Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
                     }
                     break;
@@ -221,7 +228,7 @@ namespace CSGOTM
                         historyItem.timesold = arr[3];
                         historyItem.price = Int32.Parse(arr[4]);
                         historyItem.i_market_name = arr[5];
-                        Parent.Logic.ProcessItem(historyItem);
+                        Logic.ProcessItem(historyItem);
                     }
                     catch (Exception ex)
                     {
@@ -247,7 +254,7 @@ namespace CSGOTM
                     {
                         JObject json = JObject.Parse(x.data);
                         if ((int)json["status"] == 5)
-                            Parent.Logic.doNotSell = true;
+                            Logic.doNotSell = true;
                     }
                     catch (Exception ex)
                     {
@@ -334,7 +341,7 @@ namespace CSGOTM
                             UpdateInventory();
                             GiveItems(arr[i].ui_bid);
                             gone = true;
-                            Parent.Logic.doNotSell = true;
+                            Logic.doNotSell = true;
                             break;
                         }
                         had |= arr[i].ui_status == "2";
