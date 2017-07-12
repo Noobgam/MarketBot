@@ -122,7 +122,8 @@ namespace SteamBot
         public SortedSet<string> SecurityCodesForOffers;
 
         public CSGOTM.CSGOTMProtocol Connection;
-        public CSGOTM.Logic Logic = null;
+        public CSGOTM.Logic Logic;
+
 
         public bool CheckOffer(TradeOffer offer)
         {
@@ -160,8 +161,9 @@ namespace SteamBot
         {
             SecurityCodesForOffers = new SortedSet<string>();
             Connection = new CSGOTM.CSGOTMProtocol(this, SecurityCodesForOffers);
-            Logic = new CSGOTM.Logic(Connection);
-            //Thread.Sleep(100000000);
+            Logic = new CSGOTM.Logic();
+            CSGOTM.Linker.Link(Connection, Logic); 
+
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
             {
@@ -526,6 +528,12 @@ namespace SteamBot
                 if (callback.Result == EResult.AccountLogonDeniedNeedTwoFactorCode)
                 {
                     var mobileAuthCode = GetMobileAuthCode();
+                    //while (true)
+                    //{
+                    //   mobileAuthCode = GetMobileAuthCode();
+                    //    Console.WriteLine(mobileAuthCode);
+                    //   Thread.Sleep(1000);
+                    //}
                     if (string.IsNullOrEmpty(mobileAuthCode))
                     {
                         Log.Error("Failed to generate 2FA code. Make sure you have linked the authenticator via SteamBot.");

@@ -24,33 +24,38 @@ using Newtonsoft.Json.Linq;
 namespace CSGOTM
 {
 
-
     public class Logic
     {
-        
-
-        public Logic(CSGOTMProtocol Pr1)
+        public Logic()
         {
-            Protocol = Pr1;
-            if (LoadNonStickeredBase())
-                if (SaveNonStickeredBase())
-                {
-                    Thread parser = new Thread(new ThreadStart(ParsingCycle));
-                    parser.Start();
-                }
-            fullfillBlackList();
+            LoadNonStickeredBase();
+            FulfillBlackList();
             LoadDataBase();
+            Thread starter = new Thread(new ThreadStart(StartUp));
+            starter.Start();           
+        }
+
+        private void StartUp()
+        {
+            while (Protocol == null)
+            {
+                Thread.Sleep(10);
+            }
+
+            Thread parser = new Thread(new ThreadStart(ParsingCycle));
+            parser.Start();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
             saver.Start();
             Thread seller = new Thread(new ThreadStart(SellFromQueue));
             seller.Start();
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
-            Thread setter = new Thread(new ThreadStart(setNewOrder));
-            setter.Start();            
+            Thread setter = new Thread(new ThreadStart(SetNewOrder));
+            setter.Start();
+
         }
 
-        void fullfillBlackList()
+        void FulfillBlackList()
         {
             try
             {
@@ -66,7 +71,7 @@ namespace CSGOTM
             }
         }
 
-        void setNewOrder()
+        void SetNewOrder()
         {
             while (true)
             {
@@ -399,10 +404,10 @@ namespace CSGOTM
         }
 
         public bool doNotSell = false; // True when we don`t want to sell.  
+        public CSGOTMProtocol Protocol;
 
         private const int MAXSIZE = 120;
         private const int MINSIZE = 40;
-        private CSGOTMProtocol Protocol;
         private SortedSet<string> unStickered = new SortedSet<string>();
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
