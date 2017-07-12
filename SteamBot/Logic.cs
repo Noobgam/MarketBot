@@ -27,21 +27,8 @@ namespace CSGOTM
 
     public class Logic
     {
-        public const int MAXSIZE = 120;
-        public const int MINSIZE = 15;
-        public CSGOTMProtocol Protocol;
-        private SortedSet<string> unStickered = new SortedSet<string>();
-        private const string UNSTICKEREDPATH = "emptystickered.txt";
-        private const string DATABASEPATH = "database.txt";
-        private const string DATABASETEMPPATH = "databaseTemp.txt";
-        public Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
-        public Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
-        public SortedSet<string> blackList = new SortedSet<string>();
-        public bool doNotSell = false; // True when we don`t want to sell.  
-        public Logic()
-        {
+        
 
-        }
         public Logic(CSGOTMProtocol Pr1)
         {
             Protocol = Pr1;
@@ -51,6 +38,7 @@ namespace CSGOTM
                     Thread parser = new Thread(new ThreadStart(ParsingCycle));
                     parser.Start();
                 }
+            fullfillBlackList();
             LoadDataBase();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
             saver.Start();
@@ -59,10 +47,23 @@ namespace CSGOTM
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
             Thread setter = new Thread(new ThreadStart(setNewOrder));
-            setter.Start();
-            blackList.Add("Dual Berettas | Городской шок (Немного поношенное)");
-            blackList.Add("P90 | Азимов (Закаленное в боях)");
-            blackList.Add("SSG 08 | Кислотный градиент (Прямо с завода)");
+            setter.Start();            
+        }
+
+        void fullfillBlackList()
+        {
+            try
+            {
+                string[] lines = File.ReadAllLines(BLACKLISTPATH);
+                foreach (var line in lines)
+                {
+                    blackList.Add(line);
+                }  
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("No blackList found.");
+            }
         }
 
         void setNewOrder()
@@ -75,11 +76,11 @@ namespace CSGOTM
                     try
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(1000);
+                        Thread.Sleep(3000);
 
                         SalesHistory history = dataBase[item.i_market_name];
                         Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
-                        if (price < 20000 && history.median * 0.8 > price)
+                        if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
                             try
                             {
@@ -98,7 +99,7 @@ namespace CSGOTM
                     }
                     
                 }
-                Thread.Sleep(1000);
+                Thread.Sleep(3000);
             }
         }
 
@@ -127,7 +128,6 @@ namespace CSGOTM
 
                     }
 
-
                 }
                 Thread.Sleep(500000);
             }
@@ -152,7 +152,7 @@ namespace CSGOTM
                         }
                     }
                 }
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
             }
         }
        
@@ -172,7 +172,7 @@ namespace CSGOTM
                     //Console.WriteLine("Couldn\'t parse new DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
-                Thread.Sleep(60000);
+                Thread.Sleep(600000);
             }
         }
 
@@ -192,30 +192,33 @@ namespace CSGOTM
                     //Console.WriteLine("Couldn\'t save DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
-                Thread.Sleep(60000);
+                Thread.Sleep(600000);
             }
         }
 
-        public bool LoadDataBase()
+        public bool ReadFile(string path)
+        {
+            string[] lines = File.ReadAllLines(path);
+            foreach (var line in lines)
+            {
+                string[] words = line.Split(';');
+                SalesHistory salesHistory = (SalesHistory)JsonConvert.DeserializeObject<SalesHistory>(words[1]);
+                if (words[0] != "" && !blackList.Contains(words[0]))
+                    dataBase.Add(words[0], salesHistory);
+            }
+            Console.WriteLine("Loaded " + lines.Length + " items.");
+            return true;
+        }
+
+        public void LoadDataBase()
         {
             try
             {
-                string[] lines = File.ReadAllLines(DATABASEPATH);
-                foreach (var line in lines)
-                {
-                    string[] words = line.Split(';');
-                    SalesHistory salesHistory = (SalesHistory) JsonConvert.DeserializeObject<SalesHistory>(words[1]);
-                    if (words[0] != "" && !blackList.Contains(words[0]))
-                        dataBase.Add(words[0], salesHistory);
-                }
-                Console.WriteLine("Loaded " + lines.Length + " items.");
-                return true;
+                ReadFile(DATABASETEMPPATH);
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not load DB, check whether DB name is correct (\'" + DATABASEPATH + "\'):");
-                Console.WriteLine(e.Message);
-                return false;
+                ReadFile(DATABASEPATH);
             }
         }
 
@@ -340,7 +343,6 @@ namespace CSGOTM
             }
         }
 
-        public Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
         bool hasStickers(string ClassId, string InstanceId)
         {
@@ -374,7 +376,7 @@ namespace CSGOTM
             Array.Sort(a);
             dataBase[item.i_market_name].median = a[(int)(salesHistory.cnt * 0.5)];
 
-            if (salesHistory.cnt >= MINSIZE)
+            if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name))
             {
                 needOrder.Enqueue(item);
             }
@@ -388,12 +390,28 @@ namespace CSGOTM
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (item.ui_price < 30000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
+            if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
             {//TODO какое-то условие на время
                 Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
         }
+
+        public bool doNotSell = false; // True when we don`t want to sell.  
+
+        private const int MAXSIZE = 120;
+        private const int MINSIZE = 40;
+        private CSGOTMProtocol Protocol;
+        private SortedSet<string> unStickered = new SortedSet<string>();
+        private const string UNSTICKEREDPATH = "emptystickered.txt";
+        private const string DATABASEPATH = "database.txt";
+        private const string DATABASETEMPPATH = "databaseTemp.txt";
+        private const string BLACKLISTPATH = "blackList.txt";
+        private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
+        private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
+        private SortedSet<string> blackList = new SortedSet<string>();
+        private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
+        
     }
 }
