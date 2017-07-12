@@ -28,15 +28,22 @@ namespace CSGOTM
     {
         public Logic()
         {
-            if (LoadNonStickeredBase())
-                if (SaveNonStickeredBase())
-                {
-                    Thread parser = new Thread(new ThreadStart(ParsingCycle));
-                    parser.Start();
-                }
-
-            FullfillBlackList();
+            LoadNonStickeredBase();
+            FulfillBlackList();
             LoadDataBase();
+            Thread starter = new Thread(new ThreadStart(StartUp));
+            starter.Start();           
+        }
+
+        private void StartUp()
+        {
+            while (Protocol == null)
+            {
+                Thread.Sleep(10);
+            }
+
+            Thread parser = new Thread(new ThreadStart(ParsingCycle));
+            parser.Start();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
             saver.Start();
             Thread seller = new Thread(new ThreadStart(SellFromQueue));
@@ -44,10 +51,11 @@ namespace CSGOTM
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
             Thread setter = new Thread(new ThreadStart(SetNewOrder));
-            setter.Start();            
+            setter.Start();
+
         }
 
-        void FullfillBlackList()
+        void FulfillBlackList()
         {
             try
             {
