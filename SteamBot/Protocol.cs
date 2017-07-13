@@ -24,6 +24,9 @@ namespace CSGOTM
 {
     public class CSGOTMProtocol
     {
+#if DEBUG
+        public int totalwasted = 0;
+#endif
         public SortedSet<string> Codes;
         public Queue<TradeOffer> QueuedOffers;
         public SteamBot.Bot Parent;
@@ -86,11 +89,12 @@ namespace CSGOTM
                 m => {
                     return ((char)int.Parse(m.Groups["Value"].Value, NumberStyles.HexNumber)).ToString();
                 });
-        }        
+        }
 
         public bool HandleOffer(TradeOffer offer)
         {
-            try {
+            try
+            {
                 Parent.TradeCount++;
                 switch (offer.OfferState)
                 {
@@ -169,7 +173,8 @@ namespace CSGOTM
                         return false;
                 }
             }
-            catch (Exception e){
+            catch (Exception e)
+            {
                 return false;
             }
         }
@@ -184,12 +189,15 @@ namespace CSGOTM
             Thread.Sleep(5000);
             while (true)
             {
-                if (QueuedOffers.Count > 0) {
+                if (QueuedOffers.Count > 0)
+                {
                     TradeOffer front = QueuedOffers.Dequeue();
                     //Console.WriteLine("Dequeued offer");
                     if (HandleOffer(front))
                         Thread.Sleep(10000);
-                } else {
+                }
+                else
+                {
                     Thread.Sleep(100);
                 }
             }
@@ -258,7 +266,7 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-                        
+
                     }
                     break;
             }
@@ -421,6 +429,11 @@ namespace CSGOTM
         //Interface starts here:
         public bool Buy(string ClasssId, string InstanceId, int price)
         {
+#if DEBUG
+            totalwasted += price;
+            Console.WriteLine("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
+            return true;
+#else
             using (WebClient myWebClient = new WebClient())
             {
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
@@ -439,10 +452,15 @@ namespace CSGOTM
                 else
                     return false;
             }
+#endif
         }
 
         public bool Sell(string ClasssId, string InstanceId, int price)
         {
+#if DEBUG //sorry nothing is implemented there, I don't really know what to write as debug
+            return false;
+
+#else
             using (WebClient myWebClient = new WebClient())
             {
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
@@ -459,6 +477,7 @@ namespace CSGOTM
                 else
                     return false;
             }
+#endif
         }
 
         public Inventory GetSteamInventory()
@@ -481,6 +500,9 @@ namespace CSGOTM
 
         public bool SetOrder(string classid, string instanceid, int price)
         {
+#if DEBUG   
+            return false;
+#else
             using (WebClient myWebClient = new WebClient())
             {
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
@@ -497,6 +519,7 @@ namespace CSGOTM
                 else
                     return false;
             }
+#endif
         }
 
         bool UpdateInventory()
@@ -550,7 +573,7 @@ namespace CSGOTM
                 throw ex;
             }
         }
-        
+
         TMTrade[] GetTradeList()
         {
             try

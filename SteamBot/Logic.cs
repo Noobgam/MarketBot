@@ -20,6 +20,7 @@ using Newtonsoft.Json;
 using System.Collections.Specialized;
 using System.Collections;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 namespace CSGOTM
 {
@@ -349,9 +350,23 @@ namespace CSGOTM
         }
 
 
+        [System.Obsolete("Specify item type instead of cid and iid")]
         bool hasStickers(string ClassId, string InstanceId)
         {
             return !unStickered.Contains(ClassId + '_' + InstanceId);
+        }
+
+        bool hasStickers(NewItem item)
+        {
+            if (unStickered.Contains(item.i_classid + "_" + item.i_instanceid))
+            {
+                Debug.Assert(item.stickers == null);
+            }
+            if (item.stickers != null)
+            {                
+                Debug.Assert(!unStickered.Contains(item.i_classid + "_" + item.i_instanceid));
+            }
+            return !(item.stickers == "");
         }
 
         public void ProcessItem(HistoryItem item)
@@ -389,7 +404,7 @@ namespace CSGOTM
 
         public bool WantToBuy(NewItem item)
         {
-            if (!hasStickers(item.i_classid, item.i_instanceid))
+            if (!hasStickers(item))
                 return false;
             if (!dataBase.ContainsKey(item.i_market_name))
                 return false;
