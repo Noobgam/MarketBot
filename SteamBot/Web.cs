@@ -57,6 +57,7 @@ namespace CSGOTM
         public string i_market_name;
         public float ui_price;
         public string app;
+        public string stickers;
     }
 
     public class Message
