@@ -28,10 +28,22 @@ namespace CSGOTM
         public int totalwasted = 0;
 #endif
         public SortedSet<string> Codes;
-        public Queue<TradeOffer> QueuedOffers;
-        public SteamBot.Bot Parent;
+        private Queue<TradeOffer> QueuedOffers;
+        private SteamBot.Bot Parent;
         public Logic Logic;
         string Api = "5gget2u8B096IK48lJMyX6d91s2t05n";
+
+        private string ExecuteApiRequest(string url)
+        {
+            using (WebClient myWebClient = new WebClient())
+            {
+                NameValueCollection myQueryStringCollection = new NameValueCollection();
+                myQueryStringCollection.Add("q", "");
+                myWebClient.QueryString = myQueryStringCollection;
+                return myWebClient.DownloadString("https://csgo.tm" + url);
+            }
+        }
+
         public CSGOTMProtocol()
         {
 
@@ -54,7 +66,7 @@ namespace CSGOTM
             Thread offerHandler = new Thread(new ThreadStart(OfferHandlerMain));
             offerHandler.Start();
         }
-
+        
         private void StartUp()
         {
             while (Logic == null)
@@ -284,52 +296,31 @@ namespace CSGOTM
         bool TakeItems()
         {
             Console.WriteLine("Taking items");
-            using (WebClient myWebClient = new WebClient())
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key" + Api));
+            if (json["success"] == null)
+                return false;
+            else if ((bool)json["success"])
             {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/ItemRequest/in/1/?key=" + Api);
-                JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                //cout<<;
-                if (json["success"] == null)
-                    return false;
-                else if ((bool)json["success"])
-                {
-                    Codes.Add((string)json["secret"]);
-                    return true;
-                }
-                else
-                    return false;
+                Codes.Add((string)json["secret"]);
+                return true;
             }
+            else
+                return false;
         }
 
         bool GiveItems(string botID)
         {
             Console.WriteLine("Giving items");
-            using (WebClient myWebClient = new WebClient())
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
+            if (json["success"] == null)
+                return false;
+            else if ((bool)json["success"])
             {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/ItemRequest/out/" + botID + "/?key=" + Api);
-                JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                //cout<<;
-                if (json["success"] == null)
-                    return false;
-                else if ((bool)json["success"])
-                {
-                    Codes.Add((string)json["secret"]);
-                    return true;
-                }
-                else
-                    return false;
+                Codes.Add((string)json["secret"]);
+                return true;
             }
-
+            else
+                return false;
         }
 
         void HandleTrades()
@@ -377,16 +368,9 @@ namespace CSGOTM
 
         void Auth()
         {
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/GetWSAuth/?key=" + Api);
-                Auth q = JsonConvert.DeserializeObject<Auth>(a);
-                socket.Send(q.wsAuth);
-                Subscribe();
-            }
+            Auth q = JsonConvert.DeserializeObject<Auth>(ExecuteApiRequest("/api/GetWSAuth/?key=" + Api));
+            socket.Send(q.wsAuth);
+            Subscribe();
         }
 
         void Open(object sender, EventArgs e)
@@ -434,24 +418,18 @@ namespace CSGOTM
             Console.WriteLine("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
-            using (WebClient myWebClient = new WebClient())
+            string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+            JObject parsed = JObject.Parse(a);
+            foreach (var pair in parsed)
             {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
-                JObject parsed = JObject.Parse(a);
-                foreach (var pair in parsed)
-                {
-                    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-                }
-                if (parsed["result"] == null)
-                    return false;
-                else if ((string)parsed["result"] == "ok")
-                    return true;
-                else
-                    return false;
+                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
             }
+            if (parsed["result"] == null)
+                return false;
+            else if ((string)parsed["result"] == "ok")
+                return true;
+            else
+                return false;
 #endif
         }
 
@@ -461,41 +439,29 @@ namespace CSGOTM
             return false;
 
 #else
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://csgo.tm/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
-                JObject parsed = JObject.Parse(a);
-                foreach (var pair in parsed)
-                    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-                if (parsed["result"] == null)
-                    return false;
-                else if ((string)parsed["result"] == "ok")
-                    return true;
-                else
-                    return false;
-            }
+            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+            JObject parsed = JObject.Parse(a);
+            foreach (var pair in parsed)
+                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            if (parsed["result"] == null)
+                return false;
+            else if ((string)parsed["result"] == "ok")
+                return true;
+            else
+                return false;
 #endif
         }
 
         public Inventory GetSteamInventory()
         {
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://market.csgo.com/api/GetInv/?key=" + Api);
-                JObject json = JObject.Parse(a);
-                Inventory inventory = new Inventory();
-                inventory.content = new List<Inventory.SteamItem>();
-                if (json["ok"] != null && (bool)json["ok"] == false)
-                    return inventory;
-                inventory.content = json["data"].ToObject<List<Inventory.SteamItem>>();
+            string a = ExecuteApiRequest("/api/GetInv/?key=" + Api);
+            JObject json = JObject.Parse(a);
+            Inventory inventory = new Inventory();
+            inventory.content = new List<Inventory.SteamItem>();
+            if (json["ok"] != null && (bool)json["ok"] == false)
                 return inventory;
-            }
+            inventory.content = json["data"].ToObject<List<Inventory.SteamItem>>();
+            return inventory;
         }
 
         public bool SetOrder(string classid, string instanceid, int price)
@@ -503,22 +469,16 @@ namespace CSGOTM
 #if DEBUG   
             return false;
 #else
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                string a = myWebClient.DownloadString("https://market.csgo.com/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
-                JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //..Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                if (json["success"] == null)
-                    return false;
-                else if ((bool)json["success"])
-                    return true;
-                else
-                    return false;
-            }
+            string a = ExecuteApiRequest("/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
+            JObject json = JObject.Parse(a);
+            //foreach (var thing in json)
+            //..Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+            if (json["success"] == null)
+                return false;
+            else if ((bool)json["success"])
+                return true;
+            else
+                 return false;
 #endif
         }
 
@@ -526,23 +486,17 @@ namespace CSGOTM
         {
             try
             {
-                using (WebClient myWebClient = new WebClient())
-                {
-                    NameValueCollection myQueryStringCollection = new NameValueCollection();
-                    myQueryStringCollection.Add("q", "");
-                    myWebClient.QueryString = myQueryStringCollection;
-                    string a = myWebClient.DownloadString("https://csgo.tm/api/UpdateInventory/?key=" + Api);
-                    JObject json = JObject.Parse(a);
-                    //foreach (var thing in json)
-                    //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                    //cout<<;
-                    if (json["success"] == null)
-                        return false;
-                    else if ((bool)json["success"])
-                        return true;
-                    else
-                        return false;
-                }
+                string a = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api);
+                JObject json = JObject.Parse(a);
+                //foreach (var thing in json)
+                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
+                //cout<<;
+                if (json["success"] == null)
+                    return false;
+                else if ((bool)json["success"])
+                    return true;
+                else
+                    return false;
             }
             catch (Exception ex)
             {
@@ -554,19 +508,13 @@ namespace CSGOTM
         {
             try
             {
-                using (WebClient myWebClient = new WebClient())
-                {
-                    NameValueCollection myQueryStringCollection = new NameValueCollection();
-                    myQueryStringCollection.Add("q", "");
-                    myWebClient.QueryString = myQueryStringCollection;
-                    string a = myWebClient.DownloadString("https://csgo.tm/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-                    JObject x = JObject.Parse(a);
-                    JArray thing = (JArray)x["buy_offers"];
-                    if (thing == null || thing.Count == 0)
-                        return 49;
-                    else
-                        return int.Parse(((string)thing[0]["o_price"]));
-                }
+                string a = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
+                JObject x = JObject.Parse(a);
+                JArray thing = (JArray)x["buy_offers"];
+                if (thing == null || thing.Count == 0)
+                    return 49;
+                else
+                    return int.Parse(((string)thing[0]["o_price"]));
             }
             catch (Exception ex)
             {
@@ -578,23 +526,17 @@ namespace CSGOTM
         {
             try
             {
-                using (WebClient myWebClient = new WebClient())
+                string a = ExecuteApiRequest("/api/Trades/?key=" + Api);
+                JArray json = JArray.Parse(a);
+                TMTrade[] arr = new TMTrade[json.Count];
+                int iter = 0;
+                foreach (var thing in json)
                 {
-                    NameValueCollection myQueryStringCollection = new NameValueCollection();
-                    myQueryStringCollection.Add("q", "");
-                    myWebClient.QueryString = myQueryStringCollection;
-                    string a = myWebClient.DownloadString("https://csgo.tm/api/Trades/?key=" + Api);
-                    JArray json = JArray.Parse(a);
-                    TMTrade[] arr = new TMTrade[json.Count];
-                    int iter = 0;
-                    foreach (var thing in json)
-                    {
-                        //Console.WriteLine("{0}", thing);
-                        TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
-                        arr[iter++] = xx;
-                    }
-                    return arr;
+                    //Console.WriteLine("{0}", thing);
+                    TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
+                    arr[iter++] = xx;
                 }
+                return arr;
             }
             catch
             {
