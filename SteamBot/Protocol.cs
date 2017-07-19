@@ -40,7 +40,7 @@ namespace CSGOTM
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
                 myQueryStringCollection.Add("q", "");
                 myWebClient.QueryString = myQueryStringCollection;
-                return myWebClient.DownloadString("https://csgo.tm" + url);
+                return myWebClient.DownloadString("https://market.csgo.com" + url);
             }
         }
 
