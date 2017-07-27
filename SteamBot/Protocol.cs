@@ -296,7 +296,7 @@ namespace CSGOTM
         bool TakeItems()
         {
             Console.WriteLine("Taking items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key" + Api));
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
