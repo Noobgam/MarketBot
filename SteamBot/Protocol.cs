@@ -101,11 +101,6 @@ namespace CSGOTM
                 });
         }
 
-        public void EnqueueOffer(TradeOffer offer)
-        {
-            QueuedOffers.Enqueue(offer);
-        }
-
         void Msg(object sender, MessageReceivedEventArgs e)
         {
             if (e.Message == "pong")
