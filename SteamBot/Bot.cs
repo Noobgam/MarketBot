@@ -119,8 +119,6 @@ namespace SteamBot
 
         public SteamAuth.SteamGuardAccount SteamGuardAccount;
 
-        public SortedSet<string> SecurityCodesForOffers;
-
         public CSGOTM.CSGOTMProtocol Connection;
         public CSGOTM.Logic Logic;
 
@@ -159,8 +157,7 @@ namespace SteamBot
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
-            SecurityCodesForOffers = new SortedSet<string>();
-            Connection = new CSGOTM.CSGOTMProtocol(this, SecurityCodesForOffers);
+            Connection = new CSGOTM.CSGOTMProtocol(this);
             Logic = new CSGOTM.Logic();
             CSGOTM.Linker.Link(Connection, Logic);
 

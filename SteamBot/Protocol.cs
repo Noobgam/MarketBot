@@ -27,7 +27,6 @@ namespace CSGOTM
 #if DEBUG
         public int totalwasted = 0;
 #endif
-        public SortedSet<string> Codes;
         private Queue<TradeOffer> QueuedOffers;
         private SteamBot.Bot Parent;
         public Logic Logic;
@@ -50,16 +49,9 @@ namespace CSGOTM
         }
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public CSGOTMProtocol(SortedSet<string> temp)
-        {
-            Codes = temp;
-            Thread starter = new Thread(new ThreadStart(StartUp));
-            starter.Start();
-        }
-        public CSGOTMProtocol(SteamBot.Bot p, SortedSet<string> temp)
+        public CSGOTMProtocol(SteamBot.Bot p)
         {
             Parent = p;
-            Codes = temp;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
             QueuedOffers = new Queue<TradeOffer>();
@@ -116,7 +108,7 @@ namespace CSGOTM
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Logic.WantToBuy(newItem))
                     {
-                        Buy(newItem.i_classid, newItem.i_instanceid, (int)newItem.ui_price);
+                        Buy(newItem);
                         Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
                     }
                     break;
@@ -203,7 +195,6 @@ namespace CSGOTM
                 return false;
             else if ((bool)json["success"])
             {
-                Codes.Add((string)json["secret"]);
                 return true;
             }
             else
@@ -218,7 +209,6 @@ namespace CSGOTM
                 return false;
             else if ((bool)json["success"])
             {
-                Codes.Add((string)json["secret"]);
                 return true;
             }
             else
@@ -312,7 +302,31 @@ namespace CSGOTM
             }
         }
 
+
+        public bool Buy(NewItem item)
+        {
+#if DEBUG
+            totalwasted += (int)item.ui_price;
+            Console.WriteLine("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
+            return true;
+#else
+            string a = ExecuteApiRequest("/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api);
+            JObject parsed = JObject.Parse(a);
+            foreach (var pair in parsed)
+            {
+                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            }
+            if (parsed["result"] == null)
+                return false;
+            else if ((string)parsed["result"] == "ok")
+                return true;
+            else
+                return false;
+#endif
+        }
+
         //Interface starts here:
+        [System.Obsolete("Specify item, it will parce it by itself.")]
         public bool Buy(string ClasssId, string InstanceId, int price)
         {
 #if DEBUG
