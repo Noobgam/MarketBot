@@ -127,8 +127,8 @@ namespace SteamBot
 
         public bool CheckOffer(TradeOffer offer)
         {
-            return SecurityCodesForOffers.Contains(offer.Message); //TODO: check this
-            //return offer.Message.Length == 4;
+            //return SecurityCodesForOffers.Contains(offer.Message); //TODO: check this
+            return offer.Message.Length == 4;
         }
         #endregion
 

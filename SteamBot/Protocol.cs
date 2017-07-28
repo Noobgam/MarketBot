@@ -31,7 +31,7 @@ namespace CSGOTM
         private Queue<TradeOffer> QueuedOffers;
         private SteamBot.Bot Parent;
         public Logic Logic;
-        string Api = "5gget2u8B096IK48lJMyX6d91s2t05n";
+        string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
 
         private string ExecuteApiRequest(string url)
         {
@@ -166,7 +166,7 @@ namespace CSGOTM
                         return false;
                     //Parent.AcceptAllMobileTradeConfirmations(); //will it work? I guess it is supposed to...
                     case TradeOfferState.TradeOfferStateInEscrow:
-                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                      Parent.SecurityCodesForOffers.Remove(offer.Message);
                         return false;
                     //Parent.AcceptAllMobileTradeConfirmations(); //UHHHHHHHH????
                     //Trade is still active but incomplete

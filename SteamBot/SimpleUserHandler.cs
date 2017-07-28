@@ -38,7 +38,8 @@ namespace SteamBot
         
         public override void OnMessage (string message, EChatEntryType type) 
         {
-            SendChatMessage(Bot.ChatResponse);
+            //just because I'm sick of it.
+            //SendChatMessage(Bot.ChatResponse);
         }
 
         public override bool OnTradeRequest() 

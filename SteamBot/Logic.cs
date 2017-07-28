@@ -358,20 +358,17 @@ namespace CSGOTM
 
         bool hasStickers(NewItem item)
         {
-            if (unStickered.Contains(item.i_classid + "_" + item.i_instanceid))
-            {
-                Debug.Assert(item.stickers == null);
-            }
-            if (item.stickers != null)
-            {                
-                Debug.Assert(!unStickered.Contains(item.i_classid + "_" + item.i_instanceid));
-            }
-            return !(item.stickers == "");
+            return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
+        }
+
+        bool hasStickers(HistoryItem item)
+        {
+            return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
         }
 
         public void ProcessItem(HistoryItem item)
         {
-            if (!hasStickers(item.i_classid, item.i_instanceid))
+            if (!hasStickers(item))
                 return;
             //Console.WriteLine(item.i_market_name);
             SalesHistory salesHistory;
