@@ -162,7 +162,7 @@ namespace SteamBot
             SecurityCodesForOffers = new SortedSet<string>();
             Connection = new CSGOTM.CSGOTMProtocol(this, SecurityCodesForOffers);
             Logic = new CSGOTM.Logic();
-            CSGOTM.Linker.Link(Connection, Logic); 
+            CSGOTM.Linker.Link(Connection, Logic);
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails

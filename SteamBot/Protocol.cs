@@ -207,6 +207,8 @@ namespace CSGOTM
                     //Console.WriteLine("Dequeued offer");
                     if (HandleOffer(front))
                         Thread.Sleep(10000);
+                    else
+                        QueuedOffers.Enqueue(front);
                 }
                 else
                 {
@@ -242,12 +244,28 @@ namespace CSGOTM
                         x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
                         string[] arr = x.data.Split(',');
                         HistoryItem historyItem = new HistoryItem();
-                        historyItem.i_classid = arr[0];
-                        historyItem.i_instanceid = arr[1];
-                        historyItem.i_market_hash_name = arr[2];
-                        historyItem.timesold = arr[3];
-                        historyItem.price = Int32.Parse(arr[4]);
-                        historyItem.i_market_name = arr[5];
+                        if (arr.Length == 7)
+                        {
+                            historyItem.i_classid = arr[0];
+                            historyItem.i_instanceid = arr[1];
+                            historyItem.i_market_hash_name = arr[2];
+                            historyItem.timesold = arr[3];
+                            historyItem.price = Int32.Parse(arr[4]);
+                            historyItem.i_market_name = arr[5];
+                        }
+                        else if (arr.Length == 8)
+                        {
+                            historyItem.i_classid = arr[0];
+                            historyItem.i_instanceid = arr[1];
+                            historyItem.i_market_hash_name = arr[2] + arr[3];
+                            historyItem.timesold = arr[4];
+                            historyItem.price = Int32.Parse(arr[5]);
+                            historyItem.i_market_name = arr[6];
+                        }
+                        else
+                        {
+                            throw new Exception(x.data + " is not a valid history item.");
+                        }
                         Logic.ProcessItem(historyItem);
                     }
                     catch (Exception ex)
