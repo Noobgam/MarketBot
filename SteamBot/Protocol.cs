@@ -63,6 +63,8 @@ namespace CSGOTM
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
             QueuedOffers = new Queue<TradeOffer>();
+            Thread offerHandler = new Thread(new ThreadStart(OfferHandlerMain));
+            offerHandler.Start();
         }
         
         private void StartUp()
@@ -101,9 +103,118 @@ namespace CSGOTM
                 });
         }
 
+        public bool HandleOffer(TradeOffer offer)
+        {
+            try
+            {
+                Parent.TradeCount++;
+                switch (offer.OfferState)
+                {
+                    case TradeOfferState.TradeOfferStateAccepted:
+                        {
+                            if (Parent.TradeCount <= 1000)
+                                return false;
+                            Parent.SecurityCodesForOffers.Remove(offer.Message);
+                            return false;
+                        }
+                    case TradeOfferState.TradeOfferStateActive:
+                        {
+                            if (Parent.TradeCount <= 1000)
+                            {
+                                offer.Decline();
+                                return false;
+                            }
+                            var their = offer.Items.GetTheirItems();
+                            var my = offer.Items.GetMyItems();
+                            if (my.Count > 0 && !Parent.CheckOffer(offer)) //if the offer is bad we decline it. 
+                            {
+                                offer.Decline();
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Offer failed.");
+                                Console.WriteLine("[Reason]: Invalid trade request.");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                return false;
+                            }
+                            else if (offer.Accept().Accepted)
+                            {
+                                Console.ForegroundColor = ConsoleColor.Yellow;
+                                Console.WriteLine("Offer completed.");
+                                if (their.Count != 0)
+                                    Console.WriteLine("Received: " + their.Count + " items.");
+                                if (my.Count != 0)
+                                    Console.WriteLine("Lost:     " + my.Count + " items.");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                if (offer.Items.GetMyItems().Count != 0)
+                                {
+                                    Thread.Sleep(1000);
+                                    Parent.AcceptAllMobileTradeConfirmations();
+                                    return true;
+                                }
+                                return true;
+                            }
+                            else
+                            {
+                                Console.ForegroundColor = ConsoleColor.Red;
+                                Console.WriteLine("Offer failed.");
+                                Console.WriteLine("[Reason]: Unknown error.");
+                                Console.ForegroundColor = ConsoleColor.White;
+                                return false;
+                            }
+                        }
+                    case TradeOfferState.TradeOfferStateNeedsConfirmation:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
+                    //Parent.AcceptAllMobileTradeConfirmations(); //will it work? I guess it is supposed to...
+                    case TradeOfferState.TradeOfferStateInEscrow:
+                      Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
+                    //Parent.AcceptAllMobileTradeConfirmations(); //UHHHHHHHH????
+                    //Trade is still active but incomplete
+                    case TradeOfferState.TradeOfferStateCountered:
+                        Parent.Log.Info($"Trade offer {offer.TradeOfferId} was countered");
+                        return false;
+                    case TradeOfferState.TradeOfferStateCanceled:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
+                    case TradeOfferState.TradeOfferStateDeclined:
+                        Parent.SecurityCodesForOffers.Remove(offer.Message);
+                        return false;
+                    default:
+                        Parent.Log.Info($"Trade offer {offer.TradeOfferId} failed");
+                        Parent.Log.Info($"Number of trades: {Parent.TradeCount}");
+                        return false;
+                }
+            }
+            catch (Exception e)
+            {
+                return false;
+            }
+        }
+
         public void EnqueueOffer(TradeOffer offer)
         {
             QueuedOffers.Enqueue(offer);
+        }
+
+        public void OfferHandlerMain()
+        {
+            Thread.Sleep(5000);
+            while (true)
+            {
+                if (QueuedOffers.Count > 0)
+                {
+                    TradeOffer front = QueuedOffers.Dequeue();
+                    //Console.WriteLine("Dequeued offer");
+                    if (HandleOffer(front))
+                        Thread.Sleep(10000);
+                    else
+                        QueuedOffers.Enqueue(front);
+                }
+                else
+                {
+                    Thread.Sleep(100);
+                }
+            }
         }
 
         void Msg(object sender, MessageReceivedEventArgs e)
