@@ -267,9 +267,9 @@ namespace CSGOTM
                     try {
                         string[] lines;
                         {
-                            JObject things = JObject.Parse(myWebClient.DownloadString("https://csgo.tm/itemdb/current_730.json"));
+                            JObject things = JObject.Parse(myWebClient.DownloadString("https://market.csgo.com/itemdb/current_730.json"));
                             string db = (string)things["db"];
-                            string database = myWebClient.DownloadString("https://csgo.tm/itemdb/" + db);
+                            string database = myWebClient.DownloadString("https://market.csgo.com/itemdb/" + db);
                             lines = database.Split('\n');
                         }
                         string[] indexes = lines[0].Split(';');
