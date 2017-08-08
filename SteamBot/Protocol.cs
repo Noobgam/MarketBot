@@ -50,8 +50,9 @@ namespace CSGOTM
         }
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public CSGOTMProtocol(SteamBot.Bot p)
+        public CSGOTMProtocol(SteamBot.Bot p, Utility.MarketLogger log)
         {
+            Log = log;
             Parent = p;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
@@ -164,7 +165,7 @@ namespace CSGOTM
                 default:
                     //Console.WriteLine(x.type);
                     x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    Console.WriteLine(x.data);
+                    Log.Info(x.data);
                     try
                     {
                         JObject json = JObject.Parse(x.data);
@@ -190,7 +191,7 @@ namespace CSGOTM
 
         bool TakeItems()
         {
-            Console.WriteLine("Taking items");
+            Log.Info("Taking items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -204,7 +205,7 @@ namespace CSGOTM
 
         bool GiveItems(string botID)
         {
-            Console.WriteLine("Giving items");
+            Log.Info("Giving items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -328,7 +329,7 @@ namespace CSGOTM
         {
 #if DEBUG
             totalwasted += price;
-            Console.WriteLine("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
+            Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);

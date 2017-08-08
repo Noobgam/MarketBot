@@ -13,8 +13,9 @@ namespace CSGOTM
     public class Logic
     {
         public Utility.MarketLogger Log;
-        public Logic()
+        public Logic(Utility.MarketLogger log)
         {
+            Log = log;
             LoadNonStickeredBase();
             FulfillBlackList();
             LoadDataBase();
@@ -54,7 +55,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("No blackList found.");
+                Log.Warn("No blackList found.");
             }
         }
 
@@ -71,13 +72,13 @@ namespace CSGOTM
                         Thread.Sleep(3000);
 
                         SalesHistory history = dataBase[item.i_market_name];
-                        Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
+                        Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
                             try
                             {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                Console.WriteLine("Settled order for " + item.i_market_name);
+                                Log.Success("Settled order for " + item.i_market_name);
                             }
                             catch (Exception ex)
                             {
@@ -87,7 +88,7 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Handled ex");
+                        Log.Error("Handled ex");
                     }
 
                 }
@@ -111,7 +112,7 @@ namespace CSGOTM
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content)
                         {
-                            Console.WriteLine(item.i_market_name + " is going to be sold.");
+                            Log.Info(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }
                     }
@@ -190,15 +191,12 @@ namespace CSGOTM
             }
             else if (!File.Exists(DATABASEPATH))
             {
-                Console.WriteLine("No database found, creating empty DB.");
+                Log.Success("No database found, creating empty DB.");
                 return;
             }
 
             dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Loaded new DB. Total item count: " + dataBase.Count);
-            Console.ForegroundColor = ConsoleColor.White;
-
+            Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
 
@@ -298,8 +296,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not save unstickered DB, check whether DB name is correct (\'emptystickered.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
+                Log.Info("Could not save unstickered DB, check whether DB name is correct (\'emptystickered.txt\'). Maybe this file is write-protected?:\n" + e.Message);
                 return false;
             }
         }
@@ -378,7 +375,7 @@ namespace CSGOTM
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
             {//TODO какое-то условие на время
-                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
+                Log.Info("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
