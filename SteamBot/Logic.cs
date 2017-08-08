@@ -172,11 +172,6 @@ namespace CSGOTM
             while (true)
             {
                 SaveDataBase();
-
-#if DEBUG
-                SaveJSONDataBase();           
-#endif
-
                 Thread.Sleep(600000);
             }
         }
