@@ -1,26 +1,11 @@
 ﻿using System;
-using System.Threading.Tasks;
-using System.Web;
 using System.Net;
-using System.Text;
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.ComponentModel;
-using SteamBot.SteamGroups;
-using SteamKit2;
-using WebSocket4Net;
-using SteamTrade;
-using SteamKit2.Internal;
-using SteamTrade.TradeOffer;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
-using System.Collections;
 using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 
 namespace CSGOTM
 {
@@ -33,7 +18,7 @@ namespace CSGOTM
             FulfillBlackList();
             LoadDataBase();
             Thread starter = new Thread(new ThreadStart(StartUp));
-            starter.Start();           
+            starter.Start();
         }
 
         private void StartUp()
@@ -64,7 +49,7 @@ namespace CSGOTM
                 foreach (var line in lines)
                 {
                     blackList.Add(line);
-                }  
+                }
             }
             catch (Exception e)
             {
@@ -103,7 +88,7 @@ namespace CSGOTM
                     {
                         Console.WriteLine("Handled ex");
                     }
-                    
+
                 }
                 Thread.Sleep(3000);
             }
@@ -138,7 +123,7 @@ namespace CSGOTM
                 Thread.Sleep(500000);
             }
         }
-        
+
         void SellFromQueue()
         {
             while (true)
@@ -152,7 +137,7 @@ namespace CSGOTM
                         {
                             Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
 
                         }
@@ -161,7 +146,7 @@ namespace CSGOTM
                 Thread.Sleep(2000);
             }
         }
-       
+
         void ParsingCycle()
         {
             while (true)
@@ -186,73 +171,55 @@ namespace CSGOTM
         {
             while (true)
             {
-                if (SaveDataBase())
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("Saved new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    //Console.WriteLine("Couldn\'t save DB");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
+                SaveDataBase();
                 Thread.Sleep(600000);
             }
         }
 
-        public bool ReadFile(string path)
-        {
-            string[] lines = File.ReadAllLines(path);
-            foreach (var line in lines)
-            {
-                string[] words = line.Split(';');
-                SalesHistory salesHistory = (SalesHistory)JsonConvert.DeserializeObject<SalesHistory>(words[1]);
-                if (words[0] != "" && !blackList.Contains(words[0]))
-                    dataBase.Add(words[0], salesHistory);
-            }
-            Console.WriteLine("Loaded " + lines.Length + " items.");
-            return true;
-        }
 
         public void LoadDataBase()
         {
-            try
-            {
-                ReadFile(DATABASETEMPPATH);
-            }
-            catch (Exception e)
-            {
-                ReadFile(DATABASEPATH);
-            }
-        }
-
-        public bool SaveDataBase()
-        {
-            try
+            if (File.Exists(DATABASETEMPPATH))
             {
                 if (File.Exists(DATABASEPATH))
-                    File.Move(DATABASEPATH, DATABASETEMPPATH);
-                string[] lines = new string[dataBase.Count];
-                int id = 0;
-                foreach (KeyValuePair<string, SalesHistory> kvp in dataBase)
                 {
-                    string line = kvp.Key + ";" + JsonConvert.SerializeObject(kvp.Value);
-                    lines[id++] = line;
+                    File.Delete(DATABASEPATH);
                 }
-                File.WriteAllLines(DATABASEPATH, lines);
-                File.Delete(DATABASETEMPPATH);
-                return true;
+                File.Move(DATABASETEMPPATH, DATABASEPATH);
             }
-            catch (Exception e)
+            else if (!File.Exists(DATABASEPATH))
             {
-                Console.WriteLine("Could not save DB, check whether DB name is correct (\'database.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
-                return false;
+                Console.WriteLine("No database found, creating empty DB.");
+                return;
+            }
+
+            dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Loaded new DB. Total item count: " + dataBase.Count);
+            Console.ForegroundColor = ConsoleColor.White;
+
+        }
+
+
+        public void SaveDataBase()
+        {
+            if (File.Exists(DATABASEPATH))
+            {
+                File.Copy(DATABASEPATH, DATABASETEMPPATH);
+            }
+            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            if (File.Exists(DATABASETEMPPATH))
+            {
+                File.Delete(DATABASETEMPPATH);
             }
         }
 
+#if DEBUG
+        public void SaveJSONDataBase()
+        {
+            JsonSerialization.WriteToJsonFile<Dictionary<string, SalesHistory>>(DATABASEJSONPATH, dataBase);
+        }
+#endif
         bool ParseNewDatabase()
         {
             try
@@ -264,7 +231,8 @@ namespace CSGOTM
                     myQueryStringCollection.Add("q", "");
                     myWebClient.QueryString = myQueryStringCollection;
                     Dictionary<string, int> mapping = new Dictionary<string, int>();
-                    try {
+                    try
+                    {
                         string[] lines;
                         {
                             JObject things = JObject.Parse(myWebClient.DownloadString("https://market.csgo.com/itemdb/current_730.json"));
@@ -326,7 +294,7 @@ namespace CSGOTM
                 foreach (var line in unStickered)
                     lines[id++] = line;
                 File.WriteAllLines(UNSTICKEREDPATH, lines);
-                return true;                
+                return true;
             }
             catch (Exception e)
             {
@@ -336,6 +304,7 @@ namespace CSGOTM
             }
         }
 
+        [Serializable]
         public class SalesHistory
         {
             public List<HistoryItem> sales = new List<HistoryItem>();
@@ -409,7 +378,7 @@ namespace CSGOTM
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
             {//TODO какое-то условие на время
-                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
+                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
@@ -424,11 +393,12 @@ namespace CSGOTM
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         private const string DATABASETEMPPATH = "databaseTemp.txt";
+        private const string DATABASEJSONPATH = "database.json";
         private const string BLACKLISTPATH = "blackList.txt";
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private SortedSet<string> blackList = new SortedSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
-        
+
     }
 }
