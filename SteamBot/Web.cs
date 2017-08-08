@@ -1,6 +1,7 @@
-﻿
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
+using System.IO;
 
 namespace CSGOTM
 {
@@ -72,6 +73,7 @@ namespace CSGOTM
         public string id;
     }
 
+    [Serializable]
     public class HistoryItem
     {
         public string i_classid;
@@ -115,5 +117,26 @@ namespace CSGOTM
             public string i_market_price_text;
         }
         public List<SteamItem> content;
+    }
+}
+
+public static class BinarySerialization
+{
+    public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
+    {
+        using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
+        {
+            var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            binaryFormatter.Serialize(stream, objectToWrite);
+        }
+    }
+
+    public static T ReadFromBinaryFile<T>(string filePath)
+    {
+        using (Stream stream = File.Open(filePath, FileMode.Open))
+        {
+            var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+            return (T)binaryFormatter.Deserialize(stream);
+        }
     }
 }
