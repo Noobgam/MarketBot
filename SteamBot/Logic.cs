@@ -179,18 +179,18 @@ namespace CSGOTM
 
         public void LoadDataBase()
         {
-
-            if (!File.Exists(DATABASEPATH))
+            if (File.Exists(DATABASETEMPPATH))
             {
-                if (!File.Exists(DATABASETEMPPATH))
+                if (File.Exists(DATABASEPATH))
                 {
-                    Console.WriteLine("No database found, creating empty DB.");
-                    return;
+                    File.Delete(DATABASEPATH);
                 }
-                else
-                {
-                    File.Move(DATABASETEMPPATH, DATABASEPATH);
-                }
+                File.Move(DATABASETEMPPATH, DATABASEPATH);
+            }
+            else if (!File.Exists(DATABASEPATH))
+            {
+                Console.WriteLine("No database found, creating empty DB.");
+                return;
             }
 
             dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
@@ -205,12 +205,13 @@ namespace CSGOTM
         {
             if (File.Exists(DATABASEPATH))
             {
-                if (File.Exists(DATABASETEMPPATH))
-                    File.Delete(DATABASETEMPPATH);
                 File.Copy(DATABASEPATH, DATABASETEMPPATH);
             }
             BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            File.Delete(DATABASETEMPPATH);
+            if (File.Exists(DATABASETEMPPATH))
+            {
+                File.Delete(DATABASETEMPPATH);
+            }
         }
 
 #if DEBUG
