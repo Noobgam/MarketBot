@@ -172,6 +172,11 @@ namespace CSGOTM
             while (true)
             {
                 SaveDataBase();
+
+#if DEBUG
+                SaveJSONDataBase();           
+#endif
+
                 Thread.Sleep(600000);
             }
         }
@@ -195,7 +200,7 @@ namespace CSGOTM
 
             dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Loaded new DB. Total itemы count: " + dataBase.Count);
+            Console.WriteLine("Loaded new DB. Total item count: " + dataBase.Count);
             Console.ForegroundColor = ConsoleColor.White;
 
         }
@@ -211,20 +216,14 @@ namespace CSGOTM
             }
             BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
             File.Delete(DATABASETEMPPATH);
-
-#if DEBUG
-            string[] lines = new string[dataBase.Count];
-            int id = 0;
-            foreach (KeyValuePair<string, SalesHistory> kvp in dataBase)
-            {
-                string line = kvp.Key + ";" + JsonConvert.SerializeObject(kvp.Value);
-                lines[id++] = line;
-            }
-            File.WriteAllLines(DATABASEJSONPATH, lines);
-
-#endif
         }
 
+#if DEBUG
+        public void SaveJSONDataBase()
+        {
+            JsonSerialization.WriteToJsonFile<Dictionary<string, SalesHistory>>(DATABASEJSONPATH, dataBase);
+        }
+#endif
         bool ParseNewDatabase()
         {
             try
@@ -398,7 +397,7 @@ namespace CSGOTM
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         private const string DATABASETEMPPATH = "databaseTemp.txt";
-        private const string DATABASEJSONPATH = "databaseJSON.txt";
+        private const string DATABASEJSONPATH = "database.json";
         private const string BLACKLISTPATH = "blackList.txt";
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
