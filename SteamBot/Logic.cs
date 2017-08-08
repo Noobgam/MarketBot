@@ -27,6 +27,7 @@ namespace CSGOTM
 
     public class Logic
     {
+        public Utility.MarketLogger Log;
         public Logic()
         {
             LoadNonStickeredBase();
@@ -247,8 +248,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not save DB, check whether DB name is correct (\'database.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
+                Log.Warn("Could not save DB, check whether DB name is correct (\'database.txt\'). Maybe this file is write-protected?:\n" + e.Message);
                 return false;
             }
         }
@@ -293,7 +293,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Log.Error(e.Message);
                 return false;
             }
         }
@@ -309,8 +309,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH + "\'):");
-                Console.WriteLine(e.Message);
+                Log.Warn("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH + "\'):\n" + e.Message);
                 return false;
             }
         }

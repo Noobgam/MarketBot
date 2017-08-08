@@ -78,6 +78,7 @@
   <ItemGroup>
     <Compile Include="Linker.cs" />
     <Compile Include="Logic.cs" />
+    <Compile Include="MarketLogger.cs" />
     <Compile Include="Notifications.cs" />
     <Compile Include="Protocol.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />
