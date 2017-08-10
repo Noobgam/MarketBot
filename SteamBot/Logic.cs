@@ -379,7 +379,7 @@ namespace CSGOTM
         public bool doNotSell = false; // True when we don`t want to sell.  
         public CSGOTMProtocol Protocol;
 
-        private const int MAXSIZE = 120;
+        private const int MAXSIZE = 12000;
         private const int MINSIZE = 40;
         private SortedSet<string> unStickered = new SortedSet<string>();
 

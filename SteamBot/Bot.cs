@@ -157,8 +157,9 @@ namespace SteamBot
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
-            Connection = new CSGOTM.CSGOTMProtocol(this);
-            Logic = new CSGOTM.Logic();
+            Utility.MarketLogger log = new Utility.MarketLogger("market_log.log");
+            Connection = new CSGOTM.CSGOTMProtocol(this, log);
+            Logic = new CSGOTM.Logic(log);
             CSGOTM.Linker.Link(Connection, Logic);
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
