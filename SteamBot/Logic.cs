@@ -172,7 +172,7 @@ namespace CSGOTM
             while (true)
             {
                 SaveDataBase();
-                Thread.Sleep(600000);
+                Thread.Sleep(TIMETOSLEEP);
             }
         }
 
@@ -390,11 +390,15 @@ namespace CSGOTM
         private const int MAXSIZE = 120;
         private const int MINSIZE = 40;
         private SortedSet<string> unStickered = new SortedSet<string>();
+
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         private const string DATABASETEMPPATH = "databaseTemp.txt";
         private const string DATABASEJSONPATH = "database.json";
         private const string BLACKLISTPATH = "blackList.txt";
+
+        private const int TIMETOSLEEP = 600000; // 10 minutes
+
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private SortedSet<string> blackList = new SortedSet<string>();
