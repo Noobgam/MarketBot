@@ -12,8 +12,10 @@ namespace CSGOTM
 
     public class Logic
     {
-        public Logic()
+        public Utility.MarketLogger Log;
+        public Logic(Utility.MarketLogger log)
         {
+            Log = log;
             LoadNonStickeredBase();
             FulfillBlackList();
             LoadDataBase();
@@ -53,7 +55,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("No blackList found.");
+                Log.Warn("No blackList found.");
             }
         }
 
@@ -67,16 +69,16 @@ namespace CSGOTM
                     try
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(3000);
+                        Thread.Sleep(APICOOLDOWN);
 
                         SalesHistory history = dataBase[item.i_market_name];
-                        Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
+                        Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
                             try
                             {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                Console.WriteLine("Settled order for " + item.i_market_name);
+                                Log.Success("Settled order for " + item.i_market_name);
                             }
                             catch (Exception ex)
                             {
@@ -86,11 +88,11 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Handled ex");
+                        Log.Error("Handled ex");
                     }
 
                 }
-                Thread.Sleep(3000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -101,7 +103,7 @@ namespace CSGOTM
                 if (doNotSell)
                 {
                     doNotSell = false;
-                    Thread.Sleep(500000);
+                    Thread.Sleep(TIMETOSLEEP);
                 }
                 else if (toBeSold.Count == 0)
                 {
@@ -110,7 +112,7 @@ namespace CSGOTM
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content)
                         {
-                            Console.WriteLine(item.i_market_name + " is going to be sold.");
+                            Log.Info(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }
                     }
@@ -118,9 +120,8 @@ namespace CSGOTM
                     {
 
                     }
-
                 }
-                Thread.Sleep(500000);
+                Thread.Sleep(TIMETOSLEEP);
             }
         }
 
@@ -143,7 +144,7 @@ namespace CSGOTM
                         }
                     }
                 }
-                Thread.Sleep(2000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -153,17 +154,13 @@ namespace CSGOTM
             {
                 if (ParseNewDatabase())
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("Finished parsing new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Log.Debug("Finished parsing new DB");
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    //Console.WriteLine("Couldn\'t parse new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(600000);
+                Thread.Sleep(TIMETOSLEEP);
             }
         }
 
@@ -189,15 +186,12 @@ namespace CSGOTM
             }
             else if (!File.Exists(DATABASEPATH))
             {
-                Console.WriteLine("No database found, creating empty DB.");
+                Log.Success("No database found, creating empty DB.");
                 return;
             }
 
             dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Loaded new DB. Total item count: " + dataBase.Count);
-            Console.ForegroundColor = ConsoleColor.White;
-
+            Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
 
@@ -261,7 +255,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Log.Error(e.Message);
                 return false;
             }
         }
@@ -277,8 +271,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH + "\'):");
-                Console.WriteLine(e.Message);
+                Log.Warn("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH + "\'):\n" + e.Message);
                 return false;
             }
         }
@@ -298,8 +291,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not save unstickered DB, check whether DB name is correct (\'emptystickered.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
+                Log.Info("Could not save unstickered DB, check whether DB name is correct (\'emptystickered.txt\'). Maybe this file is write-protected?:\n" + e.Message);
                 return false;
             }
         }
@@ -378,7 +370,7 @@ namespace CSGOTM
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
             {//TODO какое-то условие на время
-                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
+                Log.Info("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
@@ -398,6 +390,7 @@ namespace CSGOTM
         private const string BLACKLISTPATH = "blackList.txt";
 
         private const int TIMETOSLEEP = 600000; // 10 minutes
+        private const int APICOOLDOWN = 3000;
 
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
