@@ -78,6 +78,7 @@
   <ItemGroup>
     <Compile Include="Linker.cs" />
     <Compile Include="Logic.cs" />
+    <Compile Include="MarketLogger.cs" />
     <Compile Include="Notifications.cs" />
     <Compile Include="Protocol.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />
@@ -114,6 +115,7 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="ClassDiagram1.cd" />
+    <None Include="ClassDiagram2.cd" />
     <None Include="packages.config" />
   </ItemGroup>
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
