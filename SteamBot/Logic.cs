@@ -69,7 +69,7 @@ namespace CSGOTM
                     try
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(3000);
+                        Thread.Sleep(APICOOLDOWN);
 
                         SalesHistory history = dataBase[item.i_market_name];
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
@@ -92,7 +92,7 @@ namespace CSGOTM
                     }
 
                 }
-                Thread.Sleep(3000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -103,7 +103,7 @@ namespace CSGOTM
                 if (doNotSell)
                 {
                     doNotSell = false;
-                    Thread.Sleep(500000);
+                    Thread.Sleep(MINORCYCLETIMEINTERVAL);
                 }
                 else if (toBeSold.Count == 0)
                 {
@@ -120,9 +120,8 @@ namespace CSGOTM
                     {
 
                     }
-
                 }
-                Thread.Sleep(500000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -145,7 +144,7 @@ namespace CSGOTM
                         }
                     }
                 }
-                Thread.Sleep(2000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -155,17 +154,13 @@ namespace CSGOTM
             {
                 if (ParseNewDatabase())
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("Finished parsing new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Log.Debug("Finished parsing new DB");
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    //Console.WriteLine("Couldn\'t parse new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(600000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -174,7 +169,7 @@ namespace CSGOTM
             while (true)
             {
                 SaveDataBase();
-                Thread.Sleep(600000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -357,7 +352,7 @@ namespace CSGOTM
             for (int i = 0; i < salesHistory.cnt; i++)
                 a[i] = salesHistory.sales[i].price;
             Array.Sort(a);
-            dataBase[item.i_market_name].median = a[(int)(salesHistory.cnt * 0.5)];
+            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
 
             if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name))
             {
@@ -384,14 +379,19 @@ namespace CSGOTM
         public bool doNotSell = false; // True when we don`t want to sell.  
         public CSGOTMProtocol Protocol;
 
-        private const int MAXSIZE = 120;
+        private const int MAXSIZE = 12000;
         private const int MINSIZE = 40;
         private SortedSet<string> unStickered = new SortedSet<string>();
+
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         private const string DATABASETEMPPATH = "databaseTemp.txt";
         private const string DATABASEJSONPATH = "database.json";
         private const string BLACKLISTPATH = "blackList.txt";
+
+        private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
+        private const int APICOOLDOWN = 1000 * 3; // 3 seconds
+
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private SortedSet<string> blackList = new SortedSet<string>();
