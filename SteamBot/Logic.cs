@@ -103,7 +103,7 @@ namespace CSGOTM
                 if (doNotSell)
                 {
                     doNotSell = false;
-                    Thread.Sleep(TIMETOSLEEP);
+                    Thread.Sleep(MINORCYCLETIMEINTERVAL);
                 }
                 else if (toBeSold.Count == 0)
                 {
@@ -121,7 +121,7 @@ namespace CSGOTM
 
                     }
                 }
-                Thread.Sleep(TIMETOSLEEP);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -160,7 +160,7 @@ namespace CSGOTM
                 {
                     Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(TIMETOSLEEP);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -169,7 +169,7 @@ namespace CSGOTM
             while (true)
             {
                 SaveDataBase();
-                Thread.Sleep(TIMETOSLEEP);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -352,7 +352,7 @@ namespace CSGOTM
             for (int i = 0; i < salesHistory.cnt; i++)
                 a[i] = salesHistory.sales[i].price;
             Array.Sort(a);
-            dataBase[item.i_market_name].median = a[(int)(salesHistory.cnt * 0.5)];
+            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
 
             if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name))
             {
@@ -389,8 +389,8 @@ namespace CSGOTM
         private const string DATABASEJSONPATH = "database.json";
         private const string BLACKLISTPATH = "blackList.txt";
 
-        private const int TIMETOSLEEP = 600000; // 10 minutes
-        private const int APICOOLDOWN = 3000;
+        private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
+        private const int APICOOLDOWN = 1000 * 3; // 3 seconds
 
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
