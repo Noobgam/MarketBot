@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Utility
 {
-    class MarketLogger : SteamBot.Log
+    public class MarketLogger : SteamBot.Log
     {
-        MarketLogger(String path) : base(path, "Market")
+        public MarketLogger(String path, String marketPrefix = "Market") : base(path, marketPrefix)
         {
         }
     }

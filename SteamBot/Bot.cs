@@ -119,9 +119,11 @@ namespace SteamBot
 
         public SteamAuth.SteamGuardAccount SteamGuardAccount;
 
-        public CSGOTM.CSGOTMProtocol Connection;
-        public CSGOTM.Logic Logic;
+        public CSGOTM.Protocol CSConnection;
+        public CSGOTM.Logic CSLogic;
 
+        public NDota2Market.Dota2Market D2Connection;
+        public NDota2Market.Logic D2Logic;
 
         public bool CheckOffer(TradeOffer offer)
         {
@@ -157,9 +159,17 @@ namespace SteamBot
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
-            Connection = new CSGOTM.CSGOTMProtocol(this);
-            Logic = new CSGOTM.Logic();
-            CSGOTM.Linker.Link(Connection, Logic);
+            //Starting CS:
+            CSConnection = new CSGOTM.Protocol();
+            CSLogic = new CSGOTM.Logic();
+            CSGOTM.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
+
+            //Starting DOTA:
+
+            D2Connection = new NDota2Market.Dota2Market();
+            D2Logic = new NDota2Market.Logic();
+            CSGOTM.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
+
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails

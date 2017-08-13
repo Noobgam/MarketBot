@@ -22,13 +22,13 @@ using System.Collections.Specialized;
 
 namespace CSGOTM
 {
-    public class CSGOTMProtocol
+    public class Protocol
     {
 #if DEBUG
         public int totalwasted = 0;
 #endif
+        public Utility.MarketLogger Log;
         private Queue<TradeOffer> QueuedOffers;
-        private SteamBot.Bot Parent;
         public Logic Logic;
         string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
 
@@ -42,16 +42,11 @@ namespace CSGOTM
                 return myWebClient.DownloadString("https://market.csgo.com" + url);
             }
         }
-
-        public CSGOTMProtocol()
-        {
-
-        }
+        
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public CSGOTMProtocol(SteamBot.Bot p)
+        public Protocol()
         {
-            Parent = p;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
             QueuedOffers = new Queue<TradeOffer>();
@@ -108,8 +103,10 @@ namespace CSGOTM
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Logic.WantToBuy(newItem))
                     {
-                        Buy(newItem);
-                        Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
+                        if (Buy(newItem))
+                            Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                        else
+                            Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
                     }
                     break;
                 case "history_go":
@@ -146,14 +143,12 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-                        Console.ForegroundColor = ConsoleColor.Red;
-                        Console.WriteLine(ex.Message);
-                        Console.ForegroundColor = ConsoleColor.White;
+                        Log.Error(ex.Message);
                     }
                     break;
 
                 case "invcache_go":
-                    Console.WriteLine("Inventory was cached");
+                    Log.Info("Inventory was cached");
                     break;
                 case "money":
                     //Console.ForegroundColor = ConsoleColor.Yellow;
@@ -163,7 +158,7 @@ namespace CSGOTM
                 default:
                     //Console.WriteLine(x.type);
                     x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    Console.WriteLine(x.data);
+                    Log.Info(x.data);
                     try
                     {
                         JObject json = JObject.Parse(x.data);
@@ -189,7 +184,7 @@ namespace CSGOTM
 
         bool TakeItems()
         {
-            Console.WriteLine("Taking items");
+            Log.Info("Taking items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -203,7 +198,7 @@ namespace CSGOTM
 
         bool GiveItems(string botID)
         {
-            Console.WriteLine("Giving items");
+            Log.Info("Giving items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -268,9 +263,7 @@ namespace CSGOTM
         void Open(object sender, EventArgs e)
         {
             died = false;
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Connection opened!");
-            Console.ForegroundColor = ConsoleColor.White;
+            Log.Success("Connection opened!");
             Auth();
             Thread ping = new Thread(new ThreadStart(pinger));
             ping.Start();
@@ -281,11 +274,9 @@ namespace CSGOTM
 
         void Error(object sender, EventArgs e)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error");
+            Log.Error("Connection error");
             died = true;
             ReOpen();
-            Console.ForegroundColor = ConsoleColor.White;
         }
 
         void ReOpen()
@@ -298,7 +289,7 @@ namespace CSGOTM
                 socket.MessageReceived += Msg;
                 socket.Open();
                 Thread.Sleep(5000);
-                Console.WriteLine("Trying to reconnect for the %d-th time", i + 1);
+                Log.Info("Trying to reconnect for the %d-th time", i + 1);
             }
         }
 
@@ -307,15 +298,15 @@ namespace CSGOTM
         {
 #if DEBUG
             totalwasted += (int)item.ui_price;
-            Console.WriteLine("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
+            Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api);
             JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-            {
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            }
+            //foreach (var pair in parsed)
+            //{
+            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            //}
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -331,7 +322,7 @@ namespace CSGOTM
         {
 #if DEBUG
             totalwasted += price;
-            Console.WriteLine("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
+            Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);

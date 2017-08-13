@@ -6,7 +6,6 @@ using System.IO;
 
 namespace NDota2Market
 {
-
     public class TMTrade
     {
         public string ui_id;

@@ -27,6 +27,7 @@ namespace NDota2Market
 
     public class Logic
     {
+        public Utility.MarketLogger Log;
         public Logic()
         {
             LoadDataBase();
@@ -271,8 +272,9 @@ namespace NDota2Market
 
         private const int MAXSIZE = 500;
         private const int MINSIZE = 80;
-        private const string DATABASEPATH = "database.txt";
-        private const string DATABASETEMPPATH = "databaseTemp.txt";
+        private const string MARKETPREFIX = "dota_";
+        private const string DATABASEPATH = MARKETPREFIX + "database.txt";
+        private const string DATABASETEMPPATH = MARKETPREFIX + "databaseTemp.txt";
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();

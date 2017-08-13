@@ -1,39 +1,25 @@
 ﻿using System;
-using System.Threading.Tasks;
-using System.Web;
 using System.Net;
-using System.Text;
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.ComponentModel;
-using SteamBot.SteamGroups;
-using SteamKit2;
-using WebSocket4Net;
-using SteamTrade;
-using SteamKit2.Internal;
-using SteamTrade.TradeOffer;
-using System.Globalization;
-using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
-using System.Collections;
 using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 
 namespace CSGOTM
 {
 
     public class Logic
     {
+        public Utility.MarketLogger Log;
         public Logic()
         {
             LoadNonStickeredBase();
             FulfillBlackList();
             LoadDataBase();
             Thread starter = new Thread(new ThreadStart(StartUp));
-            starter.Start();           
+            starter.Start();
         }
 
         private void StartUp()
@@ -64,11 +50,11 @@ namespace CSGOTM
                 foreach (var line in lines)
                 {
                     blackList.Add(line);
-                }  
+                }
             }
             catch (Exception e)
             {
-                Console.WriteLine("No blackList found.");
+                Log.Warn("No blackList found.");
             }
         }
 
@@ -82,16 +68,16 @@ namespace CSGOTM
                     try
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(3000);
+                        Thread.Sleep(APICOOLDOWN);
 
                         SalesHistory history = dataBase[item.i_market_name];
-                        Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
+                        Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
                             try
                             {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                Console.WriteLine("Settled order for " + item.i_market_name);
+                                Log.Success("Settled order for " + item.i_market_name);
                             }
                             catch (Exception ex)
                             {
@@ -101,11 +87,11 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Handled ex");
+                        Log.Error("Handled ex");
                     }
-                    
+
                 }
-                Thread.Sleep(3000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -116,7 +102,7 @@ namespace CSGOTM
                 if (doNotSell)
                 {
                     doNotSell = false;
-                    Thread.Sleep(500000);
+                    Thread.Sleep(MINORCYCLETIMEINTERVAL);
                 }
                 else if (toBeSold.Count == 0)
                 {
@@ -125,7 +111,7 @@ namespace CSGOTM
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content)
                         {
-                            Console.WriteLine(item.i_market_name + " is going to be sold.");
+                            Log.Info(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }
                     }
@@ -133,12 +119,11 @@ namespace CSGOTM
                     {
 
                     }
-
                 }
-                Thread.Sleep(500000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
-        
+
         void SellFromQueue()
         {
             while (true)
@@ -152,33 +137,29 @@ namespace CSGOTM
                         {
                             Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
 
                         }
                     }
                 }
-                Thread.Sleep(2000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
-       
+
         void ParsingCycle()
         {
             while (true)
             {
                 if (ParseNewDatabase())
                 {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("Finished parsing new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Log.Debug("Finished parsing new DB");
                 }
                 else
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    //Console.WriteLine("Couldn\'t parse new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
+                    Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(600000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -186,73 +167,52 @@ namespace CSGOTM
         {
             while (true)
             {
-                if (SaveDataBase())
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    //Console.WriteLine("Saved new DB");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    //Console.WriteLine("Couldn\'t save DB");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                Thread.Sleep(600000);
+                SaveDataBase();
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
-        public bool ReadFile(string path)
-        {
-            string[] lines = File.ReadAllLines(path);
-            foreach (var line in lines)
-            {
-                string[] words = line.Split(';');
-                SalesHistory salesHistory = (SalesHistory)JsonConvert.DeserializeObject<SalesHistory>(words[1]);
-                if (words[0] != "" && !blackList.Contains(words[0]))
-                    dataBase.Add(words[0], salesHistory);
-            }
-            Console.WriteLine("Loaded " + lines.Length + " items.");
-            return true;
-        }
 
         public void LoadDataBase()
         {
-            try
-            {
-                ReadFile(DATABASETEMPPATH);
-            }
-            catch (Exception e)
-            {
-                ReadFile(DATABASEPATH);
-            }
-        }
-
-        public bool SaveDataBase()
-        {
-            try
+            if (File.Exists(DATABASETEMPPATH))
             {
                 if (File.Exists(DATABASEPATH))
-                    File.Move(DATABASEPATH, DATABASETEMPPATH);
-                string[] lines = new string[dataBase.Count];
-                int id = 0;
-                foreach (KeyValuePair<string, SalesHistory> kvp in dataBase)
                 {
-                    string line = kvp.Key + ";" + JsonConvert.SerializeObject(kvp.Value);
-                    lines[id++] = line;
+                    File.Delete(DATABASEPATH);
                 }
-                File.WriteAllLines(DATABASEPATH, lines);
-                File.Delete(DATABASETEMPPATH);
-                return true;
+                File.Move(DATABASETEMPPATH, DATABASEPATH);
             }
-            catch (Exception e)
+            else if (!File.Exists(DATABASEPATH))
             {
-                Console.WriteLine("Could not save DB, check whether DB name is correct (\'database.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
-                return false;
+                Log.Success("No database found, creating empty DB.");
+                return;
+            }
+
+            dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+            Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
+        }
+
+
+        public void SaveDataBase()
+        {
+            if (File.Exists(DATABASEPATH))
+            {
+                File.Copy(DATABASEPATH, DATABASETEMPPATH);
+            }
+            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            if (File.Exists(DATABASETEMPPATH))
+            {
+                File.Delete(DATABASETEMPPATH);
             }
         }
 
+#if DEBUG
+        public void SaveJSONDataBase()
+        {
+            JsonSerialization.WriteToJsonFile<Dictionary<string, SalesHistory>>(DATABASEJSONPATH, dataBase);
+        }
+#endif
         bool ParseNewDatabase()
         {
             try
@@ -264,7 +224,8 @@ namespace CSGOTM
                     myQueryStringCollection.Add("q", "");
                     myWebClient.QueryString = myQueryStringCollection;
                     Dictionary<string, int> mapping = new Dictionary<string, int>();
-                    try {
+                    try
+                    {
                         string[] lines;
                         {
                             JObject things = JObject.Parse(myWebClient.DownloadString("https://market.csgo.com/itemdb/current_730.json"));
@@ -293,7 +254,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Log.Error(e.Message);
                 return false;
             }
         }
@@ -309,8 +270,7 @@ namespace CSGOTM
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH + "\'):");
-                Console.WriteLine(e.Message);
+                Log.Warn("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH + "\'):\n" + e.Message);
                 return false;
             }
         }
@@ -326,16 +286,16 @@ namespace CSGOTM
                 foreach (var line in unStickered)
                     lines[id++] = line;
                 File.WriteAllLines(UNSTICKEREDPATH, lines);
-                return true;                
+                return true;
             }
             catch (Exception e)
             {
-                Console.WriteLine("Could not save unstickered DB, check whether DB name is correct (\'emptystickered.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
+                Log.Info("Could not save unstickered DB, check whether DB name is correct (\'emptystickered.txt\'). Maybe this file is write-protected?:\n" + e.Message);
                 return false;
             }
         }
 
+        [Serializable]
         public class SalesHistory
         {
             public List<HistoryItem> sales = new List<HistoryItem>();
@@ -391,7 +351,7 @@ namespace CSGOTM
             for (int i = 0; i < salesHistory.cnt; i++)
                 a[i] = salesHistory.sales[i].price;
             Array.Sort(a);
-            dataBase[item.i_market_name].median = a[(int)(salesHistory.cnt * 0.5)];
+            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
 
             if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name))
             {
@@ -409,26 +369,32 @@ namespace CSGOTM
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
             {//TODO какое-то условие на время
-                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
+                Log.Info("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
         }
 
         public bool doNotSell = false; // True when we don`t want to sell.  
-        public CSGOTMProtocol Protocol;
+        public Protocol Protocol;
 
-        private const int MAXSIZE = 120;
+        private const int MAXSIZE = 12000;
         private const int MINSIZE = 40;
         private SortedSet<string> unStickered = new SortedSet<string>();
+
         private const string UNSTICKEREDPATH = "emptystickered.txt";
         private const string DATABASEPATH = "database.txt";
         private const string DATABASETEMPPATH = "databaseTemp.txt";
+        private const string DATABASEJSONPATH = "database.json";
         private const string BLACKLISTPATH = "blackList.txt";
+
+        private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
+        private const int APICOOLDOWN = 1000 * 3; // 3 seconds
+
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private SortedSet<string> blackList = new SortedSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
-        
+
     }
 }

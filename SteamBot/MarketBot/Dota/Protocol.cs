@@ -27,9 +27,9 @@ namespace NDota2Market
 #if DEBUG
         public int totalwasted = 0;
 #endif
-        private SteamBot.Bot Parent;
         public Logic Logic;
         string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
+        public Utility.MarketLogger Log;
 
         private string ExecuteApiRequest(string url)
         {
@@ -41,16 +41,11 @@ namespace NDota2Market
                 return myWebClient.DownloadString("https://market.dota2.net" + url);
             }
         }
-
-        public Dota2Market()
-        {
-
-        }
+        
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public Dota2Market(SteamBot.Bot p)
+        public Dota2Market()
         {
-            Parent = p;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
         }
@@ -106,8 +101,10 @@ namespace NDota2Market
                         newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                         if (Logic.WantToBuy(newItem))
                         {
-                            Buy(newItem);
-                            Console.WriteLine(newItem.i_market_name + " " + newItem.ui_price);
+                            if (Buy(newItem))
+                                Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                            else
+                                Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
                         }
                         break;
                     }
