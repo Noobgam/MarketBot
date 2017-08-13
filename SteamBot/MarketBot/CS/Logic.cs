@@ -15,9 +15,6 @@ namespace CSGOTM
         public Utility.MarketLogger Log;
         public Logic()
         {
-            LoadNonStickeredBase();
-            FulfillBlackList();
-            LoadDataBase();
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
         }
@@ -29,6 +26,9 @@ namespace CSGOTM
                 Thread.Sleep(10);
             }
 
+            LoadNonStickeredBase();
+            FulfillBlackList();
+            LoadDataBase();
             Thread parser = new Thread(new ThreadStart(ParsingCycle));
             parser.Start();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));

@@ -49,13 +49,13 @@ namespace CSGOTM
         {
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
-            QueuedOffers = new Queue<TradeOffer>();
         }
         
         private void StartUp()
         {
             while (Logic == null)
                 Thread.Sleep(10);
+            QueuedOffers = new Queue<TradeOffer>();
             socket.Opened += Open;
             socket.Closed += Error;
             socket.MessageReceived += Msg;
