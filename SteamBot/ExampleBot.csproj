@@ -76,11 +76,10 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MarketBot\CS\Linker.cs" />
     <Compile Include="MarketBot\CS\Logic.cs" />
     <Compile Include="MarketBot\CS\Protocol.cs" />
     <Compile Include="MarketBot\CS\Utility.cs" />
-    <Compile Include="MarketBot\Dota\Linker.cs" />
+    <Compile Include="MarketBot\Utility\Linker.cs" />
     <Compile Include="MarketBot\Dota\Logic.cs" />
     <Compile Include="MarketBot\Dota\Protocol.cs" />
     <Compile Include="MarketBot\Dota\Utility.cs" />

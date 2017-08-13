@@ -160,15 +160,16 @@ namespace SteamBot
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
             //Starting CS:
+
             CSConnection = new CSGOTM.Protocol();
             CSLogic = new CSGOTM.Logic();
-            CSGOTM.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
+            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
 
             //Starting DOTA:
 
             D2Connection = new NDota2Market.Dota2Market();
             D2Logic = new NDota2Market.Logic();
-            CSGOTM.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
+            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
 
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
