@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
 using Newtonsoft.Json.Linq;
+using System.Text;
 
 namespace CSGOTM
 {
@@ -47,7 +48,7 @@ namespace CSGOTM
         {
             try
             {
-                string[] lines = File.ReadAllLines(BLACKLISTPATH);
+                string[] lines = File.ReadAllLines(BLACKLISTPATH, Encoding.UTF8);
                 foreach (var line in lines)
                 {
                     blackList.Add(line);
