@@ -28,6 +28,8 @@ namespace NDota2Market
         public int totalwasted = 0;
 #endif
         public Logic Logic;
+
+        private const int MINORCYCLETIMEINTERVAL = 30000;
         string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
         public Utility.MarketLogger Log;
 
@@ -219,7 +221,7 @@ namespace NDota2Market
 
                 }
                 //once per 30 seconds we check trade list
-                Thread.Sleep(30000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 

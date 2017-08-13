@@ -63,7 +63,7 @@ namespace NDota2Market
                     try
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(3000);
+                        Thread.Sleep(APICOOLDOWN);
 
                         SalesHistory history = dataBase[item.i_market_name];
                         Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
@@ -86,7 +86,7 @@ namespace NDota2Market
                     }
                     
                 }
-                Thread.Sleep(3000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -97,7 +97,7 @@ namespace NDota2Market
                 if (doNotSell)
                 {
                     doNotSell = false;
-                    Thread.Sleep(500000);
+                    Thread.Sleep(MINORCYCLETIMEINTERVAL);
                 }
                 else if (toBeSold.Count == 0)
                 {
@@ -116,7 +116,7 @@ namespace NDota2Market
                     }
 
                 }
-                Thread.Sleep(500000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
         
@@ -139,7 +139,7 @@ namespace NDota2Market
                         }
                     }
                 }
-                Thread.Sleep(2000);
+                Thread.Sleep(APICOOLDOWN);
             }
         }
 
@@ -160,7 +160,7 @@ namespace NDota2Market
                     Console.WriteLine("Couldn\'t save DB");
                     Console.ForegroundColor = ConsoleColor.White;
                 }
-                Thread.Sleep(6000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -245,7 +245,7 @@ namespace NDota2Market
             for (int i = 0; i < salesHistory.cnt; i++)
                 a[i] = salesHistory.sales[i].price;
             Array.Sort(a);
-            dataBase[item.i_market_name].median = a[(int)(salesHistory.cnt * 0.5)];
+            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
 
             if (salesHistory.cnt >= MINSIZE)
             {
@@ -270,6 +270,8 @@ namespace NDota2Market
         public bool doNotSell = false; // True when we don`t want to sell.  
         public Dota2Market Protocol;
 
+        private const int APICOOLDOWN = 3000;
+        private const int MINORCYCLETIMEINTERVAL = 50000;
         private const int MAXSIZE = 500;
         private const int MINSIZE = 80;
         private const string MARKETPREFIX = "dota_";
