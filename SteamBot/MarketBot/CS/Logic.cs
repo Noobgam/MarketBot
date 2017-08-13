@@ -13,12 +13,8 @@ namespace CSGOTM
     public class Logic
     {
         public Utility.MarketLogger Log;
-        public Logic(Utility.MarketLogger log)
+        public Logic()
         {
-            Log = log;
-            LoadNonStickeredBase();
-            FulfillBlackList();
-            LoadDataBase();
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
         }
@@ -30,6 +26,9 @@ namespace CSGOTM
                 Thread.Sleep(10);
             }
 
+            LoadNonStickeredBase();
+            FulfillBlackList();
+            LoadDataBase();
             Thread parser = new Thread(new ThreadStart(ParsingCycle));
             parser.Start();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
@@ -377,7 +376,7 @@ namespace CSGOTM
         }
 
         public bool doNotSell = false; // True when we don`t want to sell.  
-        public CSGOTMProtocol Protocol;
+        public Protocol Protocol;
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 40;

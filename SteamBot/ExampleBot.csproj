@@ -76,11 +76,15 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Linker.cs" />
-    <Compile Include="Logic.cs" />
-    <Compile Include="MarketLogger.cs" />
+    <Compile Include="MarketBot\CS\Logic.cs" />
+    <Compile Include="MarketBot\CS\Protocol.cs" />
+    <Compile Include="MarketBot\CS\Utility.cs" />
+    <Compile Include="MarketBot\Utility\Linker.cs" />
+    <Compile Include="MarketBot\Dota\Logic.cs" />
+    <Compile Include="MarketBot\Dota\Protocol.cs" />
+    <Compile Include="MarketBot\Dota\Utility.cs" />
+    <Compile Include="MarketBot\Utility\MarketLogger.cs" />
     <Compile Include="Notifications.cs" />
-    <Compile Include="Protocol.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />
     <Compile Include="SteamTradeDemoHandler.cs" />
     <Compile Include="TF2GC\Crafting.cs" />
@@ -101,7 +105,6 @@
     <Compile Include="TradeOfferUserHandler.cs" />
     <Compile Include="UserHandler.cs" />
     <Compile Include="SimpleUserHandler.cs" />
-    <Compile Include="Web.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
@@ -115,8 +118,8 @@
       <SubType>Designer</SubType>
     </None>
     <None Include="ClassDiagram1.cd" />
-    <None Include="ClassDiagram2.cd" />
     <None Include="packages.config" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
 </Project>

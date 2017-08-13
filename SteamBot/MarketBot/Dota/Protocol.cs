@@ -20,18 +20,18 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
 
-namespace CSGOTM
+namespace NDota2Market
 {
-    public class CSGOTMProtocol
+    public class Dota2Market
     {
 #if DEBUG
         public int totalwasted = 0;
 #endif
-        public Utility.MarketLogger Log;
-        private Queue<TradeOffer> QueuedOffers;
-        private SteamBot.Bot Parent;
         public Logic Logic;
+
+        private const int MINORCYCLETIMEINTERVAL = 30000;
         string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
+        public Utility.MarketLogger Log;
 
         private string ExecuteApiRequest(string url)
         {
@@ -40,23 +40,16 @@ namespace CSGOTM
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
                 myQueryStringCollection.Add("q", "");
                 myWebClient.QueryString = myQueryStringCollection;
-                return myWebClient.DownloadString("https://market.csgo.com" + url);
+                return myWebClient.DownloadString("https://market.dota2.net" + url);
             }
         }
-
-        public CSGOTMProtocol()
-        {
-
-        }
+        
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public CSGOTMProtocol(SteamBot.Bot p, Utility.MarketLogger log)
+        public Dota2Market()
         {
-            Log = log;
-            Parent = p;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
-            QueuedOffers = new Queue<TradeOffer>();
         }
         
         private void StartUp()
@@ -104,78 +97,56 @@ namespace CSGOTM
             //Console.WriteLine(x.type);
             switch (x.type)
             {
-                case "newitems_go":
-                    NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
-                    //getBestOrder(newItem.i_classid, newItem.i_instanceid);
-                    newItem.ui_price = newItem.ui_price * 100 + 0.5f;
-                    if (Logic.WantToBuy(newItem))
+                case "newitems_cs":
                     {
-                        if (Buy(newItem))
-                            Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
-                        else
-                            Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+                        NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
+                        newItem.ui_price = newItem.ui_price * 100 + 0.5f;
+                        if (Logic.WantToBuy(newItem))
+                        {
+                            if (Buy(newItem))
+                                Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                            else
+                                Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+                        }
+                        break;
                     }
-                    break;
-                case "history_go":
-                    try
+                case "history_cs":
                     {
-                        char[] trimming = { '[', ']' };
-                        x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                        x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
-                        string[] arr = x.data.Split(',');
-                        HistoryItem historyItem = new HistoryItem();
-                        if (arr.Length == 7)
+                        try
                         {
-                            historyItem.i_classid = arr[0];
-                            historyItem.i_instanceid = arr[1];
-                            historyItem.i_market_hash_name = arr[2];
-                            historyItem.timesold = arr[3];
-                            historyItem.price = Int32.Parse(arr[4]);
-                            historyItem.i_market_name = arr[5];
+                            char[] trimming = { '[', ']' };
+                            x.data = DecodeEncodedNonAsciiCharacters(x.data);
+                            //Console.WriteLine(x.data);
+                            x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
+                            string[] arr = x.data.Split(',');
+                            HistoryItem historyItem = new HistoryItem();
+                            if (arr.Length == 7)
+                            {
+                                historyItem.i_classid = arr[0];
+                                historyItem.i_instanceid = arr[1];
+                                historyItem.i_market_hash_name = arr[2];
+                                historyItem.timesold = arr[3];
+                                historyItem.price = Int32.Parse(arr[4]);
+                                historyItem.i_market_name = arr[5];
+                            }
+                            else
+                            {
+                                throw new Exception(x.data + " is not a valid history item.");
+                            }
+                            Logic.ProcessItem(historyItem);
                         }
-                        else if (arr.Length == 8)
+                        catch (Exception ex)
                         {
-                            historyItem.i_classid = arr[0];
-                            historyItem.i_instanceid = arr[1];
-                            historyItem.i_market_hash_name = arr[2] + arr[3];
-                            historyItem.timesold = arr[4];
-                            historyItem.price = Int32.Parse(arr[5]);
-                            historyItem.i_market_name = arr[6];
+                            Console.ForegroundColor = ConsoleColor.Red;
+                            Console.WriteLine(ex.Message);
+                            Console.ForegroundColor = ConsoleColor.White;
                         }
-                        else
-                        {
-                            throw new Exception(x.data + " is not a valid history item.");
-                        }
-                        Logic.ProcessItem(historyItem);
+                        break;
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Message);
-                    }
-                    break;
-
-                case "invcache_go":
-                    Log.Info("Inventory was cached");
-                    break;
-                case "money":
-                    //Console.ForegroundColor = ConsoleColor.Yellow;
-                    //Console.WriteLine("Current balance: %f", Double.Parse(x.data.Split('<')[0]));
-                    //Console.ForegroundColor = ConsoleColor.White;
-                    break;
                 default:
-                    //Console.WriteLine(x.type);
+                    Console.WriteLine(x.type);
                     x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    Log.Info(x.data);
-                    try
-                    {
-                        JObject json = JObject.Parse(x.data);
-                        if ((int)json["status"] == 5)
-                            Logic.doNotSell = true;
-                    }
-                    catch (Exception ex)
-                    {
-
-                    }
+                    Console.WriteLine(x.data);
                     break;
             }
         }
@@ -191,7 +162,7 @@ namespace CSGOTM
 
         bool TakeItems()
         {
-            Log.Info("Taking items");
+            Console.WriteLine("Taking items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -205,7 +176,7 @@ namespace CSGOTM
 
         bool GiveItems(string botID)
         {
-            Log.Info("Giving items");
+            Console.WriteLine("Giving items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -250,14 +221,14 @@ namespace CSGOTM
 
                 }
                 //once per 30 seconds we check trade list
-                Thread.Sleep(30000);
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
         }
 
         void Subscribe()
         {
-            socket.Send("newitems_go");
-            socket.Send("history_go");
+            socket.Send("newitems_cs");
+            socket.Send("history_cs");
         }
 
         void Auth()
@@ -270,20 +241,23 @@ namespace CSGOTM
         void Open(object sender, EventArgs e)
         {
             died = false;
-            Log.Success("Connection opened!");
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine("Connection opened!");
+            Console.ForegroundColor = ConsoleColor.White;
             Auth();
             Thread ping = new Thread(new ThreadStart(pinger));
             ping.Start();
             Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
             tradeHandler.Start();
-            //andrew is gay
         }
 
         void Error(object sender, EventArgs e)
         {
-            Log.Error("Connection error");
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine("Error");
             died = true;
             ReOpen();
+            Console.ForegroundColor = ConsoleColor.White;
         }
 
         void ReOpen()
@@ -296,7 +270,7 @@ namespace CSGOTM
                 socket.MessageReceived += Msg;
                 socket.Open();
                 Thread.Sleep(5000);
-                Log.Info("Trying to reconnect for the %d-th time", i + 1);
+                Console.WriteLine("Trying to reconnect for the %d-th time", i + 1);
             }
         }
 
@@ -305,15 +279,15 @@ namespace CSGOTM
         {
 #if DEBUG
             totalwasted += (int)item.ui_price;
-            Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
+            Console.WriteLine("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api);
             JObject parsed = JObject.Parse(a);
-            //foreach (var pair in parsed)
-            //{
-            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            //}
+            foreach (var pair in parsed)
+            {
+                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            }
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -329,7 +303,7 @@ namespace CSGOTM
         {
 #if DEBUG
             totalwasted += price;
-            Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
+            Console.WriteLine("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);

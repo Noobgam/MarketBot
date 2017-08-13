@@ -8,9 +8,8 @@ namespace Utility
 {
     public class MarketLogger : SteamBot.Log
     {
-        public MarketLogger(String path) : base(path, "Market")
+        public MarketLogger(String path, String marketPrefix = "Market") : base(path, marketPrefix)
         {
-
         }
     }
 }
