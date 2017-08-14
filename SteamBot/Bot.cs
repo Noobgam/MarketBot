@@ -538,7 +538,7 @@ namespace SteamBot
                     //while (true)
                     //{
                     //   mobileAuthCode = GetMobileAuthCode();
-                    //    Console.WriteLine(mobileAuthCode);
+                    //  Console.WriteLine(mobileAuthCode);
                     //   Thread.Sleep(1000);
                     //}
                     if (string.IsNullOrEmpty(mobileAuthCode))
