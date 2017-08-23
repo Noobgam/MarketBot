@@ -17,6 +17,8 @@ namespace CSGOTM
         public Logic()
         {
             Thread starter = new Thread(new ThreadStart(StartUp));
+            if (!Directory.Exists(PREFIXPATH))
+                Directory.CreateDirectory(PREFIXPATH);
             starter.Start();
         }
 
@@ -198,14 +200,10 @@ namespace CSGOTM
         public void SaveDataBase()
         {
             if (File.Exists(DATABASEPATH))
-            {
                 File.Copy(DATABASEPATH, DATABASETEMPPATH);
-            }
             BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
             if (File.Exists(DATABASETEMPPATH))
-            {
                 File.Delete(DATABASETEMPPATH);
-            }
         }
 
 #if DEBUG
@@ -381,13 +379,14 @@ namespace CSGOTM
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 40;
+        private const string PREFIXPATH = "CS";
         private SortedSet<string> unStickered = new SortedSet<string>();
 
-        private const string UNSTICKEREDPATH = "emptystickered.txt";
-        private const string DATABASEPATH = "database.txt";
-        private const string DATABASETEMPPATH = "databaseTemp.txt";
-        private const string DATABASEJSONPATH = "database.json";
-        private const string BLACKLISTPATH = "blackList.txt";
+        private const string UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
+        private const string DATABASEPATH = PREFIXPATH + "/database.txt";
+        private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
+        private const string DATABASEJSONPATH = PREFIXPATH + "/database.json";
+        private const string BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
 
         private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         private const int APICOOLDOWN = 1000 * 3; // 3 seconds

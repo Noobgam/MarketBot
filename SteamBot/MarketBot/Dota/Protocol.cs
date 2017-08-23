@@ -137,16 +137,14 @@ namespace NDota2Market
                         }
                         catch (Exception ex)
                         {
-                            Console.ForegroundColor = ConsoleColor.Red;
-                            Console.WriteLine(ex.Message);
-                            Console.ForegroundColor = ConsoleColor.White;
+                            Log.Error(ex.Message);
                         }
                         break;
                     }
                 default:
-                    Console.WriteLine(x.type);
-                    x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    Console.WriteLine(x.data);
+                    //Console.WriteLine(x.type);
+                    //x.data = DecodeEncodedNonAsciiCharacters(x.data);
+                    //Console.WriteLine(x.data);
                     break;
             }
         }
@@ -162,7 +160,7 @@ namespace NDota2Market
 
         bool TakeItems()
         {
-            Console.WriteLine("Taking items");
+            Log.Info("Taking items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -176,7 +174,7 @@ namespace NDota2Market
 
         bool GiveItems(string botID)
         {
-            Console.WriteLine("Giving items");
+            Log.Info("Giving items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -241,9 +239,7 @@ namespace NDota2Market
         void Open(object sender, EventArgs e)
         {
             died = false;
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine("Connection opened!");
-            Console.ForegroundColor = ConsoleColor.White;
+            Log.Success("Connection opened!");
             Auth();
             Thread ping = new Thread(new ThreadStart(pinger));
             ping.Start();
@@ -253,11 +249,9 @@ namespace NDota2Market
 
         void Error(object sender, EventArgs e)
         {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.WriteLine("Error");
+            Log.Error("Error");
             died = true;
             ReOpen();
-            Console.ForegroundColor = ConsoleColor.White;
         }
 
         void ReOpen()
@@ -270,7 +264,7 @@ namespace NDota2Market
                 socket.MessageReceived += Msg;
                 socket.Open();
                 Thread.Sleep(5000);
-                Console.WriteLine("Trying to reconnect for the %d-th time", i + 1);
+                Log.Error("Trying to reconnect for the %d-th time", i + 1);
             }
         }
 
@@ -279,15 +273,15 @@ namespace NDota2Market
         {
 #if DEBUG
             totalwasted += (int)item.ui_price;
-            Console.WriteLine("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
+            Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api);
             JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-            {
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            }
+            //foreach (var pair in parsed)
+            //{
+            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            //}
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -303,15 +297,15 @@ namespace NDota2Market
         {
 #if DEBUG
             totalwasted += price;
-            Console.WriteLine("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
+            Log.Debug("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
             JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-            {
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            }
+            //foreach (var pair in parsed)
+            //{
+            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            //}
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")

@@ -30,8 +30,9 @@ namespace NDota2Market
         public Utility.MarketLogger Log;
         public Logic()
         {
-            LoadDataBase();
             Thread starter = new Thread(new ThreadStart(StartUp));
+            if (!Directory.Exists(PREFIXPATH))
+                Directory.CreateDirectory(PREFIXPATH);
             starter.Start();           
         }
 
@@ -42,6 +43,7 @@ namespace NDota2Market
                 Thread.Sleep(10);
             }
 
+            LoadDataBase();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
             saver.Start();
             Thread seller = new Thread(new ThreadStart(SellFromQueue));
@@ -66,13 +68,13 @@ namespace NDota2Market
                         Thread.Sleep(APICOOLDOWN);
 
                         SalesHistory history = dataBase[item.i_market_name];
-                        Console.WriteLine("Checking item..." + price + "  vs  " + history.median);
+                        Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
                             try
                             {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                Console.WriteLine("Settled order for " + item.i_market_name);
+                                Log.Success("Settled order for " + item.i_market_name);
                             }
                             catch (Exception ex)
                             {
@@ -82,7 +84,7 @@ namespace NDota2Market
                     }
                     catch (Exception ex)
                     {
-                        Console.WriteLine("Handled ex");
+                        Log.Error("Handled ex");
                     }
                     
                 }
@@ -106,7 +108,7 @@ namespace NDota2Market
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content)
                         {
-                            Console.WriteLine(item.i_market_name + " is going to be sold.");
+                            Log.Success(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }
                     }
@@ -147,65 +149,30 @@ namespace NDota2Market
         {
             while (true)
             {
-                if (SaveDataBase())
-                {
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine("Saved new DB");
-                    Console.WriteLine(dataBase.Count);
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
-                else
-                {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine("Couldn\'t save DB");
-                    Console.ForegroundColor = ConsoleColor.White;
-                }
+                SaveDataBase();
                 Thread.Sleep(MINORCYCLETIMEINTERVAL);
             }
-        }
-
-        public bool ReadFile(string path)
-        {
-            if (!File.Exists(path))
-                return false;
-            dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string,SalesHistory>> (path);
-            return true;
         }
 
         public void LoadDataBase()
         {
             if (!File.Exists(DATABASEPATH))
             {
-                Console.WriteLine("No database found, creating empty DB.");
+                Log.Warn("No database found, creating empty DB.");
             }
             else { 
                 dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine("Loaded new DB. Total item count: " + dataBase.Count);
-                Console.ForegroundColor = ConsoleColor.White;
+                Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
             }
         }
 
-        public bool SaveDataBase()
+        public void SaveDataBase()
         {
-            try
-            {
-                if (File.Exists(DATABASEPATH))
-                {
-                    if (File.Exists(DATABASETEMPPATH))
-                        File.Delete(DATABASETEMPPATH);
-                    File.Copy(DATABASEPATH, DATABASETEMPPATH);
-                }
-                BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            if (File.Exists(DATABASEPATH))
+                File.Copy(DATABASEPATH, DATABASETEMPPATH);
+            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            if (File.Exists(DATABASETEMPPATH))
                 File.Delete(DATABASETEMPPATH);
-                return true;
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine("Could not save DB, check whether DB name is correct (\'database.txt\'). Maybe this file is write-protected?:");
-                Console.WriteLine(e.Message);
-                return false;
-            }
         }
 
         [Serializable]
@@ -261,7 +228,7 @@ namespace NDota2Market
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600)
             {//TODO какое-то условие на время
-                Console.WriteLine("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
+                Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +  (salesHistory.median - item.ui_price));
                 return true;
             }
             return false;
@@ -274,9 +241,9 @@ namespace NDota2Market
         private const int MINORCYCLETIMEINTERVAL = 50000;
         private const int MAXSIZE = 500;
         private const int MINSIZE = 80;
-        private const string MARKETPREFIX = "dota_";
-        private const string DATABASEPATH = MARKETPREFIX + "database.txt";
-        private const string DATABASETEMPPATH = MARKETPREFIX + "databaseTemp.txt";
+        private const string PREFIXPATH = "DOTA";
+        private const string DATABASEPATH = PREFIXPATH + "/database.txt";
+        private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
