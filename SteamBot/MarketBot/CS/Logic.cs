@@ -34,8 +34,8 @@ namespace CSGOTM
             parser.Start();
             Thread saver = new Thread(new ThreadStart(SaveDataBaseCycle));
             saver.Start();
-            //Thread seller = new Thread(new ThreadStart(SellFromQueue));
-            //seller.Start();
+            Thread seller = new Thread(new ThreadStart(SellFromQueue));
+            seller.Start();
             Thread adder = new Thread(new ThreadStart(AddNewItems));
             adder.Start();
             Thread setter = new Thread(new ThreadStart(SetNewOrder));
@@ -136,7 +136,7 @@ namespace CSGOTM
                     {
                         try
                         {
-                            Protocol.Sell(item.i_classid, item.i_instanceid, (int) currentItems[item.i_market_name][1]);
+                            Protocol.Sell(item.i_classid, item.i_instanceid, (int) currentItems[item.i_market_name][2] - 30);
                         }
                         catch (Exception ex)
                         {
@@ -411,9 +411,9 @@ namespace CSGOTM
                 return false;
             List<long> prices = currentItems[item.i_market_name];
             //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
-            if (item.ui_price < 20000 && prices.Count >= 8 &&
-                item.ui_price < 0.8 * prices[1] && !blackList.Contains(item.i_market_name) && salesHistory.cnt >= MINSIZE &&
-                prices[1] < dataBase[item.i_market_name].median * 1.15 && prices[1] - item.ui_price > 400)
+            if (item.ui_price < 20000 && prices.Count >= 10 &&
+                item.ui_price < 0.8 * prices[2] && !blackList.Contains(item.i_market_name) && salesHistory.cnt >= MINSIZE &&
+                prices[2] < dataBase[item.i_market_name].median * 1.15 && prices[2] - item.ui_price > 400)
             {//TODO какое-то условие на время
                 Log.Info("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
                 return true;
@@ -425,7 +425,7 @@ namespace CSGOTM
         public Protocol Protocol;
 
         private const int MAXSIZE = 12000;
-        private const int MINSIZE = 40;
+        private const int MINSIZE = 70;
         private SortedSet<string> unStickered = new SortedSet<string>();
 
         private const string UNSTICKEREDPATH = "emptystickered.txt";
