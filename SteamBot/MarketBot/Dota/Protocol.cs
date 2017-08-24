@@ -321,6 +321,7 @@ namespace NDota2Market
             return false;
 
 #else
+            Console.WriteLine(ClasssId + " : " + InstanceId);
             string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
             JObject parsed = JObject.Parse(a);
             foreach (var pair in parsed)

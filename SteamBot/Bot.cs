@@ -169,7 +169,7 @@ namespace SteamBot
 
             //D2Connection = new NDota2Market.Dota2Market();
             //D2Logic = new NDota2Market.Logic();
-            //Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
+            //Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails

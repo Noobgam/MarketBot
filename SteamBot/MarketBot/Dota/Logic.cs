@@ -108,6 +108,7 @@ namespace NDota2Market
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content)
                         {
+                            Log.Info(item.i_classid + "_" + item.i_instanceid);
                             Log.Success(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }
@@ -240,7 +241,7 @@ namespace NDota2Market
         private const int APICOOLDOWN = 3000;
         private const int MINORCYCLETIMEINTERVAL = 50000;
         private const int MAXSIZE = 500;
-        private const int MINSIZE = 80;
+        private const int MINSIZE = 60;
         private const string PREFIXPATH = "DOTA";
         private const string DATABASEPATH = PREFIXPATH + "/database.txt";
         private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
