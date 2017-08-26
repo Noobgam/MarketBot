@@ -145,6 +145,20 @@ namespace CSGOTM
 
                         }
                     }
+                    else
+                    {
+                        if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
+                        {
+                            try
+                            {
+                                Protocol.Sell(item.i_classid, item.i_instanceid, ManipulatedItems[item.i_classid + "_" + item.i_instanceid]);
+                            }
+                            catch (Exception ex)
+                            {
+
+                            }
+                        }
+                    }
                 }
                 Thread.Sleep(APICOOLDOWN);
             }
@@ -400,7 +414,13 @@ namespace CSGOTM
         public bool WantToBuy(NewItem item)
         {
             if (!hasStickers(item))
-                return false;
+            {
+                //we might want to manipulate it.
+                string id = item.i_classid + "_" + item.i_instanceid;
+                if (ManipulatedItems.ContainsKey(id))
+                    return false;
+                return ManipulatedItems[id] < item.ui_price + 10; 
+            }
             if (!dataBase.ContainsKey(item.i_market_name))
                 return false;
             SalesHistory salesHistory = dataBase[item.i_market_name];
@@ -442,5 +462,7 @@ namespace CSGOTM
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
         private Dictionary<string, List<long>> currentItems = new Dictionary<string, List<long>>();
+
+        private Dictionary<String, int> ManipulatedItems; // [cid_iid] -> price
     }
 }
