@@ -48,8 +48,8 @@ namespace NDota2Market
             saver.Start();
             Thread seller = new Thread(new ThreadStart(SellFromQueue));
             seller.Start();
-            Thread adder = new Thread(new ThreadStart(AddNewItems));
-            adder.Start();
+            //Thread adder = new Thread(new ThreadStart(AddNewItems));
+            //adder.Start();
             Thread setter = new Thread(new ThreadStart(SetNewOrder));
             setter.Start();
 

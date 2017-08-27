@@ -167,9 +167,9 @@ namespace SteamBot
 
             //Starting DOTA:
 
-            //D2Connection = new NDota2Market.Dota2Market();
-            //D2Logic = new NDota2Market.Logic();
-            //Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
+            D2Connection = new NDota2Market.Dota2Market();
+            D2Logic = new NDota2Market.Logic();
+            Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
@@ -538,7 +538,7 @@ namespace SteamBot
                     //while (true)
                     //{
                     //   mobileAuthCode = GetMobileAuthCode();
-                    //  Console.WriteLine(mobileAuthCode);
+                    //   Console.WriteLine(mobileAuthCode);
                     //   Thread.Sleep(1000);
                     //}
                     if (string.IsNullOrEmpty(mobileAuthCode))
