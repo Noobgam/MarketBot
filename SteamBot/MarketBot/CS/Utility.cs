@@ -6,7 +6,7 @@ using System.IO;
 namespace CSGOTM
 {
 
-    
+
 
     public class Pair<T, U>
     {
@@ -64,7 +64,7 @@ namespace CSGOTM
         public string stickers;
 
         public static Dictionary<string, int> mapping = new Dictionary<string, int>();
-        
+
         public NewItem(string[] item)
         {
             i_quality = item[mapping["c_quality"]];

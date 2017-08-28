@@ -138,7 +138,7 @@ namespace CSGOTM
                     {
                         try
                         {
-                            Protocol.Sell(item.i_classid, item.i_instanceid, (int) currentItems[item.i_market_name][2] - 30);
+                            Protocol.Sell(item.i_classid, item.i_instanceid, (int)currentItems[item.i_market_name][2] - 30);
                         }
                         catch (Exception ex)
                         {
@@ -152,7 +152,7 @@ namespace CSGOTM
                             try
                             {
                                 Protocol.Sell(item.i_classid, item.i_instanceid, ManipulatedItems[item.i_classid + "_" + item.i_instanceid]);
-                }
+                            }
                             catch (Exception ex)
                             {
 
@@ -250,8 +250,8 @@ namespace CSGOTM
                         int id = 0;
 
                         if (NewItem.mapping.Count == 0)
-                        foreach (var str in indexes)
-                            mapping[str] = id++;
+                            foreach (var str in indexes)
+                                mapping[str] = id++;
 
                         currentItems.Clear();
 
@@ -284,7 +284,8 @@ namespace CSGOTM
                         {
                             string[] itemInString = lines[id].Split(';');
                             NewItem newItem = new NewItem(itemInString);
-                            WantToBuy(newItem);
+                            if (WantToBuy(newItem))
+                                Protocol.Buy(newItem);
                         }
                     }
                     catch (Exception ex)
@@ -303,7 +304,8 @@ namespace CSGOTM
 
         public void SortCurrentItems()
         {
-            try {
+            try
+            {
                 foreach (String name in currentItems.Keys)
                     currentItems[name].Sort();
 
@@ -433,8 +435,8 @@ namespace CSGOTM
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
                 if (ManipulatedItems.ContainsKey(id))
-                return false;
-                return ManipulatedItems[id] < item.ui_price + 10; 
+                    return false;
+                return ManipulatedItems[id] < item.ui_price + 10;
             }
             if (!dataBase.ContainsKey(item.i_market_name))
                 return false;
