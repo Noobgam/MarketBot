@@ -152,7 +152,7 @@ namespace CSGOTM
                             try
                             {
                                 Protocol.Sell(item.i_classid, item.i_instanceid, ManipulatedItems[item.i_classid + "_" + item.i_instanceid]);
-                            }
+                }
                             catch (Exception ex)
                             {
 
@@ -248,15 +248,18 @@ namespace CSGOTM
                         }
                         string[] indexes = lines[0].Split(';');
                         int id = 0;
+
+                        if (NewItem.mapping.Count == 0)
                         foreach (var str in indexes)
                             mapping[str] = id++;
 
                         currentItems.Clear();
+
                         for (id = 1; id < lines.Length - 1; ++id)
                         {
                             string[] item = lines[id].Split(';');
                             if (item[mapping["c_stickers"]] == "0")
-                            
+
                                 unStickered.Add(item[mapping["c_classid"]] + "_" + item[mapping["c_instanceid"]]);
                             // new logic
                             else {
@@ -273,6 +276,16 @@ namespace CSGOTM
                         }
                         SaveNonStickeredBase();
                         SortCurrentItems();
+
+                        // Calling WantToBuy function for all items. 
+                        indexes = lines[0].Split(';');
+                        id = 0;
+                        for (id = 1; id < lines.Length - 1; ++id)
+                        {
+                            string[] itemInString = lines[id].Split(';');
+                            NewItem newItem = new NewItem(itemInString);
+                            WantToBuy(newItem);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -418,7 +431,7 @@ namespace CSGOTM
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
                 if (ManipulatedItems.ContainsKey(id))
-                    return false;
+                return false;
                 return ManipulatedItems[id] < item.ui_price + 10; 
             }
             if (!dataBase.ContainsKey(item.i_market_name))
