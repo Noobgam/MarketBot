@@ -307,7 +307,7 @@ namespace CSGOTM
                 foreach (String name in currentItems.Keys)
                     currentItems[name].Sort();
 
-                //Testing
+#if DEBUG
                 String[] data = new String[currentItems.Count];
                 int i = 0;
                 foreach (String name in currentItems.Keys) {
@@ -317,6 +317,8 @@ namespace CSGOTM
                     }
                     //data[i++] = name + currentItems[name][0];
                 File.WriteAllLines("stat.txt", data);
+#endif
+
             }
             catch (Exception ex)
             {
