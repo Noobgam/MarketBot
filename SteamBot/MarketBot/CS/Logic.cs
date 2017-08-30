@@ -283,9 +283,9 @@ namespace CSGOTM
                         for (id = 1; id < lines.Length - 1; ++id)
                         {
                             string[] itemInString = lines[id].Split(';');
-                            NewItem newItem = new NewItem(itemInString);
-                            if (WantToBuy(newItem))
-                                Protocol.Buy(newItem);
+                            //NewItem newItem = new NewItem(itemInString);
+                            //if (WantToBuy(newItem))
+                            //    Protocol.Buy(newItem);
                         }
                     }
                     catch (Exception ex)
@@ -312,12 +312,13 @@ namespace CSGOTM
 #if DEBUG
                 String[] data = new String[currentItems.Count];
                 int i = 0;
-                foreach (String name in currentItems.Keys) {
+                foreach (String name in currentItems.Keys)
+                {
                     if (dataBase.ContainsKey(name) && currentItems[name].Count >= 4)
-                         data[i++] = String.Format("{0:0.00}", ((double)dataBase[name].median / currentItems[name][3] - 1) * 100)  + "%   " + 
-                            name + " median: " + dataBase[name].median + "  new value: " + currentItems[name][3];                        
-                    }
-                    //data[i++] = name + currentItems[name][0];
+                        data[i++] = String.Format("{0:0.00}", ((double)dataBase[name].median / currentItems[name][3] - 1) * 100) + "%   " +
+                           name + " median: " + dataBase[name].median + "  new value: " + currentItems[name][3];
+                }
+                //data[i++] = name + currentItems[name][0];
                 File.WriteAllLines("stat.txt", data);
 #endif
 
@@ -434,7 +435,7 @@ namespace CSGOTM
             {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
-                if (ManipulatedItems.ContainsKey(id))
+                if (!ManipulatedItems.ContainsKey(id))
                     return false;
                 return ManipulatedItems[id] < item.ui_price + 10;
             }
@@ -446,6 +447,7 @@ namespace CSGOTM
                 return false;
             List<long> prices = currentItems[item.i_market_name];
             //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
+
             if (item.ui_price < 20000 && prices.Count >= 10 &&
                 item.ui_price < 0.8 * prices[2] && !blackList.Contains(item.i_market_name) && salesHistory.cnt >= MINSIZE &&
                 prices[2] < dataBase[item.i_market_name].median * 1.15 && prices[2] - item.ui_price > 400)
@@ -480,6 +482,6 @@ namespace CSGOTM
 
         private Dictionary<string, List<long>> currentItems = new Dictionary<string, List<long>>();
 
-        private Dictionary<String, int> ManipulatedItems; // [cid_iid] -> price
+        private Dictionary<String, int> ManipulatedItems = new Dictionary<string, int>(); // [cid_iid] -> price
     }
 }
