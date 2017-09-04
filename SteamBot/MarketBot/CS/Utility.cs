@@ -65,7 +65,9 @@ namespace CSGOTM
 
         public static Dictionary<string, int> mapping = new Dictionary<string, int>();
 
-        /*public NewItem(string[] item)
+
+        public NewItem() { }
+        public NewItem(string[] item)
         {
             i_quality = item[mapping["c_quality"]];
             i_classid = item[mapping["c_classid"]];
@@ -73,7 +75,7 @@ namespace CSGOTM
             i_market_name = item[mapping["c_market_name"]];
             stickers = item[mapping["c_stickers"]];
             ui_price = Int64.Parse(item[mapping["c_price"]]);
-        }*/
+        }
     }
 
     public class Message
