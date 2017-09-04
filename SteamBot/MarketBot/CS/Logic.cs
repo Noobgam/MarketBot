@@ -76,7 +76,6 @@ namespace CSGOTM
                         Thread.Sleep(APICOOLDOWN);
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
-                        DatabaseLock.ReleaseMutex();
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
@@ -90,6 +89,7 @@ namespace CSGOTM
 
                             }
                         }
+                        DatabaseLock.ReleaseMutex();
                     }
                     catch (Exception ex)
                     {
