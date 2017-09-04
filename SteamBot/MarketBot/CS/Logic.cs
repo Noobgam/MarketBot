@@ -14,6 +14,8 @@ namespace CSGOTM
     public class Logic
     {
         public Utility.MarketLogger Log;
+        private static Mutex DatabaseLock = new Mutex();
+        private static Mutex CurrentItemsLock = new Mutex();
         public Logic()
         {
             Thread starter = new Thread(new ThreadStart(StartUp));
@@ -72,8 +74,9 @@ namespace CSGOTM
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
                         Thread.Sleep(APICOOLDOWN);
-
+                        DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
+                        DatabaseLock.ReleaseMutex();
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
@@ -134,6 +137,8 @@ namespace CSGOTM
                 if (toBeSold.Count != 0)
                 {
                     Inventory.SteamItem item = toBeSold.Dequeue();
+                    DatabaseLock.WaitOne();
+                    CurrentItemsLock.WaitOne();
                     if (dataBase.ContainsKey(item.i_market_name))
                     {
                         try
@@ -159,6 +164,8 @@ namespace CSGOTM
                             }
                         }
                     }
+                    DatabaseLock.ReleaseMutex();
+                    CurrentItemsLock.ReleaseMutex();
                 }
                 Thread.Sleep(APICOOLDOWN);
             }
@@ -215,7 +222,9 @@ namespace CSGOTM
         {
             if (File.Exists(DATABASEPATH))
                 File.Copy(DATABASEPATH, DATABASETEMPPATH);
+            DatabaseLock.WaitOne();
             BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            DatabaseLock.ReleaseMutex();
             if (File.Exists(DATABASETEMPPATH))
                 File.Delete(DATABASETEMPPATH);
         }
@@ -223,7 +232,7 @@ namespace CSGOTM
 #if DEBUG
         public void SaveJSONDataBase()
         {
-            JsonSerialization.WriteToJsonFile<Dictionary<string, SalesHistory>>(DATABASEJSONPATH, dataBase);
+            JsonSerialization.WriteToJsonFile(DATABASEJSONPATH, dataBase);
         }
 #endif
 
@@ -243,8 +252,7 @@ namespace CSGOTM
                         {
                             JObject things = JObject.Parse(myWebClient.DownloadString("https://market.csgo.com/itemdb/current_730.json"));
                             string db = (string)things["db"];
-                            string database = myWebClient.DownloadString("https://market.csgo.com/itemdb/" + db);
-                            lines = database.Split('\n');
+                            lines = myWebClient.DownloadString("https://market.csgo.com/itemdb/" + db).Split('\n');
                         }
                         string[] indexes = lines[0].Split(';');
                         int id = 0;
@@ -253,6 +261,7 @@ namespace CSGOTM
                             foreach (var str in indexes)
                                 NewItem.mapping[str] = id++;
 
+                        CurrentItemsLock.WaitOne();
                         currentItems.Clear();
 
                         for (id = 1; id < lines.Length - 1; ++id)
@@ -276,6 +285,7 @@ namespace CSGOTM
                         }
                         SaveNonStickeredBase();
                         SortCurrentItems();
+                        CurrentItemsLock.ReleaseMutex();
 
                         // Calling WantToBuy function for all items. 
                         indexes = lines[0].Split(';');
@@ -402,6 +412,7 @@ namespace CSGOTM
                 return;
             //Console.WriteLine(item.i_market_name);
             SalesHistory salesHistory;
+            DatabaseLock.WaitOne();
             if (dataBase.ContainsKey(item.i_market_name))
             {
                 salesHistory = dataBase[item.i_market_name];
@@ -427,6 +438,7 @@ namespace CSGOTM
             {
                 needOrder.Enqueue(item);
             }
+            DatabaseLock.ReleaseMutex();
         }
 
         public bool WantToBuy(NewItem item)
@@ -439,12 +451,18 @@ namespace CSGOTM
                     return false;
                 return ManipulatedItems[id] < item.ui_price + 10;
             }
-            if (!dataBase.ContainsKey(item.i_market_name))
+            if (!currentItems.ContainsKey(item.i_market_name))
+            {
                 return false;
+            }
+            DatabaseLock.WaitOne();
+            if (!dataBase.ContainsKey(item.i_market_name))
+            {
+                DatabaseLock.ReleaseMutex();
+                return false;
+            }
             SalesHistory salesHistory = dataBase[item.i_market_name];
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
-            if (!currentItems.ContainsKey(item.i_market_name))
-                return false;
             List<long> prices = currentItems[item.i_market_name];
             //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
@@ -453,8 +471,10 @@ namespace CSGOTM
                 prices[2] < dataBase[item.i_market_name].median * 1.2 && prices[2] - item.ui_price > 400)
             {//TODO какое-то условие на время
                 Log.Info("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
+                DatabaseLock.ReleaseMutex();
                 return true;
             }
+            DatabaseLock.ReleaseMutex();
             return false;
         }
 
