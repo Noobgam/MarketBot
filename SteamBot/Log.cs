@@ -32,7 +32,7 @@ namespace SteamBot
         public Log(string logFile, string botName = "", LogLevel consoleLogLevel = LogLevel.Info, LogLevel fileLogLevel = LogLevel.Info)
         {
             Directory.CreateDirectory(Path.Combine(System.Windows.Forms.Application.StartupPath, "logs"));
-            _FileStream = File.AppendText (Path.Combine("logs",logFile));
+            _FileStream = File.AppendText(Path.Combine("logs", logFile));
             _FileStream.AutoFlush = true;
             _botName = botName;
             OutputLevel = consoleLogLevel;
@@ -97,11 +97,11 @@ namespace SteamBot
                 _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
                 );
 
-            if(level >= FileLogLevel)
+            if (level >= FileLogLevel)
             {
                 _FileStream.WriteLine(formattedString);
             }
-            if(level >= OutputLevel)
+            if (level >= OutputLevel)
             {
                 _OutputLineToConsole(level, formattedString);
             }
@@ -109,11 +109,11 @@ namespace SteamBot
 
         private string GetLogBotName()
         {
-            if(_botName == null)
+            if (_botName == null)
             {
                 return "(System) ";
             }
-            else if(ShowBotName)
+            else if (ShowBotName)
             {
                 return _botName + " ";
             }
@@ -122,56 +122,56 @@ namespace SteamBot
 
         // Outputs a line to the console, with the correct color
         // formatting.
-        protected void _OutputLineToConsole (LogLevel level, string line)
+        protected void _OutputLineToConsole(LogLevel level, string line)
         {
-            Console.ForegroundColor = _LogColor (level);
-            Console.WriteLine (line);
+            Console.ForegroundColor = _LogColor(level);
+            Console.WriteLine(line);
             Console.ForegroundColor = DefaultConsoleColor;
         }
 
         // Determine the string equivalent of the LogLevel.
-        protected string _LogLevel (LogLevel level)
+        protected string _LogLevel(LogLevel level)
         {
             switch (level)
             {
-            case LogLevel.Info:
-                return "info";
-            case LogLevel.Debug:
-                return "debug";
-            case LogLevel.Success:
-                return "success";
-            case LogLevel.Warn:
-                return "warn";
-            case LogLevel.Error:
-                return "error";
-            case LogLevel.Interface:
-                return "interface";
-            case LogLevel.Nothing:
-                return "nothing";
-            default:
-                return "undef";
+                case LogLevel.Info:
+                    return "info";
+                case LogLevel.Debug:
+                    return "debug";
+                case LogLevel.Success:
+                    return "success";
+                case LogLevel.Warn:
+                    return "warn";
+                case LogLevel.Error:
+                    return "error";
+                case LogLevel.Interface:
+                    return "interface";
+                case LogLevel.Nothing:
+                    return "nothing";
+                default:
+                    return "undef";
             }
         }
 
         // Determine the color to be used when outputting to the
         // console.
-        protected ConsoleColor _LogColor (LogLevel level)
+        protected ConsoleColor _LogColor(LogLevel level)
         {
             switch (level)
             {
-            case LogLevel.Info:
-            case LogLevel.Debug:
-                return ConsoleColor.White;
-            case LogLevel.Success:
-                return ConsoleColor.Green;
-            case LogLevel.Warn:
-                return ConsoleColor.Yellow;
-            case LogLevel.Error:
-                return ConsoleColor.Red;
-            case LogLevel.Interface:
-                return ConsoleColor.DarkCyan;
-            default:
-                return DefaultConsoleColor;
+                case LogLevel.Info:
+                case LogLevel.Debug:
+                    return ConsoleColor.White;
+                case LogLevel.Success:
+                    return ConsoleColor.Green;
+                case LogLevel.Warn:
+                    return ConsoleColor.Yellow;
+                case LogLevel.Error:
+                    return ConsoleColor.Red;
+                case LogLevel.Interface:
+                    return ConsoleColor.DarkCyan;
+                default:
+                    return DefaultConsoleColor;
             }
         }
 

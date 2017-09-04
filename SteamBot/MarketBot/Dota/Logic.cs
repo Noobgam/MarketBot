@@ -157,14 +157,22 @@ namespace NDota2Market
 
         public void LoadDataBase()
         {
-            if (!File.Exists(DATABASEPATH))
+            if (File.Exists(DATABASETEMPPATH))
             {
-                Log.Warn("No database found, creating empty DB.");
+                if (File.Exists(DATABASEPATH))
+                {
+                    File.Delete(DATABASEPATH);
+                }
+                File.Move(DATABASETEMPPATH, DATABASEPATH);
             }
-            else { 
-                dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-                Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
+            else if (!File.Exists(DATABASEPATH))
+            {
+                Log.Success("No database found, creating empty DB.");
+                return;
             }
+
+            dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+            Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
         public void SaveDataBase()
