@@ -28,6 +28,7 @@ namespace NDota2Market
     public class Logic
     {
         public Utility.MarketLogger Log;
+        private static Mutex DatabaseLock = new Mutex();
         public Logic()
         {
             Thread starter = new Thread(new ThreadStart(StartUp));
@@ -66,7 +67,7 @@ namespace NDota2Market
                     {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
                         Thread.Sleep(APICOOLDOWN);
-
+                        DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
@@ -81,6 +82,7 @@ namespace NDota2Market
 
                             }
                         }
+                        DatabaseLock.ReleaseMutex();
                     }
                     catch (Exception ex)
                     {
@@ -130,6 +132,7 @@ namespace NDota2Market
                 if (toBeSold.Count != 0)
                 {
                     Inventory.SteamItem item = toBeSold.Dequeue();
+                    DatabaseLock.WaitOne();
                     if (dataBase.ContainsKey(item.i_market_name))
                     {
                         try
@@ -141,6 +144,7 @@ namespace NDota2Market
 
                         }
                     }
+                    DatabaseLock.ReleaseMutex();
                 }
                 Thread.Sleep(APICOOLDOWN);
             }
@@ -179,7 +183,9 @@ namespace NDota2Market
         {
             if (File.Exists(DATABASEPATH))
                 File.Copy(DATABASEPATH, DATABASETEMPPATH);
+            DatabaseLock.WaitOne();
             BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            DatabaseLock.ReleaseMutex();
             if (File.Exists(DATABASETEMPPATH))
                 File.Delete(DATABASETEMPPATH);
         }
@@ -255,7 +261,6 @@ namespace NDota2Market
         private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
-        private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
-        
+        private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();        
     }
 }
