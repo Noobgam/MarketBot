@@ -76,6 +76,7 @@ namespace CSGOTM
                         Thread.Sleep(APICOOLDOWN);
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
+                        DatabaseLock.ReleaseMutex();
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
@@ -89,7 +90,6 @@ namespace CSGOTM
 
                             }
                         }
-                        DatabaseLock.ReleaseMutex();
                     }
                     catch (Exception ex)
                     {
@@ -256,16 +256,19 @@ namespace CSGOTM
                         }
                         string[] indexes = lines[0].Split(';');
                         int id = 0;
-                            foreach (var str in indexes)
+
+                        if (NewItem.mapping.Count == 0)
+                        foreach (var str in indexes)
                             mapping[str] = id++;
 
                         CurrentItemsLock.WaitOne();
                         currentItems.Clear();
+
                         for (id = 1; id < lines.Length - 1; ++id)
                         {
                             string[] item = lines[id].Split(';');
                             if (item[mapping["c_stickers"]] == "0")
-
+                            
                                 unStickered.Add(item[mapping["c_classid"]] + "_" + item[mapping["c_instanceid"]]);
                             // new logic
                             else {
@@ -282,18 +285,6 @@ namespace CSGOTM
                         }
                         SaveNonStickeredBase();
                         SortCurrentItems();
-                        CurrentItemsLock.ReleaseMutex();
-
-                        // Calling WantToBuy function for all items. 
-                        indexes = lines[0].Split(';');
-                        id = 0;
-                        for (id = 1; id < lines.Length - 1; ++id)
-                        {
-                            string[] itemInString = lines[id].Split(';');
-                            NewItem newItem = new NewItem(itemInString);
-                            if (WantToBuy(newItem))
-                                Protocol.Buy(newItem);
-                        }
                     }
                     catch (Exception ex)
                     {
@@ -314,17 +305,18 @@ namespace CSGOTM
             try {
                 foreach (String name in currentItems.Keys)
                     currentItems[name].Sort();
-
+#if DEBUG
                 //Testing
                 String[] data = new String[currentItems.Count];
                 int i = 0;
                 foreach (String name in currentItems.Keys) {
                     if (dataBase.ContainsKey(name) && currentItems[name].Count >= 4)
                          data[i++] = String.Format("{0:0.00}", ((double)dataBase[name].median / currentItems[name][3] - 1) * 100)  + "%   " + 
-                           name + " median: " + dataBase[name].median + "  new value: " + currentItems[name][3];
-                }
-                //data[i++] = name + currentItems[name][0];
+                            name + " median: " + dataBase[name].median + "  new value: " + currentItems[name][3];                        
+                    }
+                    //data[i++] = name + currentItems[name][0];
                 File.WriteAllLines("stat.txt", data);
+#endif
             }
             catch (Exception ex)
             {
@@ -442,7 +434,7 @@ namespace CSGOTM
                 string id = item.i_classid + "_" + item.i_instanceid;
                 if (!ManipulatedItems.ContainsKey(id))
                     return false;
-                return ManipulatedItems[id] < item.ui_price + 10;
+                return ManipulatedItems[id] < item.ui_price + 10; 
             }
             if (!currentItems.ContainsKey(item.i_market_name))
             {
