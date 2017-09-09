@@ -76,7 +76,6 @@ namespace CSGOTM
                         Thread.Sleep(APICOOLDOWN);
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
-                        DatabaseLock.ReleaseMutex();
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
                         {
@@ -90,6 +89,7 @@ namespace CSGOTM
 
                             }
                         }
+                        DatabaseLock.ReleaseMutex();
                     }
                     catch (Exception ex)
                     {
@@ -143,7 +143,7 @@ namespace CSGOTM
                     {
                         try
                         {
-                            Protocol.Sell(item.i_classid, item.i_instanceid, (int) currentItems[item.i_market_name][2] - 30);
+                            Protocol.Sell(item.i_classid, item.i_instanceid, (int)currentItems[item.i_market_name][2] - 30);
                         }
                         catch (Exception ex)
                         {
@@ -235,6 +235,7 @@ namespace CSGOTM
             JsonSerialization.WriteToJsonFile(DATABASEJSONPATH, dataBase);
         }
 #endif
+
         bool ParseNewDatabase()
         {
             try
@@ -245,7 +246,6 @@ namespace CSGOTM
                     NameValueCollection myQueryStringCollection = new NameValueCollection();
                     myQueryStringCollection.Add("q", "");
                     myWebClient.QueryString = myQueryStringCollection;
-                    Dictionary<string, int> mapping = new Dictionary<string, int>();
                     try
                     {
                         string[] lines;
@@ -258,8 +258,8 @@ namespace CSGOTM
                         int id = 0;
 
                         if (NewItem.mapping.Count == 0)
-                        foreach (var str in indexes)
-                            mapping[str] = id++;
+                            foreach (var str in indexes)
+                                NewItem.mapping[str] = id++;
 
                         CurrentItemsLock.WaitOne();
                         currentItems.Clear();
@@ -267,12 +267,12 @@ namespace CSGOTM
                         for (id = 1; id < lines.Length - 1; ++id)
                         {
                             string[] item = lines[id].Split(';');
-                            if (item[mapping["c_stickers"]] == "0")
-                            
-                                unStickered.Add(item[mapping["c_classid"]] + "_" + item[mapping["c_instanceid"]]);
+                            if (item[NewItem.mapping["c_stickers"]] == "0")
+
+                                unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" + item[NewItem.mapping["c_instanceid"]]);
                             // new logic
                             else {
-                                String name = item[mapping["c_market_name"]];
+                                String name = item[NewItem.mapping["c_market_name"]];
                                 if (name.Length >= 2)
                                 {
                                     name = name.Remove(0, 1);
@@ -280,11 +280,23 @@ namespace CSGOTM
                                 }
                                 if (!currentItems.ContainsKey(name))
                                     currentItems[name] = new List<long>();
-                                currentItems[name].Add(Int64.Parse(item[mapping["c_price"]]));
+                                currentItems[name].Add(Int64.Parse(item[NewItem.mapping["c_price"]]));
                             }
                         }
                         SaveNonStickeredBase();
                         SortCurrentItems();
+                        CurrentItemsLock.ReleaseMutex();
+
+                        // Calling WantToBuy function for all items. 
+                        indexes = lines[0].Split(';');
+                        id = 0;
+                        for (id = 1; id < lines.Length - 1; ++id)
+                        {
+                            string[] itemInString = lines[id].Split(';');
+                            NewItem newItem = new NewItem(itemInString);
+                            if (WantToBuy(newItem))
+                                Protocol.Buy(newItem);
+                        }
                     }
                     catch (Exception ex)
                     {
@@ -302,21 +314,24 @@ namespace CSGOTM
 
         public void SortCurrentItems()
         {
-            try {
+            try
+            {
                 foreach (String name in currentItems.Keys)
                     currentItems[name].Sort();
+
 #if DEBUG
-                //Testing
                 String[] data = new String[currentItems.Count];
                 int i = 0;
-                foreach (String name in currentItems.Keys) {
+                foreach (String name in currentItems.Keys)
+                {
                     if (dataBase.ContainsKey(name) && currentItems[name].Count >= 4)
-                         data[i++] = String.Format("{0:0.00}", ((double)dataBase[name].median / currentItems[name][3] - 1) * 100)  + "%   " + 
-                            name + " median: " + dataBase[name].median + "  new value: " + currentItems[name][3];                        
-                    }
-                    //data[i++] = name + currentItems[name][0];
+                        data[i++] = String.Format("{0:0.00}", ((double)dataBase[name].median / currentItems[name][3] - 1) * 100) + "%   " +
+                           name + " median: " + dataBase[name].median + "  new value: " + currentItems[name][3];
+                }
+                //data[i++] = name + currentItems[name][0];
                 File.WriteAllLines("stat.txt", data);
 #endif
+
             }
             catch (Exception ex)
             {
@@ -434,7 +449,7 @@ namespace CSGOTM
                 string id = item.i_classid + "_" + item.i_instanceid;
                 if (!ManipulatedItems.ContainsKey(id))
                     return false;
-                return ManipulatedItems[id] < item.ui_price + 10; 
+                return ManipulatedItems[id] < item.ui_price + 10;
             }
             if (!currentItems.ContainsKey(item.i_market_name))
             {
@@ -450,9 +465,10 @@ namespace CSGOTM
             HistoryItem oldest = (HistoryItem)salesHistory.sales[0];
             List<long> prices = currentItems[item.i_market_name];
             //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
-            if (item.ui_price < 20000 && prices.Count >= 10 &&
+
+            if (item.ui_price < 25000 && prices.Count >= 10 &&
                 item.ui_price < 0.8 * prices[2] && !blackList.Contains(item.i_market_name) && salesHistory.cnt >= MINSIZE &&
-                prices[2] < dataBase[item.i_market_name].median * 1.15 && prices[2] - item.ui_price > 400)
+                prices[2] < dataBase[item.i_market_name].median * 1.2 && prices[2] - item.ui_price > 400)
             {//TODO какое-то условие на время
                 Log.Info("Going to buy " + item.i_market_name + ". Expected profit " + (salesHistory.median - item.ui_price));
                 DatabaseLock.ReleaseMutex();
