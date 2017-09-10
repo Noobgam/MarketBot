@@ -295,7 +295,10 @@ namespace CSGOTM
                             string[] itemInString = lines[id].Split(';');
                             NewItem newItem = new NewItem(itemInString);
                             if (WantToBuy(newItem))
+                            {
                                 Protocol.Buy(newItem);
+                                Thread.Sleep(APICOOLDOWN);
+                            }
                         }
                     }
                     catch (Exception ex)

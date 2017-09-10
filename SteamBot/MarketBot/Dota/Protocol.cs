@@ -103,10 +103,10 @@ namespace NDota2Market
                         newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                         if (Logic.WantToBuy(newItem))
                         {
-                            if (Buy(newItem))
-                                Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
-                            else
-                                Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+                            //if (Buy(newItem))
+                            //    Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                            //else
+                            //    Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
                         }
                         break;
                     }
