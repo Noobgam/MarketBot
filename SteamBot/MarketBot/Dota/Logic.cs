@@ -70,7 +70,7 @@ namespace NDota2Market
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
-                        if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30)
+                        if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 300)
                         {
                             try
                             {
