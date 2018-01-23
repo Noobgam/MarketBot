@@ -1,26 +1,7 @@
 ﻿using System;
-using System.Threading.Tasks;
-using System.Web;
-using System.Net;
-using System.Text;
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.ComponentModel;
-using SteamBot.SteamGroups;
-using SteamKit2;
-using WebSocket4Net;
-using SteamTrade;
-using SteamKit2.Internal;
-using SteamTrade.TradeOffer;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using Newtonsoft.Json;
-using System.Collections.Specialized;
-using System.Collections;
-using Newtonsoft.Json.Linq;
-using System.Diagnostics;
 
 namespace NDota2Market {
     public class Logic {
@@ -59,7 +40,6 @@ namespace NDota2Market {
                         Thread.Sleep(APICOOLDOWN);
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
-                        Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 300) {
                             try {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
@@ -90,7 +70,6 @@ namespace NDota2Market {
                     try {
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content) {
-                            Log.Info(item.i_classid + "_" + item.i_instanceid);
                             Log.Success(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }

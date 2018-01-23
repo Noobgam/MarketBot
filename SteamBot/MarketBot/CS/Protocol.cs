@@ -1,35 +1,28 @@
 ﻿using System;
-using System.Threading.Tasks;
-using System.Web;
 using System.Net;
 using Newtonsoft.Json.Linq;
 using System.Text;
-using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.ComponentModel;
-using SteamBot.SteamGroups;
-using SteamKit2;
 using WebSocket4Net;
-using SteamTrade;
-using SteamKit2.Internal;
 using SteamTrade.TradeOffer;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
+using Timer = System.Timers.Timer;
 
 namespace CSGOTM {
     public class Protocol {
 #if DEBUG
-        public int totalwasted = 0;
+        private int totalwasted = 0;
 #endif
         public Utility.MarketLogger Log;
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
-
+        private DateTime time;
+        
         private string ExecuteApiRequest(string url) {
             using (WebClient myWebClient = new WebClient()) {
                 NameValueCollection myQueryStringCollection = new NameValueCollection();
@@ -86,14 +79,17 @@ namespace CSGOTM {
             //Console.WriteLine(x.type);
             switch (x.type) {
                 case "newitems_go":
+                    time = DateTime.Now;
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
                     //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Logic.WantToBuy(newItem)) {
+                        Log.Info("Time spent for checking is: " + (DateTime.Now - time).Milliseconds + "millis.");
                         if (Buy(newItem))
                             Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
                         else
                             Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+                        Log.Info("Time spent for checking and request is: " + (DateTime.Now - time).Milliseconds + "millis.");
                     }
 
                     break;

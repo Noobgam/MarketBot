@@ -62,7 +62,6 @@ namespace CSGOTM {
                         Thread.Sleep(APICOOLDOWN);
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
-                        Log.Info("Checking item..." + price + "  vs  " + history.median);
                         if (price < 30000 && history.median * 0.79 > price && history.median * 0.79 - price > 30) {
                             try {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
