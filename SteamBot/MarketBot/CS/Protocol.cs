@@ -10,6 +10,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using Timer = System.Timers.Timer;
 
 namespace CSGOTM {
@@ -21,7 +22,7 @@ namespace CSGOTM {
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
-        private DateTime time;
+        private Stopwatch time;
         
         private string ExecuteApiRequest(string url) {
             using (WebClient myWebClient = new WebClient()) {
@@ -79,17 +80,17 @@ namespace CSGOTM {
             //Console.WriteLine(x.type);
             switch (x.type) {
                 case "newitems_go":
-                    time = DateTime.Now;
+                    time = Stopwatch.StartNew();
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
                     //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                     if (Logic.WantToBuy(newItem)) {
-                        Log.Info("Time spent for checking is: " + (DateTime.Now - time).Milliseconds + "millis.");
+                        Log.Info("Time spent for checking is: " + time.ElapsedMilliseconds + "millis.");
                         if (Buy(newItem))
                             Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
                         else
                             Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
-                        Log.Info("Time spent for checking and request is: " + (DateTime.Now - time).Milliseconds + "millis.");
+                        Log.Info("Time spent for checking and request is: " + time.ElapsedMilliseconds + "millis.");
                     }
 
                     break;
