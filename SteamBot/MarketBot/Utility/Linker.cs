@@ -4,12 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Utility
-{
-    public class Linker
-    {
-        public static void Link(NDota2Market.Dota2Market protocol, NDota2Market.Logic logic, MarketLogger Log)
-        {
+namespace Utility {
+    public class Linker {
+        public static void Link(NDota2Market.Dota2Market protocol, NDota2Market.Logic logic, MarketLogger Log) {
             if (protocol == null && logic == null)
                 Log.Error("Both protocol and linker classes are null in Linker.");
             else if (protocol == null)
@@ -24,8 +21,7 @@ namespace Utility
             protocol.Logic = logic;
         }
 
-        public static void Link(CSGOTM.Protocol protocol, CSGOTM.Logic logic, MarketLogger Log)
-        {
+        public static void Link(CSGOTM.Protocol protocol, CSGOTM.Logic logic, MarketLogger Log) {
             if (protocol == null && logic == null)
                 Log.Error("Both protocol and linker classes are null in Linker.");
             else if (protocol == null)
