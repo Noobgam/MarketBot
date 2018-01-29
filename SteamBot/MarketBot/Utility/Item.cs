@@ -4,10 +4,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Utility
-{
-    interface Item
-    {
+namespace Utility {
+    interface Item {
         /// <summary>
         /// Determine if GetName() can be applied. Should be true in most cases.
         /// </summary>

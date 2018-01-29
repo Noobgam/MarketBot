@@ -1,13 +1,10 @@
-﻿
-using Newtonsoft.Json.Linq;
+﻿using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.IO;
 
-namespace NDota2Market
-{
-    public class TMTrade
-    {
+namespace NDota2Market {
+    public class TMTrade {
         public string ui_id;
         public string i_name;
         public string i_market_name;
@@ -35,8 +32,7 @@ namespace NDota2Market
         public string placed;
     }
 
-    public class NewItem
-    {
+    public class NewItem {
         public string i_quality;
         public string i_name_color;
         public string i_classid;
@@ -47,21 +43,18 @@ namespace NDota2Market
         public string app;
     }
 
-    public class Message
-    {
+    public class Message {
         public string type;
         public string data;
     }
 
-    public class TradeResult
-    {
+    public class TradeResult {
         public string result;
         public string id;
     }
-    
+
     [Serializable]
-    public class HistoryItem
-    {
+    public class HistoryItem {
         public string i_classid;
         public string i_instanceid;
         public string i_market_hash_name;
@@ -70,16 +63,13 @@ namespace NDota2Market
         public string timesold;
     }
 
-    public class Auth
-    {
+    public class Auth {
         public string wsAuth;
         public string success;
     }
 
-    public class Inventory
-    {
-        public class SteamItem
-        {
+    public class Inventory {
+        public class SteamItem {
             public string ui_id;
             public string i_market_hash_name;
             public string i_market_name;
@@ -102,26 +92,22 @@ namespace NDota2Market
             public double i_market_price;
             public string i_market_price_text;
         }
+
         public List<SteamItem> content;
     }
 
-    public static class BinarySerialization
-    {
-        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false)
-        {
-            using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
-            {
+    public static class BinarySerialization {
+        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false) {
+            using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
                 var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
                 binaryFormatter.Serialize(stream, objectToWrite);
             }
         }
-  
-        public static T ReadFromBinaryFile<T>(string filePath)
-        {
-            using (Stream stream = File.Open(filePath, FileMode.Open))
-            {
+
+        public static T ReadFromBinaryFile<T>(string filePath) {
+            using (Stream stream = File.Open(filePath, FileMode.Open)) {
                 var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                return (T)binaryFormatter.Deserialize(stream);
+                return (T) binaryFormatter.Deserialize(stream);
             }
         }
     }
