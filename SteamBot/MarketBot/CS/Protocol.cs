@@ -340,7 +340,7 @@ namespace CSGOTM
 #endif
         }
 
-        public bool Sell(string ClasssId, string InstanceId, int price)
+        public bool SellNew(string ClasssId, string InstanceId, int price)
         {
 #if DEBUG //sorry nothing is implemented there, I don't really know what to write as debug
             return false;
@@ -357,6 +357,19 @@ namespace CSGOTM
             else
                 return false;
 #endif
+        }
+        
+        public bool Sell(string item_id, int price) {
+            string a = ExecuteApiRequest("/api/SetPrice/" + item_id +  "/" + price + "/?key=" + Api);
+            JObject parsed = JObject.Parse(a);
+            foreach (var pair in parsed)
+                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            if (parsed["result"] == null)
+                return false;
+            else if ((string)parsed["result"] == "ok")
+                return true;
+            else
+                return false;
         }
 
         public Inventory GetSteamInventory()
@@ -429,7 +442,7 @@ namespace CSGOTM
             }
         }
 
-        TMTrade[] GetTradeList()
+        public TMTrade[] GetTradeList()
         {
             try
             {
