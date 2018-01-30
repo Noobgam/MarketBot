@@ -124,7 +124,7 @@ namespace CSGOTM {
                     CurrentItemsLock.WaitOne();
                     if (dataBase.ContainsKey(item.i_market_name)) {
                         try {
-                            Protocol.Sell(item.ui_id, (int) currentItems[item.i_market_name][2] - 30);
+                            Protocol.Sell(item.ui_id, 0);
                         }
                         catch (Exception ex) {
                         }
