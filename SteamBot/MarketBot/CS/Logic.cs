@@ -120,18 +120,11 @@ namespace CSGOTM {
             while (true) {
                 if (refreshPrice.Count != 0) {
                     TMTrade item = refreshPrice.Dequeue();
-                    DatabaseLock.WaitOne();
-                    CurrentItemsLock.WaitOne();
-                    if (dataBase.ContainsKey(item.i_market_name)) {
-                        try {
-                            Protocol.Sell(item.ui_id, (int) currentItems[item.i_market_name][2] - 30);
-                        }
-                        catch (Exception ex) {
-                        }
+                    try {
+                        Protocol.Sell(item.ui_id, 0);
                     }
-
-                    DatabaseLock.ReleaseMutex();
-                    CurrentItemsLock.ReleaseMutex();
+                    catch (Exception ex) {
+                    }
                 }
 
                 else if (toBeSold.Count != 0) {
