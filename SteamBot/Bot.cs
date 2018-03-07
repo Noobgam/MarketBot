@@ -161,15 +161,15 @@ namespace SteamBot
         {
             //Starting CS:
 
-            CSConnection = new CSGOTM.Protocol();
-            CSLogic = new CSGOTM.Logic();
-            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
+            //CSConnection = new CSGOTM.Protocol();
+            //CSLogic = new CSGOTM.Logic();
+            //Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
 
-            //Starting DOTA:
+            ////Starting DOTA:
 
-            D2Connection = new NDota2Market.Dota2Market();
-            D2Logic = new NDota2Market.Logic();
-            Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
+            //D2Connection = new NDota2Market.Dota2Market();
+            //D2Logic = new NDota2Market.Logic();
+            //Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
 
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
@@ -1122,11 +1122,11 @@ namespace SteamBot
                     {
                         if (SteamGuardAccount.AcceptConfirmation(confirmation))
                         {
-                            Log.Success("Confirmed {0}. (Confirmation ID #{1})", confirmation.ConfirmationDescription, confirmation.ConfirmationID);
+                            Log.Success("Confirmation ID #{0}", confirmation.ID);
                         }
                     }
                 }
-                catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException)
+                catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException ex)
                 {
                     Log.Error("Invalid session when trying to fetch trade confirmations.");
                 }

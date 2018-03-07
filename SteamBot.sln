@@ -1,11 +1,17 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 14
-VisualStudioVersion = 14.0.25420.1
+# Visual Studio 15
+VisualStudioVersion = 15.0.27130.2010
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ExampleBot", "SteamBot\ExampleBot.csproj", "{E81DED36-EDF5-41A5-8666-A3A0C581762F}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD0934E-F6C4-4AE5-83AF-C788313B2A87} = {5AD0934E-F6C4-4AE5-83AF-C788313B2A87}
+	EndProjectSection
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamTrade", "SteamTrade\SteamTrade.csproj", "{6CEC0333-81EB-40EE-85D1-941363626FC7}"
+	ProjectSection(ProjectDependencies) = postProject
+		{5AD0934E-F6C4-4AE5-83AF-C788313B2A87} = {5AD0934E-F6C4-4AE5-83AF-C788313B2A87}
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C8129CC9-FBBA-4F80-831B-94BDE64D263C}"
 	ProjectSection(SolutionItems) = preProject
@@ -13,6 +19,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".nuget", ".nuget", "{C8129C
 		.nuget\NuGet.Config = .nuget\NuGet.Config
 		.nuget\NuGet.targets = .nuget\NuGet.targets
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SteamAuth", "SteamAuth\SteamAuth.csproj", "{5AD0934E-F6C4-4AE5-83AF-C788313B2A87}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -28,9 +36,16 @@ Global
 		{6CEC0333-81EB-40EE-85D1-941363626FC7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6CEC0333-81EB-40EE-85D1-941363626FC7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6CEC0333-81EB-40EE-85D1-941363626FC7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5AD0934E-F6C4-4AE5-83AF-C788313B2A87}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5AD0934E-F6C4-4AE5-83AF-C788313B2A87}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5AD0934E-F6C4-4AE5-83AF-C788313B2A87}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5AD0934E-F6C4-4AE5-83AF-C788313B2A87}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {8CBB59A7-7E9D-4F75-BA4B-3E59E682432E}
 	EndGlobalSection
 	GlobalSection(MonoDevelopProperties) = preSolution
 		StartupItem = SteamBot\ExampleBot.csproj
