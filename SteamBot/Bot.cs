@@ -165,7 +165,7 @@ namespace SteamBot
             CSLogic = new CSGOTM.Logic();
             Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
 
-            //Starting DOTA:
+            ////Starting DOTA:
 
             D2Connection = new NDota2Market.Dota2Market();
             D2Logic = new NDota2Market.Logic();
@@ -1122,11 +1122,11 @@ namespace SteamBot
                     {
                         if (SteamGuardAccount.AcceptConfirmation(confirmation))
                         {
-                            Log.Success("Confirmed {0}. (Confirmation ID #{1})", confirmation.ConfirmationDescription, confirmation.ConfirmationID);
+                            Log.Success("Confirmation ID #{0}", confirmation.ID);
                         }
                     }
                 }
-                catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException)
+                catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException ex)
                 {
                     Log.Error("Invalid session when trying to fetch trade confirmations.");
                 }
