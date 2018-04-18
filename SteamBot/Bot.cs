@@ -159,18 +159,6 @@ namespace SteamBot
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
-            //Starting CS:
-
-            CSConnection = new CSGOTM.Protocol();
-            CSLogic = new CSGOTM.Logic();
-            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
-
-            ////Starting DOTA:
-
-            D2Connection = new NDota2Market.Dota2Market();
-            D2Logic = new NDota2Market.Logic();
-            Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
-
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
             {
@@ -234,6 +222,18 @@ namespace SteamBot
             botThread = new BackgroundWorker { WorkerSupportsCancellation = true };
             botThread.DoWork += BackgroundWorkerOnDoWork;
             botThread.RunWorkerCompleted += BackgroundWorkerOnRunWorkerCompleted;
+
+            //Starting CS:
+
+            CSConnection = new CSGOTM.Protocol(this);
+            CSLogic = new CSGOTM.Logic();
+            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
+
+            ////Starting DOTA:
+
+            //D2Connection = new NDota2Market.Dota2Market();
+            //D2Logic = new NDota2Market.Logic();
+            //Utility.Linker.Link(D2Connection, D2Logic, new Utility.MarketLogger("DOTA_log", "DOTA:"));
         }
 
         ~Bot()
