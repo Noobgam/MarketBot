@@ -28,7 +28,7 @@ namespace NDota2Market {
         public Logic Logic;
 
         private const int MINORCYCLETIMEINTERVAL = 30000;
-        string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
+        string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
         public Utility.MarketLogger Log;
 
         private string ExecuteApiRequest(string url) {

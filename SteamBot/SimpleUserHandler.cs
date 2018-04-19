@@ -103,7 +103,7 @@ namespace SteamBot
                     {
                         var their = offer.Items.GetTheirItems();
                         var my = offer.Items.GetMyItems();
-                        if (my.Count > 0 && !Bot.CheckOffer(offer)) //if the offer is bad we decline it. 
+                        if (my.Count > 0 && !offer.IsOurOffer) //if the offer is bad we decline it. 
                         {
                             offer.Decline();
                             Console.ForegroundColor = ConsoleColor.Red;

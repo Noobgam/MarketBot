@@ -30,7 +30,8 @@ namespace CSGOTM
         public Utility.MarketLogger Log;
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
-        string Api = "rQrm3yrEI48044Q0jCv7l3M7KMo1Cjn";
+        public SteamBot.Bot Bot;
+        string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
 
         private string ExecuteApiRequest(string url)
         {
@@ -45,15 +46,14 @@ namespace CSGOTM
         
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public Protocol()
-        {
+        public Protocol(SteamBot.Bot Bot) {
+            this.Bot = Bot;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
         }
         
-        private void StartUp()
-        {
-            while (Logic == null)
+        private void StartUp() {
+            while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             socket.Opened += Open;
@@ -182,23 +182,47 @@ namespace CSGOTM
             }
         }
 
-        bool TakeItems()
+        bool SendSoldItems()
         {
-            Log.Info("Taking items");
+            Log.Info("Sending items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
             {
-                return true;
+                if ((bool)json["manual"]) {
+                    string profile = (string)json["profile"];
+                    ulong id = ulong.Parse(profile.Split('/')[4]);
+
+                    var offer = Bot.NewTradeOffer(new SteamID(id));
+                    foreach (JObject item in json["request"]["items"]) {
+                        offer.Items.AddMyItem(
+                            (int)item["appid"],
+                            (long)item["contextid"],
+                            (long)item["assetid"],
+                            (long)item["amount"]);
+                    }
+
+                    if (offer.Items.NewVersion) {
+                        string newOfferId;
+                        if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
+                            Bot.AcceptAllMobileTradeConfirmations();
+                            Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                        }
+                        return true;
+                    }
+                    return false;
+                } else {
+                    return true; //UHHHHHHHHHHHHHHHHHHHH
+                }
             }
             else
                 return false;
         }
-
-        bool GiveItems(string botID)
+        
+        bool RequestPurchasedItems(string botID)
         {
-            Log.Info("Giving items");
+            Log.Info("Requesting items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -225,7 +249,7 @@ namespace CSGOTM
                         if (arr[i].ui_status == "4")
                         {
                             UpdateInventory();
-                            GiveItems(arr[i].ui_bid);
+                            RequestPurchasedItems(arr[i].ui_bid);
                             gone = true;
                             Logic.doNotSell = true;
                             break;
@@ -235,7 +259,7 @@ namespace CSGOTM
                     if (had && !gone)
                     {
                         UpdateInventory();
-                        TakeItems();
+                        SendSoldItems();
                     }
                 }
                 catch (Exception ex)
