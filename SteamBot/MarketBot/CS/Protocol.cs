@@ -202,7 +202,7 @@ namespace CSGOTM
                             (long)item["assetid"],
                             (long)item["amount"]);
                     }
-
+                    Log.Info("Token: " + (string)json["request"]["token"]);
                     if (offer.Items.NewVersion) {
                         string newOfferId;
                         if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
