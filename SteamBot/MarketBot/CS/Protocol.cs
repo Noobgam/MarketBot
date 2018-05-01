@@ -31,6 +31,7 @@ namespace CSGOTM
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         public SteamBot.Bot Bot;
+        static Random Generator = new Random();
         string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
 
         private string ExecuteApiRequest(string url)
@@ -325,7 +326,11 @@ namespace CSGOTM
             Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
-            string a = ExecuteApiRequest("/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api);
+            string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
+            if (Generator.Next(2) == 0) {
+                url += "&partner=447962514&token=Bh4hxu3d";
+            }
+            string a = ExecuteApiRequest(url);
             JObject parsed = JObject.Parse(a);
             //foreach (var pair in parsed)
             //{
