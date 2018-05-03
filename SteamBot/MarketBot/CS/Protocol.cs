@@ -19,6 +19,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
+ using System.Runtime.Remoting.Messaging;
 
 namespace CSGOTM
 {
@@ -327,7 +328,7 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            if (Generator.Next(2) == 0) {
+            if (Generator.Next(2) >= 0) {
                 url += "&partner=447962514&token=Bh4hxu3d";
             }
             string a = ExecuteApiRequest(url);
@@ -453,6 +454,7 @@ namespace CSGOTM
             }
         }
 
+        // If best offer is our's returning -1;
         public int getBestOrder(string classid, string instanceid)
         {
             try
@@ -462,8 +464,9 @@ namespace CSGOTM
                 JArray thing = (JArray)x["buy_offers"];
                 if (thing == null || thing.Count == 0)
                     return 49;
-                else
-                    return int.Parse(((string)thing[0]["o_price"]));
+                if (int.Parse((string) thing[0]["o_price"]) == -1)
+                    return -1;                
+                return int.Parse((string) thing[0]["o_price"]);
             }
             catch (Exception ex)
             {
@@ -471,6 +474,12 @@ namespace CSGOTM
             }
         }
 
+        public JArray GetItemHistory(string classid, string instanceid) {           
+            string a = ExecuteApiRequest("/api/ItemHistory/" + classid + "_" + instanceid + "/ru/?key=" + Api);
+            JObject x = JObject.Parse(a);
+            return (JArray) x["history"];
+        }
+        
         public TMTrade[] GetTradeList()
         {
             try

@@ -5,8 +5,11 @@ using System.Threading;
 using System.Collections.Generic;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
-using Newtonsoft.Json.Linq;
+ using System.Data;
+ using System.Drawing.Printing;
+ using Newtonsoft.Json.Linq;
 using System.Text;
+ using SteamTrade;
 
 namespace CSGOTM {
     public class Logic {
@@ -33,16 +36,47 @@ namespace CSGOTM {
             parser.Start();
             Thread saver = new Thread(SaveDataBaseCycle);
             saver.Start();
-            Thread seller = new Thread(SellFromQueue);
-            seller.Start();
+//            Thread seller = new Thread(SellFromQueue);
+//            seller.Start();
             Thread adder = new Thread(AddNewItems);
             adder.Start();
             Thread setter = new Thread(SetNewOrder);
             setter.Start();
-            Thread refresher = new Thread(RefreshPrices);
-            refresher.Start();
+//            Thread refresher = new Thread(RefreshPrices);
+//            refresher.Start();
+            Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
+            orderForUnstickered.Start();
         }
 
+        private void SetOrderForUnstickered() {
+            while (true) {
+                if (needOrderUnstickered.Count > 0) {
+                    var top = needOrderUnstickered.Peek();
+                    var history = Protocol.GetItemHistory(top.i_classid, top.i_instanceid);
+                    Thread.Sleep(1000);
+                    const int N = 15;
+                    if (history.Count > N) {
+                        double sum = 0;
+                        for (int i = 0; i < N; i++) {
+                            sum += int.Parse((string) history[i]["l_price"]);
+                        }
+
+                        double price = sum / N;
+                        int curPrice = Protocol.getBestOrder(top.i_classid, top.i_instanceid);
+                        Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
+                        Thread.Sleep(1000);
+                        if (curPrice != -1 && curPrice < price * 0.9) {
+                            Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
+                        }
+                    }
+
+                    needOrderUnstickered.Dequeue();
+                }
+
+                Thread.Sleep(1000);
+            }
+        }
+        
         private void RefreshPrices() {
             TMTrade[] trades = Protocol.GetTradeList();
             for (int i = 1; i <= 15 && trades.Length > i; i++) {
@@ -74,7 +108,7 @@ namespace CSGOTM {
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
-                        if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30) {
+                        if (price != -1 && price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30) {
                             try {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                                 Log.Success("Settled order for " + item.i_market_name);
@@ -372,8 +406,11 @@ namespace CSGOTM {
         }
 
         public void ProcessItem(HistoryItem item) {
-            if (!hasStickers(item))
-                return;
+            if (!hasStickers(item)) {
+                needOrderUnstickered.Enqueue(item);
+                return;   
+            }
+            
             //Console.WriteLine(item.i_market_name);
             SalesHistory salesHistory;
             DatabaseLock.WaitOne();
@@ -463,6 +500,7 @@ namespace CSGOTM {
         private Queue<TMTrade> refreshPrice = new Queue<TMTrade>();
 
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
+        private Queue<HistoryItem> needOrderUnstickered = new Queue<HistoryItem>();
         private SortedSet<string> blackList = new SortedSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
