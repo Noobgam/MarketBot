@@ -65,7 +65,7 @@ namespace CSGOTM {
                         int curPrice = Protocol.getBestOrder(top.i_classid, top.i_instanceid);
                         Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
                         Thread.Sleep(1000);
-                        if (curPrice != -1 && curPrice < price * 0.9) {
+                        if (curPrice != -1 && price > 9000 && curPrice < price * 0.9) {
                             Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                         }
                     }
