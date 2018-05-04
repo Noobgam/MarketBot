@@ -19,6 +19,7 @@ using System.Globalization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using System.Collections.Specialized;
+using System.Linq;
 
 namespace CSGOTM
 {
@@ -32,17 +33,11 @@ namespace CSGOTM
         public Logic Logic;
         public SteamBot.Bot Bot;
         static Random Generator = new Random();
-        string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
+        static readonly string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
 
         private string ExecuteApiRequest(string url)
         {
-            using (WebClient myWebClient = new WebClient())
-            {
-                NameValueCollection myQueryStringCollection = new NameValueCollection();
-                myQueryStringCollection.Add("q", "");
-                myWebClient.QueryString = myQueryStringCollection;
-                return myWebClient.DownloadString("https://market.csgo.com" + url);
-            }
+            return Utility.Request.Get("https://market.csgo.com" + url);
         }
         
         bool died = true;
@@ -386,6 +381,19 @@ namespace CSGOTM
             else
                 return false;
 #endif
+        }
+        
+        public static JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
+            string uri = "https://market.csgo.com/api/MassInfo/" + sell + "/" + buy + "/" + history + "/" + info + "?key=" + Api;
+            string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
+            string result = Utility.Request.Post(uri, data);
+            try {
+                JObject temp = JObject.Parse(result);
+                return temp;
+            } catch (Exception ex) {
+                //Log.Error(ex.Message);
+            }
+            return null;
         }
         
         public bool Sell(string item_id, int price) {
