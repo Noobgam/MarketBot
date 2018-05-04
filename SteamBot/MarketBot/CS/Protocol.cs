@@ -383,7 +383,7 @@ namespace CSGOTM
 #endif
         }
         
-        public static JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
+        public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
             string uri = "https://market.csgo.com/api/MassInfo/" + sell + "/" + buy + "/" + history + "/" + info + "?key=" + Api;
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
             string result = Utility.Request.Post(uri, data);
@@ -391,7 +391,7 @@ namespace CSGOTM
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
-                //Log.Error(ex.Message);
+                Log.Error(ex.Message);
             }
             return null;
         }
