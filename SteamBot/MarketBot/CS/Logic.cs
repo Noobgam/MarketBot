@@ -1,12 +1,12 @@
-﻿﻿using System;
+﻿using System;
 using System.Net;
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using System.Collections.Specialized;
 using Newtonsoft.Json.Linq;
 using System.Text;
+
 
 namespace CSGOTM {
     public class Logic {
@@ -33,14 +33,62 @@ namespace CSGOTM {
             parser.Start();
             Thread saver = new Thread(SaveDataBaseCycle);
             saver.Start();
-            Thread seller = new Thread(SellFromQueue);
-            seller.Start();
+//            Thread seller = new Thread(SellFromQueue);
+//            seller.Start();
             Thread adder = new Thread(AddNewItems);
             adder.Start();
             Thread setter = new Thread(SetNewOrder);
             setter.Start();
-            Thread refresher = new Thread(RefreshPrices);
-            refresher.Start();
+//            Thread refresher = new Thread(RefreshPrices);
+//            refresher.Start();
+            Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
+            orderForUnstickered.Start();
+        }
+
+        private void SetOrderForUnstickered() {
+            while (true) {
+                if (needOrderUnstickered.Count > 0) {
+                    var top = needOrderUnstickered.Peek();
+                    var info = Protocol.MassInfo(
+                        new List<Tuple<string, string>> {new Tuple<string, string>(top.i_classid, top.i_instanceid)},
+                        buy: 2, history: 1);
+                    Thread.Sleep(1000);
+                    if (info == null || (string) info["success"] == "false") {
+                        needOrderUnstickered.Dequeue();
+                        continue;
+                    }
+
+                    var res = info["results"][0];
+                    JArray history = (JArray) res["history"]["history"];
+
+                    double sum = 0;
+                    int cnt = 0;
+                    long time = long.Parse((string) history[0][0]);
+                    for (int i = 0; i < history.Count && time - long.Parse((string) history[i][0]) < 10 * DAY; i++) {
+                        sum += int.Parse((string) history[i][1]);
+                        cnt++;
+                    }
+
+                    double price = sum / cnt;
+                    if (cnt < 15) {
+                        needOrderUnstickered.Dequeue();
+                        continue;
+                    }
+
+                    int curPrice = 50;
+                    if (res["buy_offers"]["best_offer"] != null) {
+                        curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
+                    }
+
+                    Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
+                    if (curPrice != -1 && price > 9000 && curPrice < price * 0.85) {
+                        Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
+                    }
+                    needOrderUnstickered.Dequeue();
+                }
+
+                Thread.Sleep(1000);
+            }
         }
 
         private void RefreshPrices() {
@@ -74,11 +122,13 @@ namespace CSGOTM {
                         DatabaseLock.WaitOne();
                         SalesHistory history = dataBase[item.i_market_name];
                         Log.Info("Checking item..." + price + "  vs  " + history.median);
-                        if (price < 30000 && history.median * 0.8 > price && history.median * 0.8 - price > 30) {
+                        if (price != -1 && price < 30000 && history.median * 0.8 > price &&
+                            history.median * 0.8 - price > 30) {
                             try {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                                 Log.Success("Settled order for " + item.i_market_name);
-                            } catch (Exception ex) {
+                            }
+                            catch (Exception ex) {
                             }
                         }
 
@@ -372,8 +422,11 @@ namespace CSGOTM {
         }
 
         public void ProcessItem(HistoryItem item) {
-            if (!hasStickers(item))
+            if (!hasStickers(item)) {
+                needOrderUnstickered.Enqueue(item);
                 return;
+            }
+
             //Console.WriteLine(item.i_market_name);
             SalesHistory salesHistory;
             DatabaseLock.WaitOne();
@@ -458,11 +511,13 @@ namespace CSGOTM {
 
         private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         private const int APICOOLDOWN = 1000 * 3; // 3 seconds
+        private const int DAY = 86400;
 
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<TMTrade> refreshPrice = new Queue<TMTrade>();
 
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
+        private Queue<HistoryItem> needOrderUnstickered = new Queue<HistoryItem>();
         private SortedSet<string> blackList = new SortedSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 

@@ -1,25 +1,19 @@
-﻿﻿using System;
-using System.Threading.Tasks;
-using System.Web;
-using System.Net;
+﻿using System;
 using Newtonsoft.Json.Linq;
 using System.Text;
-using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using System.Security.Cryptography;
-using System.ComponentModel;
-using SteamBot.SteamGroups;
+
 using SteamKit2;
 using WebSocket4Net;
-using SteamTrade;
-using SteamKit2.Internal;
+
 using SteamTrade.TradeOffer;
 using System.Globalization;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
-using System.Collections.Specialized;
+
 using System.Linq;
+
 
 namespace CSGOTM
 {
@@ -322,15 +316,11 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            if (Generator.Next(2) == 0) {
+            if (Generator.Next(2) >= 0) {
                 url += "&partner=447962514&token=Bh4hxu3d";
             }
             string a = ExecuteApiRequest(url);
             JObject parsed = JObject.Parse(a);
-            //foreach (var pair in parsed)
-            //{
-            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            //}
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -428,8 +418,6 @@ namespace CSGOTM
 #else
             string a = ExecuteApiRequest("/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
             JObject json = JObject.Parse(a);
-            //foreach (var thing in json)
-            //..Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
@@ -445,9 +433,6 @@ namespace CSGOTM
             {
                 string a = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api);
                 JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                //cout<<;
                 if (json["success"] == null)
                     return false;
                 else if ((bool)json["success"])
@@ -461,6 +446,7 @@ namespace CSGOTM
             }
         }
 
+        // If best offer is our's returning -1;
         public int getBestOrder(string classid, string instanceid)
         {
             try
@@ -470,15 +456,29 @@ namespace CSGOTM
                 JArray thing = (JArray)x["buy_offers"];
                 if (thing == null || thing.Count == 0)
                     return 49;
-                else
-                    return int.Parse(((string)thing[0]["o_price"]));
+                if (int.Parse((string) thing[0]["o_price"]) == -1)
+                    return -1;                
+                return int.Parse((string) thing[0]["o_price"]);
             }
             catch (Exception ex)
             {
-                throw ex;
+                Log.Error(ex.Message);
+                return -1;
             }
         }
 
+        public JArray GetItemHistory(string classid, string instanceid) {
+            try {
+                string a = ExecuteApiRequest("/api/ItemHistory/" + classid + "_" + instanceid + "/ru/?key=" + Api);
+                JObject x = JObject.Parse(a);
+                return (JArray) x["history"];
+            }
+            catch (Exception ex) {
+                Log.Error(ex.Message);
+                return null;
+            }
+        }
+        
         public TMTrade[] GetTradeList()
         {
             try
