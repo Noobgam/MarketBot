@@ -75,21 +75,19 @@ namespace CSGOTM {
                         continue;
                     }
 
+                    int curPrice = 50;
                     try {
-                        int curPrice = 50;
-                        if ((string) res["buy_offers"] != "false") {
+                        if (res["buy_offers"]?["best_offer"] != null) {
                             curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
-                        }
-
-                        Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
-                        if (curPrice != -1 && price > 9000 && curPrice < price * 0.85) {
-                            Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                         }
                     }
                     catch (Exception ex) {
-                        Log.Error(ex.ToString());
                     }
 
+                    Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
+                    if (price > 9000 && curPrice < price * 0.85) {
+                        Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
+                    }
                     needOrderUnstickered.Dequeue();
                 }
 
