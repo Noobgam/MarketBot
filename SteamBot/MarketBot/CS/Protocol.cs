@@ -470,14 +470,21 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
-                throw ex;
+                Log.Error(ex.Message);
+                return -1;
             }
         }
 
-        public JArray GetItemHistory(string classid, string instanceid) {           
-            string a = ExecuteApiRequest("/api/ItemHistory/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-            JObject x = JObject.Parse(a);
-            return (JArray) x["history"];
+        public JArray GetItemHistory(string classid, string instanceid) {
+            try {
+                string a = ExecuteApiRequest("/api/ItemHistory/" + classid + "_" + instanceid + "/ru/?key=" + Api);
+                JObject x = JObject.Parse(a);
+                return (JArray) x["history"];
+            }
+            catch (Exception ex) {
+                Log.Error(ex.Message);
+                return null;
+            }
         }
         
         public TMTrade[] GetTradeList()
