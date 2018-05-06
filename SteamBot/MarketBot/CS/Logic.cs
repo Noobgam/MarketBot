@@ -3,14 +3,10 @@ using System.Net;
 using System.IO;
 using System.Threading;
 using System.Collections.Generic;
-using Newtonsoft.Json;
 using System.Collections.Specialized;
-using System.Data;
-using System.Drawing.Printing;
 using Newtonsoft.Json.Linq;
 using System.Text;
-using SteamKit2.GC.Dota.Internal;
-using SteamTrade;
+
 
 namespace CSGOTM {
     public class Logic {
@@ -55,7 +51,7 @@ namespace CSGOTM {
                     var top = needOrderUnstickered.Peek();
                     var info = Protocol.MassInfo(
                         new List<Tuple<string, string>> {new Tuple<string, string>(top.i_classid, top.i_instanceid)},
-                        buy: 1, history: 1);
+                        buy: 2, history: 1);
                     Thread.Sleep(1000);
                     if (info == null || (string) info["success"] == "false") {
                         needOrderUnstickered.Dequeue();
@@ -78,7 +74,12 @@ namespace CSGOTM {
                         needOrderUnstickered.Dequeue();
                         continue;
                     }
-                    int curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
+
+                    int curPrice = 50;
+                    if (res["buy_offers"]["best_offer"] != null) {
+                        curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
+                    }
+
                     Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
                     if (curPrice != -1 && price > 9000 && curPrice < price * 0.85) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
