@@ -328,10 +328,6 @@ namespace CSGOTM
             }
             string a = ExecuteApiRequest(url);
             JObject parsed = JObject.Parse(a);
-            //foreach (var pair in parsed)
-            //{
-            //    Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            //}
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -429,8 +425,6 @@ namespace CSGOTM
 #else
             string a = ExecuteApiRequest("/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
             JObject json = JObject.Parse(a);
-            //foreach (var thing in json)
-            //..Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
@@ -446,9 +440,6 @@ namespace CSGOTM
             {
                 string a = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api);
                 JObject json = JObject.Parse(a);
-                //foreach (var thing in json)
-                //    Console.WriteLine("{0}: {1}", thing.Key, thing.Value);
-                //cout<<;
                 if (json["success"] == null)
                     return false;
                 else if ((bool)json["success"])

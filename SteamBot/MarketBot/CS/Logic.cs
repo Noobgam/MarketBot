@@ -9,6 +9,7 @@ using System.Data;
 using System.Drawing.Printing;
 using Newtonsoft.Json.Linq;
 using System.Text;
+using SteamKit2.GC.Dota.Internal;
 using SteamTrade;
 
 namespace CSGOTM {
@@ -52,26 +53,34 @@ namespace CSGOTM {
             while (true) {
                 if (needOrderUnstickered.Count > 0) {
                     var top = needOrderUnstickered.Peek();
-                    var history = Protocol.GetItemHistory(top.i_classid, top.i_instanceid);
-                    if (history == null || history.Count < 15) {
+                    var info = Protocol.MassInfo(
+                        new List<Tuple<string, string>> {new Tuple<string, string>(top.i_classid, top.i_instanceid)},
+                        buy: 1, history: 1);
+                    Thread.Sleep(1000);
+                    if (info == null || (string) info["success"] == "false") {
+                        needOrderUnstickered.Dequeue();
                         continue;
                     }
 
-                    Thread.Sleep(1000);
+                    var res = info["results"][0];
+                    JArray history = (JArray) res["history"]["history"];
 
                     double sum = 0;
                     int cnt = 0;
-                    long time = long.Parse((string) history[0]["l_time"]);
-                    for (int i = 0; i < history.Count && time - long.Parse((string) history[0]["l_time"]) > 10 * DAY; i++) {
-                        sum += int.Parse((string) history[i]["l_price"]);
+                    long time = long.Parse((string) history[0][0]);
+                    for (int i = 0; i < history.Count && time - long.Parse((string) history[i][0]) < 10 * DAY; i++) {
+                        sum += int.Parse((string) history[i][1]);
                         cnt++;
                     }
 
                     double price = sum / cnt;
-                    int curPrice = Protocol.getBestOrder(top.i_classid, top.i_instanceid);
+                    if (cnt < 15) {
+                        needOrderUnstickered.Dequeue();
+                        continue;
+                    }
+                    int curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
                     Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
-                    Thread.Sleep(1000);
-                    if (curPrice != -1 && price > 9000 && curPrice < price * 0.9) {
+                    if (curPrice != -1 && price > 9000 && curPrice < price * 0.85) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
