@@ -195,11 +195,18 @@ namespace SteamBot
 
                         return;
                     }
-                case TradeOfferState.TradeOfferStateNeedsConfirmation:
-                    return;
+                case TradeOfferState.TradeOfferStateNeedsConfirmation: {
+                        Thread.Sleep(1000);
+                        var task = Task.Run(() => {
+                            Bot.AcceptAllMobileTradeConfirmations();
+                        });
+                        if (task.Wait(TimeSpan.FromSeconds(2)))
+                            return;
+                        else
+                            return;
+                    }
                 case TradeOfferState.TradeOfferStateInEscrow:
                     return;
-                //Trade is still active but incomplete
                 case TradeOfferState.TradeOfferStateCountered:
                     Log.Info($"Trade offer {offer.TradeOfferId} was countered");
                     return;
