@@ -316,7 +316,7 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            if (Generator.Next(2) >= 0) {
+            if (Generator.Next(2) >= 2) {
                 url += "&partner=447962514&token=Bh4hxu3d";
             }
             string a = ExecuteApiRequest(url);

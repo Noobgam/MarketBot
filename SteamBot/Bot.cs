@@ -535,12 +535,12 @@ namespace SteamBot
                if (callback.Result == EResult.AccountLogonDeniedNeedTwoFactorCode)
                {
                    var mobileAuthCode = GetMobileAuthCode();
-                    //while (true)
-                    //{
-                    //   mobileAuthCode = GetMobileAuthCode();
-                    //   Console.WriteLine(mobileAuthCode);
-                    //   Thread.Sleep(1000);
-                    //}
+//                    while (true)
+//                    {
+//                       mobileAuthCode = GetMobileAuthCode();
+//                       Console.WriteLine(mobileAuthCode);
+//                      Thread.Sleep(1000);
+//                    }
                     if (string.IsNullOrEmpty(mobileAuthCode))
                    {
                        Log.Error("Failed to generate 2FA code. Make sure you have linked the authenticator via SteamBot.");
