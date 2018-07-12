@@ -33,14 +33,14 @@ namespace CSGOTM {
             parser.Start();
             Thread saver = new Thread(SaveDataBaseCycle);
             saver.Start();
-//            Thread seller = new Thread(SellFromQueue);
-//            seller.Start();
+            Thread seller = new Thread(SellFromQueue);
+            seller.Start();
             Thread adder = new Thread(AddNewItems);
             adder.Start();
             Thread setter = new Thread(SetNewOrder);
             setter.Start();
-//            Thread refresher = new Thread(RefreshPrices);
-//            refresher.Start();
+            Thread refresher = new Thread(RefreshPrices);
+            refresher.Start();
             Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
             orderForUnstickered.Start();
         }
@@ -97,8 +97,9 @@ namespace CSGOTM {
 
         private void RefreshPrices() {
             TMTrade[] trades = Protocol.GetTradeList();
-            for (int i = 1; i <= 15 && trades.Length > i; i++) {
-                if (trades[trades.Length - i].ui_status == "1") {
+            for (int i = 1; i <= 4 && trades.Length > i; i++) {
+                var cur = trades[trades.Length - i];
+                if (cur.ui_status == "1" && hasStickers(cur.i_classid, cur.i_instanceid)) {
                     refreshPrice.Enqueue(trades[trades.Length - i]);
                 }
             }
