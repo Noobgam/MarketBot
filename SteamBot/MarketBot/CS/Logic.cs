@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using Newtonsoft.Json.Linq;
 using System.Text;
+using Newtonsoft.Json;
 
 
 namespace CSGOTM {
@@ -43,6 +44,27 @@ namespace CSGOTM {
             refresher.Start();
             Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
             orderForUnstickered.Start();
+            Thread addGraphData = new Thread(AddGraphData);
+            addGraphData.Start();
+        }
+
+        private void AddGraphData() {
+            string response = Utility.Request.Get("http://steamcommunity.com/inventory/76561198321472965/730/2?l=russian&count=5000");
+            JObject parsed = JObject.Parse(response);
+            JArray items = (JArray) parsed["descriptions"];
+            float price = 0;
+            foreach (var item in items) {
+                try
+                {
+                    price += (float)currentItems[(string)item["market_name"]][2];
+                } catch
+                {
+
+                }
+            }
+            price += Protocol.GetMoney();
+            string line = DateTime.Now + ";" + (price / 100).ToString();
+            File.AppendAllText(MONEYTPATH, line);
         }
 
         private void SetOrderForUnstickered() {
@@ -97,7 +119,7 @@ namespace CSGOTM {
 
         private void RefreshPrices() {
             TMTrade[] trades = Protocol.GetTradeList();
-            for (int i = 1; i <= 4 && trades.Length > i; i++) {
+            for (int i = 1; i <= 4 && i < trades.Length; i++) {
                 var cur = trades[trades.Length - i];
                 if (cur.ui_status == "1" && hasStickers(cur.i_classid, cur.i_instanceid)) {
                     refreshPrice.Enqueue(trades[trades.Length - i]);
@@ -513,6 +535,7 @@ namespace CSGOTM {
         private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
         private const string DATABASEJSONPATH = PREFIXPATH + "/database.json";
         private const string BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
+        private const string MONEYTPATH = PREFIXPATH + "/money.txt";
 
         private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         private const int APICOOLDOWN = 1000 * 3; // 3 seconds
