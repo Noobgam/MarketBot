@@ -174,7 +174,8 @@ namespace CSGOTM
 
         bool SendSoldItems()
         {
-            Log.Info("Sending items");
+            Log.Info("Sending " +
+                "items");
             JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
             if (json["success"] == null)
                 return false;
@@ -500,6 +501,12 @@ namespace CSGOTM
             {
                 return null;
             }
+        }
+
+        public float GetMoney() {
+            string temp = ExecuteApiRequest("/api/GetMoney/?key=" + Api);
+            JObject temp2 = JObject.Parse(temp);
+            return float.Parse((string)temp2["money"]);
         }
     }
 }
