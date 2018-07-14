@@ -49,21 +49,22 @@ namespace CSGOTM {
         }
 
         private void AddGraphData() {
+            Thread.Sleep(5000);
             string response = Utility.Request.Get("http://steamcommunity.com/inventory/76561198321472965/730/2?l=russian&count=5000");
             JObject parsed = JObject.Parse(response);
             JArray items = (JArray) parsed["descriptions"];
             float price = 0;
             foreach (var item in items) {
-                try
-                {
-                    price += (float)currentItems[(string)item["market_name"]][2];
+                try {
+                    string name = (string) item["market_name"];
+                    price += currentItems[name][0];
                 } catch
                 {
 
                 }
             }
             price += Protocol.GetMoney();
-            string line = DateTime.Now + ";" + (price / 100).ToString();
+            string line = DateTime.Now + ";" + (price / 100) + "\n";
             File.AppendAllText(MONEYTPATH, line);
         }
 
