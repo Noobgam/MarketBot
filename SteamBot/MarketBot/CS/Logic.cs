@@ -206,29 +206,33 @@ namespace CSGOTM {
 
                 else if (toBeSold.Count != 0) {
                     Inventory.SteamItem item = toBeSold.Dequeue();
-                    DatabaseLock.WaitOne();
-                    CurrentItemsLock.WaitOne();
-                    if (dataBase.ContainsKey(item.i_market_name)) {
-                        try {
+                    if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
+                    {
+                        try
+                        {
                             Protocol.SellNew(item.i_classid, item.i_instanceid,
-                                (int) currentItems[item.i_market_name][2] - 30);
+                                ManipulatedItems[item.i_classid + "_" + item.i_instanceid]);
                         }
-                        catch (Exception ex) {
-                        }
-                    }
-                    else {
-                        if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid)) {
-                            try {
-                                Protocol.SellNew(item.i_classid, item.i_instanceid,
-                                    ManipulatedItems[item.i_classid + "_" + item.i_instanceid]);
-                            }
-                            catch (Exception ex) {
-                            }
+                        catch (Exception ex)
+                        {
+                            toBeSold.Enqueue(item);
                         }
                     }
-
-                    DatabaseLock.ReleaseMutex();
-                    CurrentItemsLock.ReleaseMutex();
+                    else
+                    {
+                        CurrentItemsLock.WaitOne();
+                        try
+                        {
+                            string[] ui_id = item.ui_id.Split('_');
+                            Protocol.SellNew(ui_id[1], ui_id[2],
+                                (int)currentItems[item.i_market_name][2] - 30);
+                        }
+                        catch (Exception ex)
+                        {
+                            toBeSold.Enqueue(item);
+                        }
+                        CurrentItemsLock.ReleaseMutex();
+                    }
                 }
 
                 Thread.Sleep(APICOOLDOWN);
@@ -330,7 +334,7 @@ namespace CSGOTM {
                                     name = name.Remove(0, 1);
                                     name = name.Remove(name.Length - 1);
                                 }
-
+                                
                                 if (!currentItems.ContainsKey(name))
                                     currentItems[name] = new List<long>();
                                 currentItems[name].Add(Int64.Parse(item[NewItem.mapping["c_price"]]));

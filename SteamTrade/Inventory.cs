@@ -22,8 +22,13 @@ namespace SteamTrade
             while ((result == null || result.result.items == null) && attempts <= 3)
             {
                 var url = "http://api.steampowered.com/IEconItems_440/GetPlayerItems/v0001/?key=" + apiKey + "&steamid=" + steamId;
-                string response = steamWeb.Fetch(url, "GET", null, false);
-                result = JsonConvert.DeserializeObject<InventoryResponse>(response);
+                try
+                {
+                    string response = steamWeb.Fetch(url, "GET", null, false);
+                    result = JsonConvert.DeserializeObject<InventoryResponse>(response);
+                }
+                catch {
+                } 
                 attempts++;
             }
             return new Inventory(result.result);
