@@ -285,7 +285,7 @@ namespace NDota2Market {
 
         public bool Sell(Inventory.SteamItem item, int price)
         {
-#if !DEBUG 
+#if DEBUG 
             return false;
 #else
             string a =
