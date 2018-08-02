@@ -132,11 +132,12 @@ namespace NDota2Market {
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
-        public void SaveDataBase() {
-            if (File.Exists(DATABASEPATH))
-                File.Copy(DATABASEPATH, DATABASETEMPPATH);
+        public void SaveDataBase()
+        {
             lock (DatabaseLock)
             {
+                if (File.Exists(DATABASEPATH))
+                    File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
                 BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
             }
         }

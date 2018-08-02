@@ -286,10 +286,10 @@ namespace CSGOTM {
 
         public void SaveDataBase()
         {
-            if (File.Exists(DATABASEPATH))
-                File.Copy(DATABASEPATH, DATABASETEMPPATH);
             lock (DatabaseLock)
             {
+                if (File.Exists(DATABASEPATH))
+                    File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
                 BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
             }
         }
