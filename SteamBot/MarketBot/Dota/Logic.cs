@@ -87,7 +87,7 @@ namespace NDota2Market {
                 if (toBeSold.Count != 0) {
                     Inventory.SteamItem item = toBeSold.Dequeue();
                     DatabaseLock.WaitOne();
-                    if (dataBase.ContainsKey(item.i_market_name)) {
+                    if (dataBase.ContainsKey(item.i_market_name) && dataBase[item.i_market_name].cnt >= MINSIZE) {
                         try {
                             Protocol.Sell(item, dataBase[item.i_market_name].median);
                         }
@@ -110,30 +110,35 @@ namespace NDota2Market {
         }
 
         public void LoadDataBase() {
-            if (File.Exists(DATABASETEMPPATH)) {
-                if (File.Exists(DATABASEPATH)) {
-                    File.Delete(DATABASEPATH);
+            lock (DatabaseLock)
+            {
+                if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
+                    return;
+                try
+                {
+                    dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+                    if (File.Exists(DATABASETEMPPATH))
+                        File.Delete(DATABASETEMPPATH);
                 }
-
-                File.Move(DATABASETEMPPATH, DATABASEPATH);
+                catch (Exception e)
+                {
+                    if (File.Exists(DATABASEPATH))
+                        File.Delete(DATABASEPATH);
+                    if (File.Exists(DATABASETEMPPATH))
+                        File.Move(DATABASETEMPPATH, DATABASEPATH);
+                    LoadDataBase();
+                }
             }
-            else if (!File.Exists(DATABASEPATH)) {
-                Log.Success("No database found, creating empty DB.");
-                return;
-            }
-
-            dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
         public void SaveDataBase() {
             if (File.Exists(DATABASEPATH))
                 File.Copy(DATABASEPATH, DATABASETEMPPATH);
-            DatabaseLock.WaitOne();
-            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            DatabaseLock.ReleaseMutex();
-            if (File.Exists(DATABASETEMPPATH))
-                File.Delete(DATABASETEMPPATH);
+            lock (DatabaseLock)
+            {
+                BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            }
         }
 
         [Serializable]
@@ -197,7 +202,7 @@ namespace NDota2Market {
         private const int APICOOLDOWN = 3000;
         private const int MINORCYCLETIMEINTERVAL = 50000;
         private const int MAXSIZE = 500;
-        private const int MINSIZE = 60;
+        private const int MINSIZE = 10;
         private const string PREFIXPATH = "DOTA";
         private const string DATABASEPATH = PREFIXPATH + "/database.txt";
         private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";

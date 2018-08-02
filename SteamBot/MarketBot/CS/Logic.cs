@@ -260,32 +260,38 @@ namespace CSGOTM {
         }
 
 
-        public void LoadDataBase() {
-            if (File.Exists(DATABASETEMPPATH)) {
-                if (File.Exists(DATABASEPATH)) {
-                    File.Delete(DATABASEPATH);
+        public void LoadDataBase()
+        {
+            lock (DatabaseLock)
+            {
+                if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
+                    return;
+                try
+                {
+                    dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+                    if (File.Exists(DATABASETEMPPATH))
+                        File.Delete(DATABASETEMPPATH);
                 }
-
-                File.Move(DATABASETEMPPATH, DATABASEPATH);
+                catch (Exception e)
+                {
+                    if (File.Exists(DATABASEPATH))
+                        File.Delete(DATABASEPATH);
+                    if (File.Exists(DATABASETEMPPATH))
+                        File.Move(DATABASETEMPPATH, DATABASEPATH);
+                    LoadDataBase();
+                }
             }
-            else if (!File.Exists(DATABASEPATH)) {
-                Log.Success("No database found, creating empty DB.");
-                return;
-            }
-
-            dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
-
-        public void SaveDataBase() {
+        public void SaveDataBase()
+        {
             if (File.Exists(DATABASEPATH))
                 File.Copy(DATABASEPATH, DATABASETEMPPATH);
-            DatabaseLock.WaitOne();
-            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            DatabaseLock.ReleaseMutex();
-            if (File.Exists(DATABASETEMPPATH))
-                File.Delete(DATABASETEMPPATH);
+            lock (DatabaseLock)
+            {
+                BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            }
         }
 
 #if DEBUG
