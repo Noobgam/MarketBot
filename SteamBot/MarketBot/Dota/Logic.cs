@@ -89,12 +89,12 @@ namespace NDota2Market {
                     DatabaseLock.WaitOne();
                     if (dataBase.ContainsKey(item.i_market_name)) {
                         try {
-                            Protocol.Sell(item.i_classid, item.i_instanceid, dataBase[item.i_market_name].median);
+                            Protocol.Sell(item, dataBase[item.i_market_name].median);
                         }
                         catch (Exception ex) {
+                            toBeSold.Enqueue(item);
                         }
                     }
-
                     DatabaseLock.ReleaseMutex();
                 }
 
