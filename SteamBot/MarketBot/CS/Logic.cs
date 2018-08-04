@@ -1,4 +1,4 @@
-﻿using System;
+﻿﻿using System;
 using System.Net;
 using System.IO;
 using System.Threading;
@@ -42,8 +42,8 @@ namespace CSGOTM {
             setter.Start();
             Thread refresher = new Thread(RefreshPrices);
             refresher.Start();
-//            Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
-//            orderForUnstickered.Start();
+            Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
+            orderForUnstickered.Start();
             Thread addGraphData = new Thread(AddGraphData);
             addGraphData.Start();
         }
@@ -108,7 +108,7 @@ namespace CSGOTM {
                     }
 
                     Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
-                    if (price > 9000 && curPrice < price * 0.8) {
+                    if (price > 9000 && curPrice < price * 0.85) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
@@ -260,8 +260,10 @@ namespace CSGOTM {
         }
 
 
-        public void LoadDataBase() {
-            DatabaseLock.WaitOne();
+        public void LoadDataBase()
+        {
+            lock (DatabaseLock)
+            {
                 if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
                     return;
                 try
@@ -278,17 +280,18 @@ namespace CSGOTM {
                         File.Move(DATABASETEMPPATH, DATABASEPATH);
                     LoadDataBase();
                 }
-            DatabaseLock.ReleaseMutex();
+            }
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
-        public void SaveDataBase() {
-            DatabaseLock.WaitOne();
-            if (File.Exists(DATABASEPATH))
-                File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
-            
+        public void SaveDataBase()
+        {
+            lock (DatabaseLock)
+            {
+                if (File.Exists(DATABASEPATH))
+                    File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
                 BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            DatabaseLock.ReleaseMutex();
+            }
         }
 
 #if DEBUG
