@@ -260,38 +260,34 @@ namespace CSGOTM {
         }
 
 
-        public void LoadDataBase()
-        {
-            lock (DatabaseLock)
+        public void LoadDataBase() {
+            DatabaseLock.WaitOne();
+            if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
+               return;
+            try
             {
-                if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
-                    return;
-                try
-                {
-                    dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-                    if (File.Exists(DATABASETEMPPATH))
-                        File.Delete(DATABASETEMPPATH);
-                }
-                catch (Exception e)
-                {
-                    if (File.Exists(DATABASEPATH))
-                        File.Delete(DATABASEPATH);
-                    if (File.Exists(DATABASETEMPPATH))
-                        File.Move(DATABASETEMPPATH, DATABASEPATH);
-                    LoadDataBase();
-                }
+                dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+                if (File.Exists(DATABASETEMPPATH))
+                    File.Delete(DATABASETEMPPATH);
             }
+            catch (Exception e)
+            {
+                if (File.Exists(DATABASEPATH))
+                    File.Delete(DATABASEPATH);
+                if (File.Exists(DATABASETEMPPATH))
+                    File.Move(DATABASETEMPPATH, DATABASEPATH);
+                LoadDataBase();
+            }
+            DatabaseLock.ReleaseMutex();
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
-        public void SaveDataBase()
-        {
-            lock (DatabaseLock)
-            {
-                if (File.Exists(DATABASEPATH))
-                    File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
-                BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            }
+        public void SaveDataBase() {
+            DatabaseLock.WaitOne();
+            if (File.Exists(DATABASEPATH))
+                File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
+            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            DatabaseLock.ReleaseMutex();
         }
 
 #if DEBUG

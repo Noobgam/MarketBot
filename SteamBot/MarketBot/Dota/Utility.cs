@@ -99,7 +99,7 @@ namespace NDota2Market {
 
     public static class BinarySerialization
     {
-        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = true, CompressionLevel compression = CompressionLevel.NoCompression)
+        public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false, CompressionLevel compression = CompressionLevel.NoCompression)
         {
             using (FileStream filestream = File.Open(filePath, append ? FileMode.Append : FileMode.Create))
             {
