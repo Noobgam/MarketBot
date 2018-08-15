@@ -28,7 +28,7 @@ namespace NDota2Market {
         public Logic Logic;
 
         private const int MINORCYCLETIMEINTERVAL = 30000;
-        string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
+        string Api = null;
         public Utility.MarketLogger Log;
 
         private string ExecuteApiRequest(string url) {
@@ -43,7 +43,8 @@ namespace NDota2Market {
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
 
-        public Dota2Market() {
+        public Dota2Market(string api) {
+            Api = api;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
         }

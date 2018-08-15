@@ -14,7 +14,6 @@ using Newtonsoft.Json;
 
 using System.Linq;
 
-
 namespace CSGOTM
 {
     public class Protocol
@@ -27,7 +26,7 @@ namespace CSGOTM
         public Logic Logic;
         public SteamBot.Bot Bot;
         static Random Generator = new Random();
-        static readonly string Api = "1iG3flVKV3OulG5KiWy404b2DFM5WZj";
+        static string Api = null;
 
         private string ExecuteApiRequest(string url)
         {
@@ -36,7 +35,8 @@ namespace CSGOTM
         
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-        public Protocol(SteamBot.Bot Bot) {
+        public Protocol(SteamBot.Bot Bot, string api) {
+            Api = api;
             this.Bot = Bot;
             Thread starter = new Thread(new ThreadStart(StartUp));
             starter.Start();
@@ -318,9 +318,6 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            if (Generator.Next(2) >= 2) {
-                url += "&partner=447962514&token=Bh4hxu3d";
-            }
             string a = ExecuteApiRequest(url);
             JObject parsed = JObject.Parse(a);
             if (parsed["result"] == null)
