@@ -15,15 +15,19 @@ namespace CSGOTM {
         private static Mutex DatabaseLock = new Mutex();
         private static Mutex CurrentItemsLock = new Mutex();
 
-        public Logic() {
+        public Logic(String botName)
+        {
+            this.botName = botName;
             Thread starter = new Thread(new ThreadStart(StartUp));
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
             starter.Start();
         }
 
-        private void StartUp() {
-            while (Protocol == null) {
+        private void StartUp()
+        {
+            while (Protocol == null)
+            {
                 Thread.Sleep(10);
             }
 
@@ -42,10 +46,40 @@ namespace CSGOTM {
             setter.Start();
             Thread refresher = new Thread(RefreshPrices);
             refresher.Start();
-            Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
-            orderForUnstickered.Start();
+            if (!sellOnly)
+            {
+                Thread orderForUnstickered = new Thread(SetOrderForUnstickered);
+                orderForUnstickered.Start();
+            }
             Thread addGraphData = new Thread(AddGraphData);
             addGraphData.Start();
+            Thread nameChecker = new Thread(CheckName);
+            nameChecker.Start();
+        }
+
+        void CheckName()
+        {
+            while (true)
+            {
+                try
+                {
+                    using (WebClient myWebClient = new WebClient())
+                    {
+                        myWebClient.Encoding = System.Text.Encoding.UTF8;
+                        NameValueCollection myQueryStringCollection = new NameValueCollection {{"q", ""}};
+                        myWebClient.QueryString = myQueryStringCollection;
+
+                        JObject modes = JObject.Parse(myWebClient.DownloadString(
+                            "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/226670972576660e269364ac3ca0a612d829dbac/set_true_if_want_to_sell_only.txt"));
+                        sellOnly = Boolean.Parse((string) modes[botName]);
+                    }
+                }
+                catch (Exception e)
+                {
+
+                }
+                Thread.Sleep(MINORCYCLETIMEINTERVAL);
+            }
         }
 
         private void AddGraphData() {
@@ -261,33 +295,36 @@ namespace CSGOTM {
 
 
         public void LoadDataBase() {
-            DatabaseLock.WaitOne();
-            if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
-               return;
-            try
+            lock (DatabaseLock)
             {
-                dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-                if (File.Exists(DATABASETEMPPATH))
-                    File.Delete(DATABASETEMPPATH);
+
+                if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
+                    return;
+                try
+                {
+                    dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+                    if (File.Exists(DATABASETEMPPATH))
+                        File.Delete(DATABASETEMPPATH);
+                }
+                catch (Exception e)
+                {
+                    if (File.Exists(DATABASEPATH))
+                        File.Delete(DATABASEPATH);
+                    if (File.Exists(DATABASETEMPPATH))
+                        File.Move(DATABASETEMPPATH, DATABASEPATH);
+                    LoadDataBase();
+                }
             }
-            catch (Exception e)
-            {
-                if (File.Exists(DATABASEPATH))
-                    File.Delete(DATABASEPATH);
-                if (File.Exists(DATABASETEMPPATH))
-                    File.Move(DATABASETEMPPATH, DATABASEPATH);
-                LoadDataBase();
-            }
-            DatabaseLock.ReleaseMutex();
+
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
         public void SaveDataBase() {
-            DatabaseLock.WaitOne();
-            if (File.Exists(DATABASEPATH))
-                File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
-            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            DatabaseLock.ReleaseMutex();
+            lock (DatabaseLock) {
+                if (File.Exists(DATABASEPATH))
+                    File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
+                BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            }
         }
 
 #if DEBUG
@@ -530,7 +567,10 @@ namespace CSGOTM {
         }
 
         public bool doNotSell = false; // True when we don`t want to sell.  
+        public bool sellOnly = false;
         public Protocol Protocol;
+
+        private String botName;
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 70;

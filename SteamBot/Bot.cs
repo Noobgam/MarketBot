@@ -226,7 +226,7 @@ namespace SteamBot
             //Starting CS:
 
             CSConnection = new CSGOTM.Protocol(this, config.MarketApiKey);
-            CSLogic = new CSGOTM.Logic();
+            CSLogic = new CSGOTM.Logic(DisplayName);
             Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
 
             ////Starting DOTA:

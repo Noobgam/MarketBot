@@ -91,7 +91,7 @@ namespace CSGOTM
                     NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
                     //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                     newItem.ui_price = newItem.ui_price * 100 + 0.5f;
-                    if (Logic.WantToBuy(newItem))
+                    if (!Logic.sellOnly && Logic.WantToBuy(newItem))
                     {
                         if (Buy(newItem))
                             Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
