@@ -122,9 +122,6 @@ namespace SteamBot
         public CSGOTM.Protocol CSConnection;
         public CSGOTM.Logic CSLogic;
 
-        public NDota2Market.Dota2Market D2Connection;
-        public NDota2Market.Logic D2Logic;
-
         public bool CheckOffer(TradeOffer offer)
         {
             //return SecurityCodesForOffers.Contains(offer.Message); //TODO: check this
