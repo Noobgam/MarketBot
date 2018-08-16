@@ -181,20 +181,26 @@ namespace CSGOTM {
                     try {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
                         Thread.Sleep(APICOOLDOWN);
-                        DatabaseLock.WaitOne();
-                        SalesHistory history = dataBase[item.i_market_name];
-                        Log.Info("Checking item..." + price + "  vs  " + history.median);
-                        if (price != -1 && price < 30000 && history.median * 0.8 > price &&
-                            history.median * 0.8 - price > 30) {
-                            try {
-                                Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                Log.Success("Settled order for " + item.i_market_name);
-                            }
-                            catch (Exception ex) {
-                            }
-                        }
+                        lock (DatabaseLock)
+                        {
 
-                        DatabaseLock.ReleaseMutex();
+
+                            SalesHistory history = dataBase[item.i_market_name];
+                            Log.Info("Checking item..." + price + "  vs  " + history.median);
+                            if (price != -1 && price < 30000 && history.median * 0.8 > price &&
+                                history.median * 0.8 - price > 30)
+                            {
+                                try
+                                {
+                                    Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
+                                    Log.Success("Settled order for " + item.i_market_name);
+                                }
+                                catch (Exception ex)
+                                {
+                                }
+                            }
+
+                        }
                     }
                     catch (Exception ex) {
                         Log.Error("Handled ex");
@@ -254,18 +260,19 @@ namespace CSGOTM {
                     }
                     else
                     {
-                        CurrentItemsLock.WaitOne();
-                        try
+                        lock (CurrentItemsLock)
                         {
-                            string[] ui_id = item.ui_id.Split('_');
-                            Protocol.SellNew(ui_id[1], ui_id[2],
-                                (int)currentItems[item.i_market_name][2] - 30);
+                            try
+                            {
+                                string[] ui_id = item.ui_id.Split('_');
+                                Protocol.SellNew(ui_id[1], ui_id[2],
+                                    (int) currentItems[item.i_market_name][2] - 30);
+                            }
+                            catch (Exception ex)
+                            {
+                                toBeSold.Enqueue(item);
+                            }
                         }
-                        catch (Exception ex)
-                        {
-                            toBeSold.Enqueue(item);
-                        }
-                        CurrentItemsLock.ReleaseMutex();
                     }
                 }
 
@@ -297,7 +304,6 @@ namespace CSGOTM {
         public void LoadDataBase() {
             lock (DatabaseLock)
             {
-
                 if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
                     return;
                 try
@@ -357,32 +363,36 @@ namespace CSGOTM {
                             foreach (var str in indexes)
                                 NewItem.mapping[str] = id++;
 
-                        CurrentItemsLock.WaitOne();
-                        currentItems.Clear();
+                        lock (CurrentItemsLock)
+                        {
+                            currentItems.Clear();
 
-                        for (id = 1; id < lines.Length - 1; ++id) {
-                            string[] item = lines[id].Split(';');
-                            if (item[NewItem.mapping["c_stickers"]] == "0")
+                            for (id = 1; id < lines.Length - 1; ++id)
+                            {
+                                string[] item = lines[id].Split(';');
+                                if (item[NewItem.mapping["c_stickers"]] == "0")
 
-                                unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
-                                                item[NewItem.mapping["c_instanceid"]]);
-                            // new logic
-                            else {
-                                String name = item[NewItem.mapping["c_market_name"]];
-                                if (name.Length >= 2) {
-                                    name = name.Remove(0, 1);
-                                    name = name.Remove(name.Length - 1);
+                                    unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
+                                                    item[NewItem.mapping["c_instanceid"]]);
+                                // new logic
+                                else
+                                {
+                                    String name = item[NewItem.mapping["c_market_name"]];
+                                    if (name.Length >= 2)
+                                    {
+                                        name = name.Remove(0, 1);
+                                        name = name.Remove(name.Length - 1);
+                                    }
+
+                                    if (!currentItems.ContainsKey(name))
+                                        currentItems[name] = new List<long>();
+                                    currentItems[name].Add(Int64.Parse(item[NewItem.mapping["c_price"]]));
                                 }
-                                
-                                if (!currentItems.ContainsKey(name))
-                                    currentItems[name] = new List<long>();
-                                currentItems[name].Add(Int64.Parse(item[NewItem.mapping["c_price"]]));
                             }
-                        }
 
-                        SaveNonStickeredBase();
-                        SortCurrentItems();
-                        CurrentItemsLock.ReleaseMutex();
+                            SaveNonStickeredBase();
+                            SortCurrentItems();
+                        }
 
                         // Calling WantToBuy function for all items. 
                         indexes = lines[0].Split(';');
@@ -500,31 +510,34 @@ namespace CSGOTM {
 
             //Console.WriteLine(item.i_market_name);
             SalesHistory salesHistory;
-            DatabaseLock.WaitOne();
-            if (dataBase.ContainsKey(item.i_market_name)) {
-                salesHistory = dataBase[item.i_market_name];
-                if (dataBase[item.i_market_name].cnt == MAXSIZE)
-                    dataBase[item.i_market_name].sales.RemoveAt(0);
+            lock (DatabaseLock)
+            {
+                if (dataBase.ContainsKey(item.i_market_name))
+                {
+                    salesHistory = dataBase[item.i_market_name];
+                    if (dataBase[item.i_market_name].cnt == MAXSIZE)
+                        dataBase[item.i_market_name].sales.RemoveAt(0);
+                    else
+                        dataBase[item.i_market_name].cnt++;
+                    dataBase[item.i_market_name].sales.Add(item);
+                }
                 else
-                    dataBase[item.i_market_name].cnt++;
-                dataBase[item.i_market_name].sales.Add(item);
-            }
-            else {
-                salesHistory = new SalesHistory(item);
-                dataBase.Add(item.i_market_name, salesHistory);
-            }
+                {
+                    salesHistory = new SalesHistory(item);
+                    dataBase.Add(item.i_market_name, salesHistory);
+                }
 
-            int[] a = new int[salesHistory.cnt];
-            for (int i = 0; i < salesHistory.cnt; i++)
-                a[i] = salesHistory.sales[i].price;
-            Array.Sort(a);
-            dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
+                int[] a = new int[salesHistory.cnt];
+                for (int i = 0; i < salesHistory.cnt; i++)
+                    a[i] = salesHistory.sales[i].price;
+                Array.Sort(a);
+                dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
 
-            if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name)) {
-                needOrder.Enqueue(item);
+                if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name))
+                {
+                    needOrder.Enqueue(item);
+                }
             }
-
-            DatabaseLock.ReleaseMutex();
         }
 
         public bool WantToBuy(NewItem item) {
@@ -540,29 +553,30 @@ namespace CSGOTM {
                 return false;
             }
 
-            DatabaseLock.WaitOne();
-            if (!dataBase.ContainsKey(item.i_market_name)) {
-                DatabaseLock.ReleaseMutex();
-                return false;
+            lock (DatabaseLock)
+            {
+                if (!dataBase.ContainsKey(item.i_market_name))
+                {
+                    return false;
+                }
+
+                SalesHistory salesHistory = dataBase[item.i_market_name];
+                HistoryItem oldest = (HistoryItem) salesHistory.sales[0];
+                List<long> prices = currentItems[item.i_market_name];
+                //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
+
+                if (item.ui_price < 25000 && prices.Count >= 6 &&
+                    item.ui_price < 0.85 * prices[2] && !blackList.Contains(item.i_market_name) &&
+                    salesHistory.cnt >= MINSIZE &&
+                    prices[2] < dataBase[item.i_market_name].median * 1.25 && prices[2] - item.ui_price > 400)
+                {
+                    //TODO какое-то условие на время
+                    Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
+                             (salesHistory.median - item.ui_price));
+                    return true;
+                }
             }
 
-            SalesHistory salesHistory = dataBase[item.i_market_name];
-            HistoryItem oldest = (HistoryItem) salesHistory.sales[0];
-            List<long> prices = currentItems[item.i_market_name];
-            //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
-
-            if (item.ui_price < 25000 && prices.Count >= 6 &&
-                item.ui_price < 0.85 * prices[2] && !blackList.Contains(item.i_market_name) &&
-                salesHistory.cnt >= MINSIZE &&
-                prices[2] < dataBase[item.i_market_name].median * 1.25 && prices[2] - item.ui_price > 400) {
-                //TODO какое-то условие на время
-                Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
-                         (salesHistory.median - item.ui_price));
-                DatabaseLock.ReleaseMutex();
-                return true;
-            }
-
-            DatabaseLock.ReleaseMutex();
             return false;
         }
 
