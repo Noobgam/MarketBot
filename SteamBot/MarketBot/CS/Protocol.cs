@@ -320,7 +320,13 @@ namespace CSGOTM
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
             string a = ExecuteApiRequest(url);
             JObject parsed = JObject.Parse(a);
-            if (parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету")
+			bool badTrade = false;
+			try {
+				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету"
+			} catch {
+				
+			}
+            if (badTrade)
             {
                 Log.Error($"Missed an item {item.i_market_name} costing {item.ui_price}");
                 return false;
