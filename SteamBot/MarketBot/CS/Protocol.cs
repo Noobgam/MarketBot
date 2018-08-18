@@ -322,7 +322,7 @@ namespace CSGOTM
             JObject parsed = JObject.Parse(a);
 			bool badTrade = false;
 			try {
-				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету"
+				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
 			} catch {
 				
 			}
