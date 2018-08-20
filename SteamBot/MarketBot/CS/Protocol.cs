@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CSGOTM
 {
@@ -515,6 +516,21 @@ namespace CSGOTM
             string temp = ExecuteApiRequest("/api/GetMoney/?key=" + Api);
             JObject temp2 = JObject.Parse(temp);
             return float.Parse((string)temp2["money"]);
+        }
+
+        public int MinPrice(string classid, string instanceid)
+        {
+            string url = $"/api/BestSellOffer/{classid}_{instanceid}/?key={Api}";
+            string temp = ExecuteApiRequest(url);
+            JObject temp2 = JObject.Parse(temp);
+            try
+            {
+                return int.Parse((string) temp2["best_offer"]);
+            }
+            catch 
+            {
+                return -1;
+            }
         }
     }
 }
