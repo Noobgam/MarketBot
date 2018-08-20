@@ -154,9 +154,9 @@ namespace CSGOTM {
 
         private void RefreshPrices() {
             TMTrade[] trades = Protocol.GetTradeList();
-            for (int i = 1; i <= 4 && i < trades.Length; i++) {
+            for (int i = 1; i <= 7 && i < trades.Length; i++) {
                 var cur = trades[trades.Length - i];
-                if (cur.ui_status == "1" && hasStickers(cur.i_classid, cur.i_instanceid)) {
+                if (cur.ui_status == "1") {
                     refreshPrice.Enqueue(trades[trades.Length - i]);
                 }
             }
@@ -265,8 +265,19 @@ namespace CSGOTM {
                             try
                             {
                                 string[] ui_id = item.ui_id.Split('_');
+                                if (!hasStickers(ui_id[1], ui_id[2]))
+                                {
+                                    int price = Protocol.MinPrice(ui_id[1], ui_id[2]);
+                                    if (price != -1)
+                                    {
+                                        Protocol.SellNew(ui_id[1], ui_id[2], price - 1);
+                                        continue;
+                                    }
+                                }
+                            
                                 Protocol.SellNew(ui_id[1], ui_id[2],
-                                    (int) currentItems[item.i_market_name][2] - 30);
+                                        (int) currentItems[item.i_market_name][2] - 30);
+                                
                             }
                             catch (Exception ex)
                             {
