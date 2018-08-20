@@ -268,6 +268,7 @@ namespace CSGOTM {
                                 if (!hasStickers(ui_id[1], ui_id[2]))
                                 {
                                     int price = Protocol.MinPrice(ui_id[1], ui_id[2]);
+                                    Thread.Sleep(APICOOLDOWN);
                                     if (price != -1)
                                     {
                                         Protocol.SellNew(ui_id[1], ui_id[2], price - 1);
