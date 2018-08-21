@@ -128,6 +128,13 @@ namespace CSGOTM
                         }
                         else
                         {
+                            historyItem.i_classid = arr[0];
+                            historyItem.i_instanceid = arr[1];
+                            historyItem.i_market_hash_name = arr[2] + "," + arr[3];
+                            historyItem.timesold = arr[4];
+                            historyItem.price = Int32.Parse(arr[5]);
+                            historyItem.i_market_name = arr[6] + "," + arr[7];
+
                             throw new Exception(x.data + " is not a valid history item.");
                         }
                         Logic.ProcessItem(historyItem);
@@ -244,7 +251,7 @@ namespace CSGOTM
                             Thread.Sleep(Consts.APICOOLDOWN);
                             RequestPurchasedItems(arr[i].ui_bid);
                             gone = true;
-                            Logic.doNotSell = true;
+                            Logic.doNotSell = true; 
                             break;
                         }
                         had |= arr[i].ui_status == "2";
@@ -254,6 +261,9 @@ namespace CSGOTM
                         UpdateInventory();
                         Thread.Sleep(Consts.APICOOLDOWN);
                         SendSoldItems();
+                    }
+                    if (!gone)
+                    {
                         Logic.RefreshPrices(arr);
                     }
                 }
@@ -285,7 +295,7 @@ namespace CSGOTM
             Log.Success("Connection opened!");
             Auth();
             Task.Run((Action) pinger);
-            //Task.Run((Action)HandleTrades);
+            Task.Run((Action)HandleTrades);
             //andrew is gay
         }
 
@@ -453,11 +463,19 @@ namespace CSGOTM
             string a = ExecuteApiRequest("/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
             JObject json = JObject.Parse(a);
             if (json["success"] == null)
+            {
+                Log.ApiError("Was unable to set order, uls is :/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
                 return false;
+            }
             else if ((bool)json["success"])
+            {
                 return true;
+            }
             else
-                 return false;
+            {
+                Log.ApiError("Was unable to set order, uls is :/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
+                return false;
+            }
 #endif
         }
 
@@ -468,14 +486,21 @@ namespace CSGOTM
                 string a = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api);
                 JObject json = JObject.Parse(a);
                 if (json["success"] == null)
+                {
+                    Log.ApiError("Was unable to update inventory");
                     return false;
+                }
                 else if ((bool)json["success"])
                     return true;
                 else
+                {
+                    Log.ApiError("Was unable to update inventory");
                     return false;
+                }
             }
             catch (Exception ex)
             {
+                Log.ApiError("Was unable to update inventory");
                 return false;
             }
         }

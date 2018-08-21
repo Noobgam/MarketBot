@@ -10,8 +10,8 @@ namespace CSGOTM {
         public const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         public const int APICOOLDOWN = 1000 * 3; // 3 seconds
         public const int DAY = 86400;
-
     }
+
     public class Pair<T, U> {
         public Pair() {
         }

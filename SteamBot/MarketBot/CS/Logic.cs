@@ -41,6 +41,7 @@ namespace CSGOTM {
             Task.Run((Action)SaveDataBaseCycle);
             Task.Run((Action)SellFromQueue);
             Task.Run((Action)AddNewItems);
+            Task.Run((Action)UnstickeredRefresh);
             Task.Run((Action)SetNewOrder);
             if (!sellOnly)
             {
@@ -146,16 +147,18 @@ namespace CSGOTM {
         }
 
         public void RefreshPrices(TMTrade[] trades) {
-            lock (RefreshItemsLock)
+            lock (RefreshItemsLock) lock (UnstickeredRefreshItemsLock)
             {
                 for (int i = 1; i <= trades.Length; i++)
                 {
                     var cur = trades[trades.Length - i];
-                    if ((i <= 7 && cur.ui_status == "1") || !hasStickers(cur.i_classid, cur.i_instanceid))
+                    if (!hasStickers(cur.i_classid, cur.i_instanceid))
                     {
-                        {
-                            refreshPrice.Enqueue(trades[trades.Length - i]);
-                        }
+                        unstickeredRefresh.Enqueue(cur);
+                    }
+                    else if (i <= 7 && cur.ui_status == "1")
+                    {
+                        refreshPrice.Enqueue(cur);
                     }
                 }
             }
@@ -185,7 +188,7 @@ namespace CSGOTM {
 
 
                             SalesHistory history = dataBase[item.i_market_name];
-                            Log.Info("Checking item..." + price + "  vs  " + history.median);
+                            //Log.Info("Checking item..." + price + "  vs  " + history.median); this message is useless
                             if (price != -1 && price < 30000 && history.median * 0.8 > price &&
                                 history.median * 0.8 - price > 30)
                             {
@@ -258,22 +261,28 @@ namespace CSGOTM {
             }
         }
 
-        void SellFromQueue() {
-            while (true) {
-                if (refreshPrice.Count != 0) {
-                    Queue<TMTrade> unstickered = new Queue<TMTrade>();
-                    lock (RefreshItemsLock)
-                    {
-                        refreshPrice = new Queue<TMTrade>(refreshPrice.GroupBy(x => x.ui_id).Select(x => x.First())); //delete duplicate trades just in case.
-                        unstickered = new Queue<TMTrade>(refreshPrice.Where(x => !hasStickers(x.i_classid, x.i_instanceid)).Take(100));
-                        refreshPrice = new Queue<TMTrade>(refreshPrice.Except(unstickered));
-                    }
+        void UnstickeredRefresh()
+        {
+            while (true)
+            {
+                Queue<TMTrade> unstickeredTemp;
+                lock (UnstickeredRefreshItemsLock)
+                {
+                    unstickeredTemp = new Queue<TMTrade>(unstickeredRefresh);
+                }
+                while (unstickeredTemp.Count > 0)
+                {
+                    Thread.Sleep(1000); //constant rps.
+                    Queue<TMTrade> unstickeredChunk = new Queue<TMTrade>(unstickeredTemp.Take(100));
+                    for (int i = 0; i < unstickeredChunk.Count; ++i)
+                        unstickeredTemp.Dequeue();
                     List<Tuple<string, string>> tpls = new List<Tuple<string, string>>();
-                    foreach (var x in unstickered)
+                    foreach (var x in unstickeredChunk)
                     {
                         tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
                     }
                     JObject info = Protocol.MassInfo(tpls, sell: 1);
+                    Thread.Sleep(1000); //constant rps.
                     List<Tuple<string, int>> items = new List<Tuple<string, int>>();
                     Dictionary<string, Tuple<int, int>[]> marketOffers = new Dictionary<string, Tuple<int, int>[]>();
                     Dictionary<string, int> myOffer = new Dictionary<string, int>();
@@ -288,9 +297,20 @@ namespace CSGOTM {
                         {
                             myOffer[$"{cid}_{iid}"] = (int)token["sell_offers"]["my_offers"].Min();
                         }
-                        catch { };
+                        catch
+                        {
+                            Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
+                            try
+                            {
+                                //int val = GetMySellPriceByName((string)token["name"]);
+                            }
+                            catch
+                            {
+                                Log.ApiError("No stickered price detected");
+                            }
+                        };
                     }
-                    foreach (TMTrade trade in unstickered)
+                    foreach (TMTrade trade in unstickeredChunk)
                     {
                         try
                         {
@@ -310,8 +330,17 @@ namespace CSGOTM {
                         }
                         catch { }
                     }
-                    Thread.Sleep(Consts.APICOOLDOWN);
                     /*JOBject obj = */Protocol.MassSetPriceById(items);
+                }
+                Thread.Sleep(100); //constant rps.
+            }
+        }
+
+        void SellFromQueue() {
+            while (true) {
+                if (refreshPrice.Count != 0)
+                {
+                    List<Tuple<string, int>> items = new List<Tuple<string, int>>();
                     items = new List<Tuple<string, int>>();
                     foreach (TMTrade trade in refreshPrice)
                     {
@@ -610,7 +639,6 @@ namespace CSGOTM {
         }
 
         public bool WantToBuy(NewItem item) {
-            return false;
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
@@ -672,6 +700,7 @@ namespace CSGOTM {
 
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<TMTrade> refreshPrice = new Queue<TMTrade>();
+        private Queue<TMTrade> unstickeredRefresh = new Queue<TMTrade>();
 
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private Queue<HistoryItem> needOrderUnstickered = new Queue<HistoryItem>();
