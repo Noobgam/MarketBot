@@ -71,7 +71,7 @@ namespace CSGOTM {
                 {
 
                 }
-                Thread.Sleep(MINORCYCLETIMEINTERVAL);
+                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -114,7 +114,7 @@ namespace CSGOTM {
                     double sum = 0;
                     int cnt = 0;
                     long time = long.Parse((string) history[0][0]);
-                    for (int i = 0; i < history.Count && time - long.Parse((string) history[i][0]) < 10 * DAY; i++) {
+                    for (int i = 0; i < history.Count && time - long.Parse((string) history[i][0]) < 10 * Consts.DAY; i++) {
                         sum += int.Parse((string) history[i][1]);
                         cnt++;
                     }
@@ -145,8 +145,7 @@ namespace CSGOTM {
             }
         }
 
-        private void RefreshPrices() {
-            TMTrade[] trades = Protocol.GetTradeList();
+        public void RefreshPrices(TMTrade[] trades) {
             lock (RefreshItemsLock)
             {
                 for (int i = 1; i <= trades.Length; i++)
@@ -180,7 +179,7 @@ namespace CSGOTM {
                     HistoryItem item = needOrder.Dequeue();
                     try {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(APICOOLDOWN);
+                        Thread.Sleep(Consts.APICOOLDOWN);
                         lock (DatabaseLock)
                         {
 
@@ -207,7 +206,7 @@ namespace CSGOTM {
                     }
                 }
 
-                Thread.Sleep(APICOOLDOWN);
+                Thread.Sleep(Consts.APICOOLDOWN);
             }
         }
 
@@ -215,7 +214,7 @@ namespace CSGOTM {
             while (true) {
                 if (doNotSell) {
                     doNotSell = false;
-                    Thread.Sleep(MINORCYCLETIMEINTERVAL);
+                    Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL); //can't lower it due to some weird things in protocol, requieres testing
                 }
                 else if (toBeSold.Count == 0) {
                     try {
@@ -229,7 +228,7 @@ namespace CSGOTM {
                     }
                 }
 
-                Thread.Sleep(MINORCYCLETIMEINTERVAL);
+                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -311,14 +310,14 @@ namespace CSGOTM {
                         }
                         catch { }
                     }
-                    Thread.Sleep(APICOOLDOWN);
+                    Thread.Sleep(Consts.APICOOLDOWN);
                     /*JOBject obj = */Protocol.MassSetPriceById(items);
                     items = new List<Tuple<string, int>>();
                     foreach (TMTrade trade in refreshPrice)
                     {
                         items.Add(new Tuple<string, int>(trade.ui_id, 0));
                     }
-                    Thread.Sleep(APICOOLDOWN);
+                    Thread.Sleep(Consts.APICOOLDOWN);
                     /*JOBject obj =*/ Protocol.MassSetPriceById(items);
                     refreshPrice.Clear();
                 }
@@ -346,7 +345,7 @@ namespace CSGOTM {
                     }
                 }
 
-               Thread.Sleep(APICOOLDOWN);
+               Thread.Sleep(Consts.APICOOLDOWN);
             }
         }
 
@@ -359,14 +358,14 @@ namespace CSGOTM {
                     Log.Error("Couldn\'t parse new DB");
                 }
 
-                Thread.Sleep(MINORCYCLETIMEINTERVAL);
+                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
         }
 
         void SaveDataBaseCycle() {
             while (true) {
                 SaveDataBase();
-                Thread.Sleep(MINORCYCLETIMEINTERVAL);
+                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -472,7 +471,7 @@ namespace CSGOTM {
                             NewItem newItem = new NewItem(itemInString);
                             if (WantToBuy(newItem)) {
                                 Protocol.Buy(newItem);
-                                Thread.Sleep(APICOOLDOWN);
+                                Thread.Sleep(Consts.APICOOLDOWN);
                             }
                         }
                     }
@@ -669,9 +668,7 @@ namespace CSGOTM {
         private const string BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
         private const string MONEYTPATH = PREFIXPATH + "/money.txt";
 
-        private const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
-        private const int APICOOLDOWN = 1000 * 3; // 3 seconds
-        private const int DAY = 86400;
+
 
         private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
         private Queue<TMTrade> refreshPrice = new Queue<TMTrade>();

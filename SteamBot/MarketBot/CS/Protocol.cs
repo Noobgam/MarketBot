@@ -234,7 +234,6 @@ namespace CSGOTM
                 try
                 {
                     TMTrade[] arr = GetTradeList();
-                    UpdateInventory();
                     bool had = false;
                     bool gone = false;
                     for (int i = 0; i < arr.Length; ++i)
@@ -242,6 +241,7 @@ namespace CSGOTM
                         if (arr[i].ui_status == "4")
                         {
                             UpdateInventory();
+                            Thread.Sleep(Consts.APICOOLDOWN);
                             RequestPurchasedItems(arr[i].ui_bid);
                             gone = true;
                             Logic.doNotSell = true;
@@ -252,7 +252,9 @@ namespace CSGOTM
                     if (had && !gone)
                     {
                         UpdateInventory();
+                        Thread.Sleep(Consts.APICOOLDOWN);
                         SendSoldItems();
+                        Logic.RefreshPrices(arr);
                     }
                 }
                 catch (Exception ex)
