@@ -281,10 +281,8 @@ namespace CSGOTM
             died = false;
             Log.Success("Connection opened!");
             Auth();
-            Thread ping = new Thread(new ThreadStart(pinger));
-            ping.Start();
-            Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
-            tradeHandler.Start();
+            Task.Run((Action) pinger);
+            //Task.Run((Action)HandleTrades);
             //andrew is gay
         }
 
@@ -384,7 +382,7 @@ namespace CSGOTM
         }
         
         public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
-            string uri = "https://market.csgo.com/api/MassInfo/" + sell + "/" + buy + "/" + history + "/" + info + "?key=" + Api;
+            string uri = $"https://market.csgo.com/api/MassInfo/{sell}/{buy}/{history}/{info}?key={Api}";
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
             string result = Utility.Request.Post(uri, data);
             try {
@@ -395,7 +393,30 @@ namespace CSGOTM
             }
             return null;
         }
-        
+
+        /// <summary>
+        /// Provides server response by given list{name : price}
+        /// Beware, server completely ignores failing items, doesn't include them in JObject and completely silently deletes them from answer
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public JObject MassSetPriceById(List<Tuple<string, int>> items)
+        {
+            string uri = $"https://market.csgo.com/api/MassSetPriceById/?key={Api}";
+            string data = String.Join("&", items.Select(lr => $"list[{lr.Item1}]={lr.Item2}"));
+            string result = Utility.Request.Post(uri, data);
+            try
+            {
+                JObject temp = JObject.Parse(result);
+                return temp;
+            }
+            catch (Exception ex)
+            {
+                Log.Error(ex.Message);
+            }
+            return null;
+        }
+
         public bool Sell(string item_id, int price) {
             string a = ExecuteApiRequest("/api/SetPrice/" + item_id +  "/" + price + "/?key=" + Api);
             JObject parsed = JObject.Parse(a);
