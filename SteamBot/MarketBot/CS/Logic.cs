@@ -7,7 +7,7 @@ using System.Collections.Specialized;
 using Newtonsoft.Json.Linq;
 using System.Text;
 using Newtonsoft.Json;
-
+using System.Threading.Tasks;
 
 namespace CSGOTM {
     public class Logic {
@@ -34,18 +34,12 @@ namespace CSGOTM {
             LoadNonStickeredBase();
             FulfillBlackList();
             LoadDataBase();
-            Thread parser = new Thread(ParsingCycle);
-            parser.Start();
-            Thread saver = new Thread(SaveDataBaseCycle);
-            saver.Start();
-            Thread seller = new Thread(SellFromQueue);
-            seller.Start();
-            Thread adder = new Thread(AddNewItems);
-            adder.Start();
-            Thread setter = new Thread(SetNewOrder);
-            setter.Start();
-            Thread refresher = new Thread(RefreshPrices);
-            refresher.Start();
+            Task.Run((Action)ParsingCycle);
+            Task.Run((Action)SaveDataBaseCycle);
+            Task.Run((Action)SellFromQueue);
+            Task.Run((Action)AddNewItems);
+            Task.Run((Action)SetNewOrder);
+            Task.Run((Action)RefreshPrices);
             if (!sellOnly)
             {
                 Thread orderForUnstickered = new Thread(SetOrderForUnstickered);

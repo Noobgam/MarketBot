@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace CSGOTM
 {
@@ -38,8 +39,7 @@ namespace CSGOTM
         public Protocol(SteamBot.Bot Bot, string api) {
             Api = api;
             this.Bot = Bot;
-            Thread starter = new Thread(new ThreadStart(StartUp));
-            starter.Start();
+            Task.Run((Action)StartUp);
         }
         
         private void StartUp() {
