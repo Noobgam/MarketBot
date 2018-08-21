@@ -13,6 +13,7 @@ namespace SteamBot
             Success,
             Warn,
             Error,
+            ApiError,
             Interface, // if the user needs to input something
             Nothing    // not recommended; it basically silences
                        // the console output because nothing is
@@ -62,6 +63,12 @@ namespace SteamBot
         public void Success(string data, params object[] formatParams)
         {
             _OutputLine(LogLevel.Success, data, formatParams);
+        }
+
+        // This outputs a log entry of the level success.
+        public void ApiError(string data, params object[] formatParams)
+        {
+            _OutputLine(LogLevel.ApiError, data, formatParams);
         }
 
         // This outputs a log entry of the level warn.
@@ -144,6 +151,8 @@ namespace SteamBot
                     return "warn";
                 case LogLevel.Error:
                     return "error";
+                case LogLevel.ApiError:
+                    return "apierror";
                 case LogLevel.Interface:
                     return "interface";
                 case LogLevel.Nothing:
@@ -168,6 +177,8 @@ namespace SteamBot
                     return ConsoleColor.Yellow;
                 case LogLevel.Error:
                     return ConsoleColor.Red;
+                case LogLevel.ApiError:
+                    return ConsoleColor.Magenta;
                 case LogLevel.Interface:
                     return ConsoleColor.DarkCyan;
                 default:
