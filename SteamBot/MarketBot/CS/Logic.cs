@@ -187,7 +187,7 @@ namespace CSGOTM {
 
                             SalesHistory history = dataBase[item.i_market_name];
                             Log.Info("Checking item..." + price + "  vs  " + history.median);
-                            if (price != -1 && price < 30000 && history.median * 0.78 > price &&
+                            if (price != -1 && price < 30000 && history.median * 0.8 > price &&
                                 history.median * 0.8 - price > 30)
                             {
                                 try
