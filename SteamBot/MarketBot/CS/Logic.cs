@@ -142,7 +142,7 @@ namespace CSGOTM {
                     }
 
                     Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
-                    if (price > 9000 && curPrice < price * 0.85 && !blackList.Contains(top.i_market_hash_name)) {
+                    if (price > 9000 && curPrice < price * 0.765 && !blackList.Contains(top.i_market_hash_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
@@ -187,8 +187,8 @@ namespace CSGOTM {
 
                             SalesHistory history = dataBase[item.i_market_name];
                             Log.Info("Checking item..." + price + "  vs  " + history.median);
-                            if (price != -1 && price < 30000 && history.median * 0.8 > price &&
-                                history.median * 0.8 - price > 30)
+                            if (price != -1 && price < 30000 && history.median * 0.78 > price &&
+                                history.median * 0.78 - price > 30)
                             {
                                 try
                                 {
@@ -578,9 +578,9 @@ namespace CSGOTM {
                 //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
                 if (item.ui_price < 25000 && prices.Count >= 6 &&
-                    item.ui_price < 0.85 * prices[2] && !blackList.Contains(item.i_market_name) &&
+                    item.ui_price < 0.8 * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
-                    prices[2] < dataBase[item.i_market_name].median * 1.25 && prices[2] - item.ui_price > 400)
+                    prices[2] < dataBase[item.i_market_name].median * 1.2 && prices[2] - item.ui_price > 400)
                 {
                     //TODO какое-то условие на время
                     Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
