@@ -29,18 +29,111 @@ namespace CSGOTM
         public SteamBot.Bot Bot;
         static Random Generator = new Random();
         static string Api = null;
+        private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(Consts.GLOBALRPSLIMIT);
 
-        private string ExecuteApiRequest(string url)
-        {
-            return Utility.Request.Get("https://market.csgo.com" + url);
+        public enum ApiMethod {
+            UpdateInventory,
+            MassInfo,
+            Buy,
+            Sell,
+            SellNew = Sell,
+            MassSetPriceById,
+            SetOrder,
+            GetMoney,
+            MinPrice,
+            GetSteamInventory,
+            GenericCall,
+            PingPong
         }
-        
+
+        private static Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
+        private static Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
+
+        private void ObtainApiSemaphore(ApiMethod method)
+        {
+            rpsRestricter[method].Wait();
+            ApiSemaphore.Wait();
+        }
+
+        private void ReleaseApiSemaphore(ApiMethod method)
+        {
+            Task.Delay(rpsDelay[method])
+                .ContinueWith(tks => rpsRestricter[method].Release());
+            Task.Delay(Consts.SECOND)
+                .ContinueWith(tsk => ApiSemaphore.Release());
+        }
+
+        private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall)
+        {
+
+            string response = null;
+            try
+            {
+                ObtainApiSemaphore(method);
+                response = Utility.Request.Get("https://market.csgo.com" + url);
+            }
+            finally
+            {
+                ReleaseApiSemaphore(method);
+            }
+            return response;
+        }
+
+        private string ExecuteApiPostRequest(string url, string data, ApiMethod method = ApiMethod.GenericCall)
+        {
+            string response = null;
+            try
+            {
+                ObtainApiSemaphore(method);
+                response = Utility.Request.Post("https://market.csgo.com" + url, data);
+            }
+            finally
+            {
+                ReleaseApiSemaphore(method);
+            }
+            return response;
+        }
+
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public Protocol(SteamBot.Bot Bot, string api) {
             Api = api;
             this.Bot = Bot;
+            InitializeRPSSemaphores();
             Task.Run((Action)StartUp);
+        }
+
+        //I'm going to use different semaphores to allow some requests to have higher RPS than others, without bothering one another.
+
+        private void GenerateSemaphore(ApiMethod method, double rps)
+        {
+            rpsRestricter[method] = new SemaphoreSlim(Consts.GLOBALRPSLIMIT);
+            rpsDelay[method] = (int)Math.Ceiling(1000.0 / rps);
+        }
+
+        readonly Tuple<ApiMethod, double>[] rpsLimit = {
+            Tuple.Create(ApiMethod.GenericCall, 0.1),
+            Tuple.Create(ApiMethod.UpdateInventory, 0.1),
+            Tuple.Create(ApiMethod.Sell, 0.1),
+            Tuple.Create(ApiMethod.MassInfo, 1.5),
+            Tuple.Create(ApiMethod.MassSetPriceById, 1.5),
+            Tuple.Create(ApiMethod.SetOrder, 0.1),
+            Tuple.Create(ApiMethod.GetSteamInventory, 0.1),
+            Tuple.Create(ApiMethod.PingPong, 1.0 / 180)
+        };
+
+        private void InitializeRPSSemaphores()
+        {
+            double totalrps = 0;
+            foreach (Tuple<ApiMethod, double> method in rpsLimit)
+            {
+                GenerateSemaphore(method.Item1, method.Item2);
+                totalrps += method.Item2;
+            }      
+            if (totalrps > Consts.GLOBALRPSLIMIT)
+            {
+                throw new Exception($"Total RPS amount exceeds {Consts.GLOBALRPSLIMIT}.");
+            }
         }
         
         private void StartUp() {
@@ -206,7 +299,8 @@ namespace CSGOTM
                     if (offer.Items.NewVersion) {
                         string newOfferId;
                         if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
-                            Bot.AcceptAllMobileTradeConfirmations();
+                            Task.Delay(10000) //the delay might fix #35
+                                .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
                             Log.Success("Trade offer sent : Offer ID " + newOfferId);
                         }
                         return true;
@@ -355,12 +449,12 @@ namespace CSGOTM
         [System.Obsolete("Specify item, it will parce it by itself.")]
         public bool Buy(string ClasssId, string InstanceId, int price)
         {
-#if DEBUG
+#if !DEBUG
             totalwasted += price;
             Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
-            string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+            string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Buy);
             JObject parsed = JObject.Parse(a);
             foreach (var pair in parsed)
             {
@@ -381,23 +475,29 @@ namespace CSGOTM
             return false;
 
 #else
-            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.SellNew);
             JObject parsed = JObject.Parse(a);
             foreach (var pair in parsed)
                 Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
             if (parsed["result"] == null)
                 return false;
-            else if ((string)parsed["result"] == "ok")
-                return true;
+            else if ((int)parsed["result"] == 1) {
+                return 
+            }
             else
                 return false;
 #endif
         }
+
+        public void PingPong()
+        {
+
+        }
         
         public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
-            string uri = $"https://market.csgo.com/api/MassInfo/{sell}/{buy}/{history}/{info}?key={Api}";
+            string uri = $"/api/MassInfo/{sell}/{buy}/{history}/{info}?key={Api}";
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
-            string result = Utility.Request.Post(uri, data);
+            string result = ExecuteApiPostRequest(uri, data);
             try {
                 JObject temp = JObject.Parse(result);
                 return temp;
@@ -415,9 +515,9 @@ namespace CSGOTM
         /// <returns></returns>
         public JObject MassSetPriceById(List<Tuple<string, int>> items)
         {
-            string uri = $"https://market.csgo.com/api/MassSetPriceById/?key={Api}";
+            string uri = $"/api/MassSetPriceById/?key={Api}";
             string data = String.Join("&", items.Select(lr => $"list[{lr.Item1}]={lr.Item2}"));
-            string result = Utility.Request.Post(uri, data);
+            string result = ExecuteApiPostRequest(uri, data);
             try
             {
                 JObject temp = JObject.Parse(result);
@@ -428,19 +528,6 @@ namespace CSGOTM
                 Log.Error(ex.Message);
             }
             return null;
-        }
-
-        public bool Sell(string item_id, int price) {
-            string a = ExecuteApiRequest("/api/SetPrice/" + item_id +  "/" + price + "/?key=" + Api);
-            JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            if (parsed["result"] == null)
-                return false;
-            else if ((string)parsed["result"] == "ok")
-                return true;
-            else
-                return false;
         }
 
         public Inventory GetSteamInventory()

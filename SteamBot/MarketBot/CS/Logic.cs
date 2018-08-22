@@ -364,6 +364,7 @@ namespace CSGOTM {
                             string[] ui_id = item.ui_id.Split('_');
                             if (!Protocol.SellNew(ui_id[1], ui_id[2], price))
                             {
+                                Log.ApiError("Could not sell new item, enqueuing it again.");
                                 toBeSold.Enqueue(item);
                             }
                         }
