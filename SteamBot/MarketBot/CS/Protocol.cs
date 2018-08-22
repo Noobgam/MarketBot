@@ -31,11 +31,10 @@ namespace CSGOTM
         static string Api = null;
         private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(Consts.GLOBALRPSLIMIT);
 
+        //TODO(noobgam): make it great again, probably some of them can be united.
         public enum ApiMethod {
-            UpdateInventory,
             GetTradeList,
             GetBestOrder,
-            ItemRequest,
             GenericMassInfo,
             GenericMassSetPriceById,
             Buy,
@@ -43,12 +42,20 @@ namespace CSGOTM
             UnstickeredMassInfo,
             UnstickeredMassSetPriceById,
             SetOrder,
-            GetMoney,
             MinPrice,
             GetSteamInventory,
             GenericCall,
-            PingPong
+            UpdateInventory,
+            GetMoney,
+            PingPong = GetMoney,
+            ItemRequest = UpdateInventory,
         }
+
+        readonly Dictionary<ApiMethod, double> rpsLimit = new Dictionary<ApiMethod, double> {
+            { ApiMethod.UnstickeredMassInfo, 1.5 },
+            { ApiMethod.UnstickeredMassSetPriceById, 1.5 },
+            { ApiMethod.Buy, 1 },
+        };
 
         private static Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
         private static Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
@@ -83,6 +90,26 @@ namespace CSGOTM
             return response;
         }
 
+        /// <summary>
+        /// [Leaked resource from csgotm network tab]
+        /// https://market.csgo.com/ajax/i_popularity/all/all/all/1/56/0;100000/all/all/all --- sample query
+        /// Returns popular items, format: [[cid, iid, market_name, lowest_price (RUB), color (or false if doesn't apply), CHEAPER_THAN_STEAM, unknown array (usually empty)]]
+        /// </summary>
+        /// <param name="page">page to return</param>
+        /// <param name="amount">amount of items (can't be above 96)</param>
+        /// <returns></returns>
+        public JArray PopularItems(int page = 1, int amount = 56, int lowest_price = 0, int highest_price = 100000, bool any_stickers = false)
+        {
+            if (any_stickers)
+            {
+                return JArray.Parse(Utility.Request.Get($"https://market.csgo.com/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/-1"));
+            }
+            else
+            {
+                return JArray.Parse(Utility.Request.Get($"https://market.csgo.com/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/all"));
+            }
+        }
+
         private string ExecuteApiPostRequest(string url, string data, ApiMethod method = ApiMethod.GenericCall)
         {
             string response = null;
@@ -115,16 +142,10 @@ namespace CSGOTM
             rpsDelay[method] = (int)Math.Ceiling(1000.0 / rps);
         }
 
-        readonly Dictionary<ApiMethod, double> rpsLimit = new Dictionary<ApiMethod, double> { 
-            { ApiMethod.UnstickeredMassInfo, 1.5 },
-            { ApiMethod.UnstickeredMassSetPriceById, 1.5 },
-            { ApiMethod.Buy, 1 },
-        };
-
         private void InitializeRPSSemaphores()
         {
             double totalrps = 0;
-            foreach (ApiMethod method in (ApiMethod[]) Enum.GetValues(typeof(ApiMethod)))
+            foreach (ApiMethod method in ((ApiMethod[]) Enum.GetValues(typeof(ApiMethod))).Distinct())
             {
                 double limit;
                 bool temp = rpsLimit.TryGetValue(method, out limit);
@@ -324,7 +345,7 @@ namespace CSGOTM
         bool RequestPurchasedItems(string botID)
         {
             Log.Info("Requesting items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api, ApiMethod.ItemRequest));
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
@@ -361,8 +382,10 @@ namespace CSGOTM
                     }
                     if (had && !gone)
                     {
-                        UpdateInventory();
-                        Thread.Sleep(Consts.APICOOLDOWN);
+                        if (UpdateInventory())
+                        {
+                            Thread.Sleep(10000); //should wait some time if inventory was updated
+                        }
                         SendSoldItems();
                     }
                     if (!gone)
