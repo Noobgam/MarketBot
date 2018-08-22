@@ -33,11 +33,15 @@ namespace CSGOTM
 
         public enum ApiMethod {
             UpdateInventory,
-            MassInfo,
+            GetTradeList,
+            GetBestOrder,
+            ItemRequest,
+            GenericMassInfo,
+            GenericMassSetPriceById,
             Buy,
             Sell,
-            SellNew = Sell,
-            MassSetPriceById,
+            UnstickeredMassInfo,
+            UnstickeredMassSetPriceById,
             SetOrder,
             GetMoney,
             MinPrice,
@@ -111,24 +115,29 @@ namespace CSGOTM
             rpsDelay[method] = (int)Math.Ceiling(1000.0 / rps);
         }
 
-        readonly Tuple<ApiMethod, double>[] rpsLimit = {
-            Tuple.Create(ApiMethod.GenericCall, 0.1),
-            Tuple.Create(ApiMethod.UpdateInventory, 0.1),
-            Tuple.Create(ApiMethod.Sell, 0.1),
-            Tuple.Create(ApiMethod.MassInfo, 1.5),
-            Tuple.Create(ApiMethod.MassSetPriceById, 1.5),
-            Tuple.Create(ApiMethod.SetOrder, 0.1),
-            Tuple.Create(ApiMethod.GetSteamInventory, 0.1),
-            Tuple.Create(ApiMethod.PingPong, 1.0 / 180)
+        readonly Dictionary<ApiMethod, double> rpsLimit = new Dictionary<ApiMethod, double> { 
+            { ApiMethod.UnstickeredMassInfo, 1.5 },
+            { ApiMethod.UnstickeredMassSetPriceById, 1.5 },
+            { ApiMethod.Buy, 1 },
         };
 
         private void InitializeRPSSemaphores()
         {
             double totalrps = 0;
-            foreach (Tuple<ApiMethod, double> method in rpsLimit)
+            foreach (ApiMethod method in (ApiMethod[]) Enum.GetValues(typeof(ApiMethod)))
             {
-                GenerateSemaphore(method.Item1, method.Item2);
-                totalrps += method.Item2;
+                double limit;
+                bool temp = rpsLimit.TryGetValue(method, out limit);
+                if (temp)
+                {
+                    GenerateSemaphore(method, limit);
+                }
+                else
+                {
+                    limit = Consts.DEFAULTRPS;
+                    GenerateSemaphore(method, limit);
+                }
+                totalrps += limit;
             }      
             if (totalrps > Consts.GLOBALRPSLIMIT)
             {
@@ -227,8 +236,6 @@ namespace CSGOTM
                             historyItem.timesold = arr[4];
                             historyItem.price = Int32.Parse(arr[5]);
                             historyItem.i_market_name = arr[6] + "," + arr[7];
-
-                            throw new Exception(x.data + " is not a valid history item.");
                         }
                         Logic.ProcessItem(historyItem);
                     }
@@ -277,7 +284,7 @@ namespace CSGOTM
         {
             Log.Info("Sending " +
                 "items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api, ApiMethod.ItemRequest));
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
@@ -341,8 +348,10 @@ namespace CSGOTM
                     {
                         if (arr[i].ui_status == "4")
                         {
-                            UpdateInventory();
-                            Thread.Sleep(Consts.APICOOLDOWN);
+                            if (UpdateInventory())
+                            {
+                                Thread.Sleep(10000); //should wait some time if inventory was updated
+                            }
                             RequestPurchasedItems(arr[i].ui_bid);
                             gone = true;
                             Logic.doNotSell = true; 
@@ -410,7 +419,7 @@ namespace CSGOTM
                 socket.MessageReceived += Msg;
                 socket.Open();
                 Thread.Sleep(5000);
-                Log.Info("Trying to reconnect for the %d-th time", i + 1);
+                Log.ApiError("Trying to reconnect for the %d-th time", i + 1);
             }
         }
 
@@ -423,7 +432,7 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            string a = ExecuteApiRequest(url);
+            string a = ExecuteApiRequest(url, ApiMethod.Buy);
             JObject parsed = JObject.Parse(a);
 			bool badTrade = false;
 			try {
@@ -433,7 +442,7 @@ namespace CSGOTM
 			}
             if (badTrade)
             {
-                Log.Error($"Missed an item {item.i_market_name} costing {item.ui_price}");
+                Log.ApiError($"Missed an item {item.i_market_name} costing {item.ui_price}");
                 return false;
             }
             if (parsed["result"] == null)
@@ -449,7 +458,7 @@ namespace CSGOTM
         [System.Obsolete("Specify item, it will parce it by itself.")]
         public bool Buy(string ClasssId, string InstanceId, int price)
         {
-#if !DEBUG
+#if DEBUG
             totalwasted += price;
             Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
@@ -475,14 +484,14 @@ namespace CSGOTM
             return false;
 
 #else
-            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.SellNew);
+            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell);
             JObject parsed = JObject.Parse(a);
             foreach (var pair in parsed)
                 Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
             if (parsed["result"] == null)
                 return false;
             else if ((int)parsed["result"] == 1) {
-                return 
+                return true; 
             }
             else
                 return false;
@@ -494,10 +503,10 @@ namespace CSGOTM
 
         }
         
-        public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
+        public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0, ApiMethod method = ApiMethod.GenericMassInfo) {
             string uri = $"/api/MassInfo/{sell}/{buy}/{history}/{info}?key={Api}";
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
-            string result = ExecuteApiPostRequest(uri, data);
+            string result = ExecuteApiPostRequest(uri, data, method);
             try {
                 JObject temp = JObject.Parse(result);
                 return temp;
@@ -513,11 +522,11 @@ namespace CSGOTM
         /// </summary>
         /// <param name="items"></param>
         /// <returns></returns>
-        public JObject MassSetPriceById(List<Tuple<string, int>> items)
+        public JObject MassSetPriceById(List<Tuple<string, int>> items, ApiMethod method = ApiMethod.GenericMassSetPriceById)
         {
             string uri = $"/api/MassSetPriceById/?key={Api}";
             string data = String.Join("&", items.Select(lr => $"list[{lr.Item1}]={lr.Item2}"));
-            string result = ExecuteApiPostRequest(uri, data);
+            string result = ExecuteApiPostRequest(uri, data, method);
             try
             {
                 JObject temp = JObject.Parse(result);
@@ -532,7 +541,7 @@ namespace CSGOTM
 
         public Inventory GetSteamInventory()
         {
-            string a = ExecuteApiRequest("/api/GetInv/?key=" + Api);
+            string a = ExecuteApiRequest("/api/GetInv/?key=" + Api, ApiMethod.GetSteamInventory);
             JObject json = JObject.Parse(a);
             Inventory inventory = new Inventory();
             inventory.content = new List<Inventory.SteamItem>();
@@ -547,11 +556,11 @@ namespace CSGOTM
 #if DEBUG   
             return false;
 #else
-            string a = ExecuteApiRequest("/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
-            JObject json = JObject.Parse(a);
+            string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+            JObject json = JObject.Parse(ExecuteApiRequest(uri + Api, ApiMethod.SetOrder));
             if (json["success"] == null)
             {
-                Log.ApiError("Was unable to set order, uls is :/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
+                Log.ApiError("Was unable to set order, uls is :" + uri);
                 return false;
             }
             else if ((bool)json["success"])
@@ -560,7 +569,7 @@ namespace CSGOTM
             }
             else
             {
-                Log.ApiError("Was unable to set order, uls is :/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
+                Log.ApiError("Was unable to set order, uls is :" + uri);
                 return false;
             }
 #endif
@@ -570,8 +579,7 @@ namespace CSGOTM
         {
             try
             {
-                string a = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api);
-                JObject json = JObject.Parse(a);
+                JObject json = JObject.Parse(ExecuteApiRequest("/api/UpdateInventory/?key=" + Api, ApiMethod.UpdateInventory));
                 if (json["success"] == null)
                 {
                     Log.ApiError("Was unable to update inventory");
@@ -597,8 +605,7 @@ namespace CSGOTM
         {
             try
             {
-                string a = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-                JObject x = JObject.Parse(a);
+                JObject x = JObject.Parse(ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder));
                 JArray thing = (JArray)x["buy_offers"];
                 if (thing == null || thing.Count == 0)
                     return 49;
@@ -612,25 +619,12 @@ namespace CSGOTM
                 return -1;
             }
         }
-
-        public JArray GetItemHistory(string classid, string instanceid) {
-            try {
-                string a = ExecuteApiRequest("/api/ItemHistory/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-                JObject x = JObject.Parse(a);
-                return (JArray) x["history"];
-            }
-            catch (Exception ex) {
-                Log.Error(ex.Message);
-                return null;
-            }
-        }
         
         public TMTrade[] GetTradeList()
         {
             try
             {
-                string a = ExecuteApiRequest("/api/Trades/?key=" + Api);
-                JArray json = JArray.Parse(a);
+                JArray json = JArray.Parse(ExecuteApiRequest("/api/Trades/?key=" + Api, ApiMethod.GetTradeList));
                 TMTrade[] arr = new TMTrade[json.Count];
                 int iter = 0;
                 foreach (var thing in json)
@@ -648,24 +642,8 @@ namespace CSGOTM
         }
 
         public float GetMoney() {
-            string temp = ExecuteApiRequest("/api/GetMoney/?key=" + Api);
-            JObject temp2 = JObject.Parse(temp);
+            JObject temp2 = JObject.Parse(ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney));
             return float.Parse((string)temp2["money"]);
-        }
-
-        public int MinPrice(string classid, string instanceid)
-        {
-            string url = $"/api/BestSellOffer/{classid}_{instanceid}/?key={Api}";
-            string temp = ExecuteApiRequest(url);
-            JObject temp2 = JObject.Parse(temp);
-            try
-            {
-                return int.Parse((string) temp2["best_offer"]);
-            }
-            catch 
-            {
-                return -1;
-            }
         }
     }
 }

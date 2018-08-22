@@ -12,6 +12,7 @@ namespace CSGOTM {
         public const int SECOND = 1050; //used to restrict rps.
         public const int GLOBALRPSLIMIT = 5;
         public const int DAY = 86400;
+        public const double DEFAULTRPS = 0.1;
     }
 
     public class Pair<T, U> {

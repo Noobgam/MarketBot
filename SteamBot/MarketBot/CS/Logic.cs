@@ -57,16 +57,9 @@ namespace CSGOTM {
             {
                 try
                 {
-                    using (WebClient myWebClient = new WebClient())
-                    {
-                        myWebClient.Encoding = System.Text.Encoding.UTF8;
-                        NameValueCollection myQueryStringCollection = new NameValueCollection {{"q", ""}};
-                        myWebClient.QueryString = myQueryStringCollection;
-
-                        JObject modes = JObject.Parse(myWebClient.DownloadString(
-                            "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/226670972576660e269364ac3ca0a612d829dbac/set_true_if_want_to_sell_only.txt"));
-                        sellOnly = Boolean.Parse((string) modes[botName]);
-                    }
+                    JObject modes = JObject.Parse(Utility.Request.Get(
+                        "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/226670972576660e269364ac3ca0a612d829dbac/set_true_if_want_to_sell_only.txt"));
+                    sellOnly = Boolean.Parse((string) modes[botName]);
                 }
                 catch (Exception e)
                 {
@@ -103,7 +96,6 @@ namespace CSGOTM {
                     var info = Protocol.MassInfo(
                         new List<Tuple<string, string>> {new Tuple<string, string>(top.i_classid, top.i_instanceid)},
                         buy: 2, history: 1);
-                    Thread.Sleep(1000);
                     if (info == null || (string) info["success"] == "false") {
                         needOrderUnstickered.Dequeue();
                         continue;
@@ -141,8 +133,6 @@ namespace CSGOTM {
                     }
                     needOrderUnstickered.Dequeue();
                 }
-
-                Thread.Sleep(1000);
             }
         }
 
@@ -182,11 +172,8 @@ namespace CSGOTM {
                     HistoryItem item = needOrder.Dequeue();
                     try {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        Thread.Sleep(Consts.APICOOLDOWN);
                         lock (DatabaseLock)
                         {
-
-
                             SalesHistory history = dataBase[item.i_market_name];
                             //Log.Info("Checking item..." + price + "  vs  " + history.median); this message is useless
                             if (price != -1 && price < 30000 && history.median * 0.78 > price &&
@@ -208,8 +195,7 @@ namespace CSGOTM {
                         Log.Error("Handled ex");
                     }
                 }
-
-                Thread.Sleep(Consts.APICOOLDOWN);
+                
             }
         }
 
@@ -217,7 +203,7 @@ namespace CSGOTM {
             while (true) {
                 if (doNotSell) {
                     doNotSell = false;
-                    Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL); //can't lower it due to some weird things in protocol, requieres testing
+                    Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL); //can't lower it due to some weird things in protocol, requires testing
                 }
                 else if (toBeSold.Count == 0) {
                     try {
@@ -230,8 +216,6 @@ namespace CSGOTM {
                     catch (Exception ex) {
                     }
                 }
-
-                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
         }
 
@@ -272,7 +256,6 @@ namespace CSGOTM {
                 }
                 while (unstickeredTemp.Count > 0)
                 {
-                    Thread.Sleep(1000); //constant rps.
                     Queue<TMTrade> unstickeredChunk = new Queue<TMTrade>(unstickeredTemp.Take(100));
                     for (int i = 0; i < unstickeredChunk.Count; ++i)
                         unstickeredTemp.Dequeue();
@@ -281,8 +264,7 @@ namespace CSGOTM {
                     {
                         tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
                     }
-                    JObject info = Protocol.MassInfo(tpls, sell: 1);
-                    Thread.Sleep(1000); //constant rps.
+                    JObject info = Protocol.MassInfo(tpls, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
                     List<Tuple<string, int>> items = new List<Tuple<string, int>>();
                     Dictionary<string, Tuple<int, int>[]> marketOffers = new Dictionary<string, Tuple<int, int>[]>();
                     Dictionary<string, int> myOffer = new Dictionary<string, int>();
@@ -330,9 +312,8 @@ namespace CSGOTM {
                         }
                         catch { }
                     }
-                    /*JOBject obj = */Protocol.MassSetPriceById(items);
+                    /*JOBject obj = */Protocol.MassSetPriceById(items, method: Protocol.ApiMethod.UnstickeredMassSetPriceById);
                 }
-                Thread.Sleep(100); //constant rps.
             }
         }
 
@@ -346,8 +327,7 @@ namespace CSGOTM {
                     {
                         items.Add(new Tuple<string, int>(trade.ui_id, 0));
                     }
-                    Thread.Sleep(Consts.APICOOLDOWN);
-                    /*JOBject obj =*/ Protocol.MassSetPriceById(items);
+                    /*JOBject obj =*/Protocol.MassSetPriceById(items);
                     refreshPrice.Clear();
                 }
                 else if (toBeSold.Count != 0) {
@@ -374,8 +354,6 @@ namespace CSGOTM {
                         }
                     }
                 }
-
-               Thread.Sleep(Consts.APICOOLDOWN);
             }
         }
 
@@ -387,7 +365,6 @@ namespace CSGOTM {
                 else {
                     Log.Error("Couldn\'t parse new DB");
                 }
-
                 Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
         }
@@ -440,74 +417,72 @@ namespace CSGOTM {
 #endif
 
         bool ParseNewDatabase() {
-            try {
-                using (WebClient myWebClient = new WebClient()) {
-                    myWebClient.Encoding = System.Text.Encoding.UTF8;
-                    NameValueCollection myQueryStringCollection = new NameValueCollection();
-                    myQueryStringCollection.Add("q", "");
-                    myWebClient.QueryString = myQueryStringCollection;
-                    try {
-                        string[] lines;
+            try
+            {
+                try
+                {
+                    string[] lines;
+                    {
+                        JObject things =
+                            JObject.Parse(
+                                Utility.Request.Get("https://market.csgo.com/itemdb/current_730.json"));
+                        string db = (string)things["db"];
+                        lines = Utility.Request.Get("https://market.csgo.com/itemdb/" + db).Split('\n');
+                    }
+                    string[] indexes = lines[0].Split(';');
+                    int id = 0;
+
+                    if (NewItem.mapping.Count == 0)
+                        foreach (var str in indexes)
+                            NewItem.mapping[str] = id++;
+
+                    lock (CurrentItemsLock)
+                    {
+                        currentItems.Clear();
+
+                        for (id = 1; id < lines.Length - 1; ++id)
                         {
-                            JObject things =
-                                JObject.Parse(
-                                    myWebClient.DownloadString("https://market.csgo.com/itemdb/current_730.json"));
-                            string db = (string) things["db"];
-                            lines = myWebClient.DownloadString("https://market.csgo.com/itemdb/" + db).Split('\n');
-                        }
-                        string[] indexes = lines[0].Split(';');
-                        int id = 0;
+                            string[] item = lines[id].Split(';');
+                            if (item[NewItem.mapping["c_stickers"]] == "0")
 
-                        if (NewItem.mapping.Count == 0)
-                            foreach (var str in indexes)
-                                NewItem.mapping[str] = id++;
-
-                        lock (CurrentItemsLock)
-                        {
-                            currentItems.Clear();
-
-                            for (id = 1; id < lines.Length - 1; ++id)
+                                unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
+                                                item[NewItem.mapping["c_instanceid"]]);
+                            // new logic
+                            else
                             {
-                                string[] item = lines[id].Split(';');
-                                if (item[NewItem.mapping["c_stickers"]] == "0")
-
-                                    unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
-                                                    item[NewItem.mapping["c_instanceid"]]);
-                                // new logic
-                                else
+                                String name = item[NewItem.mapping["c_market_name"]];
+                                if (name.Length >= 2)
                                 {
-                                    String name = item[NewItem.mapping["c_market_name"]];
-                                    if (name.Length >= 2)
-                                    {
-                                        name = name.Remove(0, 1);
-                                        name = name.Remove(name.Length - 1);
-                                    }
-
-                                    if (!currentItems.ContainsKey(name))
-                                        currentItems[name] = new List<int>();
-                                    currentItems[name].Add(int.Parse(item[NewItem.mapping["c_price"]]));
+                                    name = name.Remove(0, 1);
+                                    name = name.Remove(name.Length - 1);
                                 }
-                            }
 
-                            SaveNonStickeredBase();
-                            SortCurrentItems();
-                        }
-
-                        // Calling WantToBuy function for all items. 
-                        indexes = lines[0].Split(';');
-                        id = 0;
-                        for (id = 1; id < lines.Length - 1; ++id) {
-                            string[] itemInString = lines[id].Split(';');
-                            NewItem newItem = new NewItem(itemInString);
-                            if (WantToBuy(newItem)) {
-                                Protocol.Buy(newItem);
-                                Thread.Sleep(Consts.APICOOLDOWN);
+                                if (!currentItems.ContainsKey(name))
+                                    currentItems[name] = new List<int>();
+                                currentItems[name].Add(int.Parse(item[NewItem.mapping["c_price"]]));
                             }
                         }
+
+                        SaveNonStickeredBase();
+                        SortCurrentItems();
                     }
-                    catch (Exception ex) {
-                        Console.WriteLine(ex.Message);
+
+                    // Calling WantToBuy function for all items. 
+                    indexes = lines[0].Split(';');
+                    id = 0;
+                    for (id = 1; id < lines.Length - 1; ++id)
+                    {
+                        string[] itemInString = lines[id].Split(';');
+                        NewItem newItem = new NewItem(itemInString);
+                        if (WantToBuy(newItem))
+                        {
+                            Protocol.Buy(newItem);
+                        }
                     }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.Message);
                 }
 
                 return true;
