@@ -577,6 +577,19 @@ namespace CSGOTM {
                 List<long> prices = currentItems[item.i_market_name];
                 //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
+                
+                 //Logging 
+                if (item.ui_price < 25000 && prices.Count >= 6 &&
+                    item.ui_price < 0.9 * prices[2] && !blackList.Contains(item.i_market_name) &&
+                    salesHistory.cnt >= MINSIZE &&
+                    prices[2] < dataBase[item.i_market_name].median * 1.25 && prices[2] - item.ui_price > 400)
+                {
+                    JObject log = new JObject();
+                    log["item"] = JsonConvert.SerializeObject(item);
+                    log["curPrice"] = prices[2];
+                    Log.Info("Have seen interesting item: " + log.ToString());
+                }
+                
                 if (item.ui_price < 25000 && prices.Count >= 6 &&
                     item.ui_price < 0.85 * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
@@ -587,6 +600,7 @@ namespace CSGOTM {
                              (salesHistory.median - item.ui_price));
                     return true;
                 }
+                
             }
 
             return false;
