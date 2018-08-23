@@ -6,6 +6,7 @@ using System.Net;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace SteamAuth
@@ -123,51 +124,74 @@ namespace SteamAuth
             return Encoding.UTF8.GetString(codeArray);
         }
 
+        private DateTime lastConfirmationFetchTime = DateTime.MinValue;
+        private Mutex fetchingLock = new Mutex();
+
         public Confirmation[] FetchConfirmations()
         {
-            string url = this.GenerateConfirmationURL();
-
-            CookieContainer cookies = new CookieContainer();
-            this.Session.AddCookies(cookies);
-
-            string response = SteamWeb.Request(url, "GET", "", cookies);
-
-            /*So you're going to see this abomination and you're going to be upset.
-              It's understandable. But the thing is, regex for HTML -- while awful -- makes this way faster than parsing a DOM, plus we don't need another library.
-              And because the data is always in the same place and same format... It's not as if we're trying to naturally understand HTML here. Just extract strings.
-              I'm sorry. */
-
-            Regex confRegex = new Regex("<div class=\"mobileconf_list_entry\" id=\"conf[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\"");
-
-            if (response == null || !confRegex.IsMatch(response))
+            if (fetchingLock.WaitOne(500))
             {
-                if (response == null || !response.Contains("<div>Nothing to confirm</div>"))
+                try
                 {
-                    throw new WGTokenInvalidException();
-                }
+                    int msec = (int)Math.Floor(10000 - DateTime.Now.Subtract(lastConfirmationFetchTime).TotalMilliseconds);
+                    if (msec > 0)
+                    {
+                        Thread.Sleep(msec);
+                    }
+                    string url = this.GenerateConfirmationURL();
 
+                    CookieContainer cookies = new CookieContainer();
+                    this.Session.AddCookies(cookies);
+
+                    string response = SteamWeb.Request(url, "GET", "", cookies);
+                    lastConfirmationFetchTime = DateTime.Now;
+
+                    /*So you're going to see this abomination and you're going to be upset.
+                        It's understandable. But the thing is, regex for HTML -- while awful -- makes this way faster than parsing a DOM, plus we don't need another library.
+                        And because the data is always in the same place and same format... It's not as if we're trying to naturally understand HTML here. Just extract strings.
+                        I'm sorry. */
+
+                    Regex confRegex = new Regex("<div class=\"mobileconf_list_entry\" id=\"conf[0-9]+\" data-confid=\"(\\d+)\" data-key=\"(\\d+)\" data-type=\"(\\d+)\" data-creator=\"(\\d+)\"");
+                    if (response == null || !confRegex.IsMatch(response))
+                    {
+                        if (response == null || !response.Contains("<div>Nothing to confirm</div>"))
+                        {
+                            throw new WGTokenInvalidException();
+                        }
+
+                        return new Confirmation[0];
+                    }
+
+                    MatchCollection confirmations = confRegex.Matches(response);
+
+                    List<Confirmation> ret = new List<Confirmation>();
+                    foreach (Match confirmation in confirmations)
+                    {
+                        if (confirmation.Groups.Count != 5) continue;
+
+                        if (!ulong.TryParse(confirmation.Groups[1].Value, out ulong confID) ||
+                            !ulong.TryParse(confirmation.Groups[2].Value, out ulong confKey) ||
+                            !int.TryParse(confirmation.Groups[3].Value, out int confType) ||
+                            !ulong.TryParse(confirmation.Groups[4].Value, out ulong confCreator))
+                        {
+                            continue;
+                        }
+
+                        ret.Add(new Confirmation(confID, confKey, confType, confCreator));
+                    }
+
+                    return ret.ToArray();
+                }
+                finally
+                {
+                    fetchingLock.ReleaseMutex();
+                }
+            }
+            else
+            {
+                //kinda nothing to confirm, don't bother it will probably be confirmed by another thread.
                 return new Confirmation[0];
             }
-
-            MatchCollection confirmations = confRegex.Matches(response);
-
-            List<Confirmation> ret = new List<Confirmation>();
-            foreach (Match confirmation in confirmations)
-            {
-                if (confirmation.Groups.Count != 5) continue;
-
-                if (!ulong.TryParse(confirmation.Groups[1].Value, out ulong confID) ||
-                    !ulong.TryParse(confirmation.Groups[2].Value, out ulong confKey) ||
-                    !int.TryParse(confirmation.Groups[3].Value, out int confType) ||
-                    !ulong.TryParse(confirmation.Groups[4].Value, out ulong confCreator))
-                {
-                    continue;
-                }
-
-                ret.Add(new Confirmation(confID, confKey, confType, confCreator));
-            }
-
-            return ret.ToArray();
         }
 
         public async Task<Confirmation[]> FetchConfirmationsAsync()
