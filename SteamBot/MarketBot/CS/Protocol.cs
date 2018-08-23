@@ -13,6 +13,7 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 using System.Linq;
+using System.Runtime.InteropServices;
 
 namespace CSGOTM
 {
@@ -320,6 +321,17 @@ namespace CSGOTM
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
             string a = ExecuteApiRequest(url);
             JObject parsed = JObject.Parse(a);
+			bool badTrade = false;
+			try {
+				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
+			} catch {
+				
+			}
+            if (badTrade)
+            {
+                Log.Error($"Missed an item {item.i_market_name} costing {item.ui_price}");
+                return false;
+            }
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -504,6 +516,21 @@ namespace CSGOTM
             string temp = ExecuteApiRequest("/api/GetMoney/?key=" + Api);
             JObject temp2 = JObject.Parse(temp);
             return float.Parse((string)temp2["money"]);
+        }
+
+        public int MinPrice(string classid, string instanceid)
+        {
+            string url = $"/api/BestSellOffer/{classid}_{instanceid}/?key={Api}";
+            string temp = ExecuteApiRequest(url);
+            JObject temp2 = JObject.Parse(temp);
+            try
+            {
+                return int.Parse((string) temp2["best_offer"]);
+            }
+            catch 
+            {
+                return -1;
+            }
         }
     }
 }
