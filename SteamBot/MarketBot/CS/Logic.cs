@@ -9,6 +9,7 @@ using System.Text;
 using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Linq;
+using System.Collections.Concurrent;
 
 namespace CSGOTM {
     public class Logic {
@@ -204,19 +205,28 @@ namespace CSGOTM {
 
         void AddNewItems() {
             while (true) {
-                if (doNotSell) {
+                if (doNotSell)
+                {
                     doNotSell = false;
                     Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL); //can't lower it due to some weird things in protocol, requires testing
                 }
-                else if (toBeSold.Count == 0) {
-                    try {
-                        Inventory inventory = Protocol.GetSteamInventory();
-                        foreach (Inventory.SteamItem item in inventory.content) {
-                            Log.Info(item.i_market_name + " is going to be sold.");
-                            toBeSold.Enqueue(item);
+                else
+                {
+                    Thread.Sleep(10); //dont want to spin nonstop.
+                    if (toBeSold.Count == 0)
+                    {
+                        try
+                        {
+                            Inventory inventory = Protocol.GetSteamInventory();
+                            foreach (Inventory.SteamItem item in inventory.content)
+                            {
+                                Log.Info(item.i_market_name + " is going to be sold.");
+                                toBeSold.Enqueue(item);
+                            }
                         }
-                    }
-                    catch (Exception ex) {
+                        catch (Exception ex)
+                        {
+                        }
                     }
                 }
             }
@@ -322,6 +332,7 @@ namespace CSGOTM {
 
         void SellFromQueue() {
             while (true) {
+                Thread.Sleep(10); //spin prevention
                 if (refreshPrice.Count != 0)
                 {
                     List<Tuple<string, int>> items = new List<Tuple<string, int>>();
@@ -333,14 +344,10 @@ namespace CSGOTM {
                     /*JOBject obj =*/Protocol.MassSetPriceById(items);
                     refreshPrice.Clear();
                 }
-                else if (toBeSold.Count != 0) {
-                    Inventory.SteamItem item = toBeSold.Dequeue();
+                else if (toBeSold.TryDequeue(out Inventory.SteamItem item))
+                {
                     int price = GetMySellPrice(item);
-                    if (price == -1)
-                    {
-                        toBeSold.Enqueue(item);
-                    }
-                    else
+                    if (price != -1)
                     {
                         try
                         {
@@ -348,14 +355,12 @@ namespace CSGOTM {
                             if (!Protocol.SellNew(ui_id[1], ui_id[2], price))
                             {
                                 Log.ApiError("Could not sell new item, enqueuing it again.");
-                                toBeSold.Enqueue(item);
                             }
                         }
                         catch
                         {
-                            toBeSold.Enqueue(item);
                         }
-                    }
+                    }                
                 }
             }
         }
@@ -363,7 +368,7 @@ namespace CSGOTM {
         void ParsingCycle() {
             while (true) {
                 if (ParseNewDatabase()) {
-                    Log.Debug("Finished parsing new DB");
+                    Log.Success("Finished parsing new DB");
                 }
                 else {
                     Log.Error("Couldn\'t parse new DB");
@@ -677,7 +682,7 @@ namespace CSGOTM {
 
 
 
-        private Queue<Inventory.SteamItem> toBeSold = new Queue<Inventory.SteamItem>();
+        private ConcurrentQueue<Inventory.SteamItem> toBeSold = new ConcurrentQueue<Inventory.SteamItem>();
         private Queue<TMTrade> refreshPrice = new Queue<TMTrade>();
         private Queue<TMTrade> unstickeredRefresh = new Queue<TMTrade>();
 

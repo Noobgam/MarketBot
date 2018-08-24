@@ -29,7 +29,7 @@ namespace CSGOTM
         public SteamBot.Bot Bot;
         static Random Generator = new Random();
         static string Api = null;
-        private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(Consts.GLOBALRPSLIMIT);
+        private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
 
         //TODO(noobgam): make it great again, probably some of them can be united.
         public enum ApiMethod {
@@ -54,7 +54,8 @@ namespace CSGOTM
         readonly Dictionary<ApiMethod, double> rpsLimit = new Dictionary<ApiMethod, double> {
             { ApiMethod.UnstickeredMassInfo, 1.5 },
             { ApiMethod.UnstickeredMassSetPriceById, 1.5 },
-            { ApiMethod.Buy, 1 },
+            { ApiMethod.Sell, 3 },
+            { ApiMethod.Buy, 3 },
         };
 
         private static Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
@@ -76,11 +77,11 @@ namespace CSGOTM
 
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall)
         {
-
             string response = null;
             try
             {
                 ObtainApiSemaphore(method);
+                Log.Success("Executing api call " + url);
                 response = Utility.Request.Get("https://market.csgo.com" + url);
             }
             finally
@@ -116,6 +117,7 @@ namespace CSGOTM
             try
             {
                 ObtainApiSemaphore(method);
+                Log.Success("Executing api call " + url);
                 response = Utility.Request.Post("https://market.csgo.com" + url, data);
             }
             finally
@@ -327,7 +329,7 @@ namespace CSGOTM
                     if (offer.Items.NewVersion) {
                         string newOfferId;
                         if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
-                            Task.Delay(10000) //the delay might fix #35
+                            Task.Delay(5000) //the delay might fix #35
                                 .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
                             Log.Success("Trade offer sent : Offer ID " + newOfferId);
                         }
@@ -388,10 +390,10 @@ namespace CSGOTM
                         }
                         SendSoldItems();
                     }
-                    if (!gone)
-                    {
-                        Logic.RefreshPrices(arr);
-                    }
+                    //if (!gone)
+                    //{
+                    //    Logic.RefreshPrices(arr);
+                    //}
                 }
                 catch (Exception ex)
                 {
@@ -582,7 +584,7 @@ namespace CSGOTM
             return false;
 #else
             string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
-            JObject json = JObject.Parse(ExecuteApiRequest(uri + Api, ApiMethod.SetOrder));
+            JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
             if (json["success"] == null)
             {
                 Log.ApiError("Was unable to set order, uls is :" + uri);
