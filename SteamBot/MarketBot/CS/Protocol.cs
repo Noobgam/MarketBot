@@ -162,7 +162,7 @@ namespace CSGOTM
             }      
             if (totalrps > Consts.GLOBALRPSLIMIT)
             {
-                Log.Info($"Total RPS of {totalrps} exceeds {Consts.GLOBALRPSLIMIT}.");
+                //Log.Info($"Total RPS of {totalrps} exceeds {Consts.GLOBALRPSLIMIT}.");
             }
         }
         
