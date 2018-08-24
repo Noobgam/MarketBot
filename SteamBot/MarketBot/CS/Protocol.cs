@@ -594,7 +594,10 @@ namespace CSGOTM
             }
             else
             {
-                Log.ApiError("Was unable to set order, uls is :" + uri);
+                if (json.ContainsKey("error"))
+                    Log.ApiError($"Was unable to set: url is {uri}, error message: {(string)json["error"]}");
+                else
+                    Log.ApiError("Was unable to set order, urls is :" + uri);
                 return false;
             }
 #endif

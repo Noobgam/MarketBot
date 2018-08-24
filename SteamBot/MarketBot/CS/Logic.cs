@@ -184,8 +184,8 @@ namespace CSGOTM {
                             {
                                 try
                                 {
-                                    Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                    Log.Success("Settled order for " + item.i_market_name);
+                                    if (Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price))
+                                        Log.Success("Settled order for " + item.i_market_name);
                                 }
                                 catch (Exception ex)
                                 {
