@@ -586,6 +586,7 @@ namespace CSGOTM
             if (json["success"] == null)
             {
                 Log.ApiError("Was unable to set order, uls is :" + uri);
+                Log.ApiError(json.ToString());
                 return false;
             }
             else if ((bool)json["success"])
