@@ -41,7 +41,7 @@ namespace CSGOTM {
             Task.Run((Action)SaveDataBaseCycle);
             Task.Run((Action)SellFromQueue);
             Task.Run((Action)AddNewItems);
-            Task.Run((Action)UnstickeredRefresh);
+            //Task.Run((Action)UnstickeredRefresh);
             Task.Run((Action)SetNewOrder);
             if (!sellOnly)
             {
@@ -58,7 +58,7 @@ namespace CSGOTM {
                 try
                 {
                     JObject modes = JObject.Parse(Utility.Request.Get(
-                        "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/226670972576660e269364ac3ca0a612d829dbac/set_true_if_want_to_sell_only.txt"));
+                        "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/set_true_if_want_to_sell_only.txt"));
                     sellOnly = Boolean.Parse((string) modes[botName]);
                 }
                 catch (Exception e)
@@ -137,16 +137,17 @@ namespace CSGOTM {
         }
 
         public void RefreshPrices(TMTrade[] trades) {
-            lock (RefreshItemsLock) lock (UnstickeredRefreshItemsLock)
+            lock (RefreshItemsLock) //lock (UnstickeredRefreshItemsLock)
             {
                 for (int i = 1; i <= trades.Length; i++)
                 {
                     var cur = trades[trades.Length - i];
-                    if (!hasStickers(cur.i_classid, cur.i_instanceid))
-                    {
-                        unstickeredRefresh.Enqueue(cur);
-                    }
-                    else if (i <= 7 && cur.ui_status == "1")
+                    //if (!hasStickers(cur.i_classid, cur.i_instanceid))
+                    //{
+                    //    unstickeredRefresh.Enqueue(cur);
+                    //}
+                    //else 
+                    if (i <= 7 && cur.ui_status == "1")
                     {
                         refreshPrice.Enqueue(cur);
                     }
