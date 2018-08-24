@@ -153,7 +153,7 @@ namespace SteamBot
                                     offer.Decline();
                                     Console.ForegroundColor = ConsoleColor.Red;
                                     Console.WriteLine("Offer failed.");
-                                    Console.WriteLine("[Reason]: Invalid trade request.");
+                                    Console.WriteLine("[Reason]: Invalid trade request. (not issued by me, has my items there)");
                                     Console.ForegroundColor = ConsoleColor.White;
                                     return;
                                 } else if (offer.Accept().Accepted) {
@@ -165,14 +165,8 @@ namespace SteamBot
                                         Console.WriteLine("Lost:     " + my.Count + " items.");
                                     Console.ForegroundColor = ConsoleColor.White;
                                     if (my.Count != 0) {
-                                        Thread.Sleep(1000);
-                                        var task = Task.Run(() => {
-                                            Bot.AcceptAllMobileTradeConfirmations();
-                                        });
-                                        if (task.Wait(TimeSpan.FromSeconds(2)))
-                                            return;
-                                        else
-                                            return;
+                                        Task.Delay(1000).
+                                            ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
                                     }
                                     return;
                                 } else {
@@ -182,51 +176,6 @@ namespace SteamBot
                                     Console.ForegroundColor = ConsoleColor.White;
                                     return;
                                 }
-                            case "570-2":
-                                bool checkMessage = true;
-                                if (offer.Message.IndexOf(' ') != 4 || offer.Message.Substring(0, 4).ToUpper() != offer.Message.Substring(0, 4))
-                                    checkMessage = false;
-                                if (my.Count > 0 && !checkMessage) //if the offer is bad we decline it. 
-                                {
-                                    offer.Decline();
-                                    Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.WriteLine("Offer failed.");
-                                    Console.WriteLine("[Reason]: Invalid trade request.");
-                                    Console.ForegroundColor = ConsoleColor.White;
-                                    return;
-                                }
-                                else if (offer.Accept().Accepted)
-                                {
-                                    Console.ForegroundColor = ConsoleColor.Yellow;
-                                    Console.WriteLine("Offer completed.");
-                                    if (their.Count != 0)
-                                        Console.WriteLine("Received: " + their.Count + " items.");
-                                    if (my.Count != 0)
-                                        Console.WriteLine("Lost:     " + my.Count + " items.");
-                                    Console.ForegroundColor = ConsoleColor.White;
-                                    if (my.Count != 0)
-                                    {
-                                        Thread.Sleep(1000);
-                                        var task = Task.Run(() => {
-                                            Bot.AcceptAllMobileTradeConfirmations();
-                                        });
-                                        if (task.Wait(TimeSpan.FromSeconds(2)))
-                                            return;
-                                        else
-                                            return;
-                                    }
-                                    return;
-                                }
-                                else
-                                {
-                                    Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.WriteLine("Offer failed.");
-                                    Console.WriteLine("[Reason]: Unknown error.");
-                                    Console.ForegroundColor = ConsoleColor.White;
-                                    return;
-                                }
-
-                                break;
                             case "unstable":
                                 break;
                             default:

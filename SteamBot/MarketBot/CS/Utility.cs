@@ -13,6 +13,7 @@ namespace CSGOTM {
         public const int GLOBALRPSLIMIT = 1;
         public const int DAY = 86400;
         public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
+        public const double MAXFROMMEDIAN = 0.78;
     }
 
     public class Pair<T, U> {

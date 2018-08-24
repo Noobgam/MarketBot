@@ -62,9 +62,9 @@ namespace CSGOTM {
                         "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/set_true_if_want_to_sell_only.txt"));
                     sellOnly = Boolean.Parse((string) modes[botName]);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
-
+                    Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
                 Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
             }
@@ -127,7 +127,9 @@ namespace CSGOTM {
                             curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
                         }
                     }
-                    catch (Exception ex) {
+                    catch (Exception ex)
+                    {
+                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
 
                     Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
@@ -165,8 +167,9 @@ namespace CSGOTM {
                     blackList.Add(line);
                 }
             }
-            catch (Exception e) {
-                Log.Warn("No blackList found.");
+            catch (Exception ex)
+            {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
             }
         }
 
@@ -176,27 +179,19 @@ namespace CSGOTM {
                     HistoryItem item = needOrder.Dequeue();
                     try {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
-                        lock (DatabaseLock)
+                        if (price != -1 && price < 30000)
                         {
-                            SalesHistory history = dataBase[item.i_market_name];
-                            //Log.Info("Checking item..." + price + "  vs  " + history.median); this message is useless
-                            if (price != -1 && price < 30000 && history.median * 0.78 > price &&
-                                history.median * 0.78 - price > 30)
+                            lock (DatabaseLock)
                             {
-                                try
+                                if (dataBase[item.i_market_name].median * Consts.MAXFROMMEDIAN - price > 30)
                                 {
-                                    if (Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price))
-                                        Log.Success("Settled order for " + item.i_market_name);
-                                }
-                                catch (Exception ex)
-                                {
+                                    Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                                 }
                             }
-
                         }
                     }
                     catch (Exception ex) {
-                        Log.Error("Handled ex");
+                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                 }
                 
@@ -205,28 +200,26 @@ namespace CSGOTM {
 
         void AddNewItems() {
             while (true) {
+                SpinWait.SpinUntil(() => (doNotSell || !toBeSold.IsEmpty));
                 if (doNotSell)
                 {
                     doNotSell = false;
                     Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL); //can't lower it due to some weird things in protocol, requires testing
                 }
                 else
-                {
-                    Thread.Sleep(10); //dont want to spin nonstop.
-                    if (toBeSold.Count == 0)
+                {    
+                    try
                     {
-                        try
+                        Inventory inventory = Protocol.GetSteamInventory();
+                        foreach (Inventory.SteamItem item in inventory.content)
                         {
-                            Inventory inventory = Protocol.GetSteamInventory();
-                            foreach (Inventory.SteamItem item in inventory.content)
-                            {
-                                Log.Info(item.i_market_name + " is going to be sold.");
-                                toBeSold.Enqueue(item);
-                            }
+                            Log.Info(item.i_market_name + " is going to be sold.");
+                            toBeSold.Enqueue(item);
                         }
-                        catch (Exception ex)
-                        {
-                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                 }
             }
@@ -332,7 +325,7 @@ namespace CSGOTM {
 
         void SellFromQueue() {
             while (true) {
-                Thread.Sleep(10); //spin prevention
+                SpinWait.SpinUntil(() => (refreshPrice.Count != 0 || !toBeSold.IsEmpty));
                 if (refreshPrice.Count != 0)
                 {
                     List<Tuple<string, int>> items = new List<Tuple<string, int>>();
@@ -396,8 +389,9 @@ namespace CSGOTM {
                     if (File.Exists(DATABASETEMPPATH))
                         File.Delete(DATABASETEMPPATH);
                 }
-                catch (Exception e)
+                catch (Exception ex)
                 {
+                    Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     if (File.Exists(DATABASEPATH))
                         File.Delete(DATABASEPATH);
                     if (File.Exists(DATABASETEMPPATH))
@@ -631,13 +625,14 @@ namespace CSGOTM {
                 return ManipulatedItems[id] < item.ui_price + 10;
             }
 
-            if (!currentItems.ContainsKey(item.i_market_name)) {
-                return false;
-            }
-
-            lock (DatabaseLock)
+            lock (DatabaseLock) lock (CurrentItemsLock)
             {
                 if (!dataBase.ContainsKey(item.i_market_name))
+                {
+                    return false;
+                }
+
+                if (!currentItems.ContainsKey(item.i_market_name))
                 {
                     return false;
                 }

@@ -1117,7 +1117,7 @@ namespace SteamBot
                         }
                     }
                 }
-                catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException ex)
+                catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException)
                 {
                     Log.Error("Invalid session when trying to fetch trade confirmations.");
                 }

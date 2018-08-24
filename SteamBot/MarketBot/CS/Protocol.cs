@@ -81,7 +81,7 @@ namespace CSGOTM
             try
             {
                 ObtainApiSemaphore(method);
-                Log.Success("Executing api call " + url);
+                //Log.Success("Executing api call " + url);
                 response = Utility.Request.Get("https://market.csgo.com" + url);
             }
             finally
@@ -117,7 +117,7 @@ namespace CSGOTM
             try
             {
                 ObtainApiSemaphore(method);
-                Log.Success("Executing api call " + url);
+                //Log.Success("Executing api call " + url);
                 response = Utility.Request.Post("https://market.csgo.com" + url, data);
             }
             finally
@@ -288,7 +288,7 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-
+                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                     break;
             }
@@ -325,7 +325,6 @@ namespace CSGOTM
                             (long)item["amount"]);
                     }
                     Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-                    //Log.Info("Token: " + (string)json["request"]["token"]);
                     if (offer.Items.NewVersion) {
                         string newOfferId;
                         if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
@@ -397,10 +396,9 @@ namespace CSGOTM
                 }
                 catch (Exception ex)
                 {
-
+                    Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                //once per 30 seconds we check trade list
-                Thread.Sleep(30000);
+                Thread.Sleep(10000);
             }
         }
 
@@ -580,30 +578,38 @@ namespace CSGOTM
 
         public bool SetOrder(string classid, string instanceid, int price)
         {
-#if CAREFUL   
+            try
+            {
+#if CAREFUL
             return false;
 #else
-            string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
-            JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
-            if (json["success"] == null)
-            {
-                Log.ApiError("Was unable to set order, uls is :" + uri);
-                Log.ApiError(json.ToString());
-                return false;
-            }
-            else if ((bool)json["success"])
-            {
-                return true;
-            }
-            else
-            {
-                if (json.ContainsKey("error"))
-                    Log.ApiError($"Was unable to set: url is {uri}, error message: {(string)json["error"]}");
+                string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+                JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
+                if (json["success"] == null)
+                {
+                    Log.ApiError("Was unable to set order, uls is :" + uri);
+                    Log.ApiError(json.ToString());
+                    return false;
+                }
+                else if ((bool)json["success"])
+                {
+                    return true;
+                }
                 else
-                    Log.ApiError("Was unable to set order, urls is :" + uri);
+                {
+                    if (json.ContainsKey("error"))
+                        Log.ApiError($"Was unable to set: url is {uri}, error message: {(string)json["error"]}");
+                    else
+                        Log.ApiError("Was unable to set order, urls is :" + uri);
+                    return false;
+                }
+#endif
+            }
+            catch (Exception ex)
+            {
+                Log.ApiError("Unknown error happened. Message: " + ex.Message + "\nTrace:" + ex.StackTrace);
                 return false;
             }
-#endif
         }
 
         bool UpdateInventory()
@@ -626,7 +632,7 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
-                Log.ApiError("Was unable to update inventory");
+                Log.ApiError("Was unable to update inventory. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 return false;
             }
         }
