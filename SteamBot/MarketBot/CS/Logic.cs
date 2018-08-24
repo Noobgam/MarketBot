@@ -412,7 +412,7 @@ namespace CSGOTM {
             }
         }
 
-#if DEBUG
+#if CAREFUL
         public void SaveJSONDataBase()
         {
             JsonSerialization.WriteToJsonFile(DATABASEJSONPATH, dataBase);
@@ -501,7 +501,7 @@ namespace CSGOTM {
                 foreach (String name in currentItems.Keys)
                     currentItems[name].Sort();
 
-#if DEBUG
+#if CAREFUL
                 String[] data = new String[currentItems.Count];
                 int i = 0;
                 foreach (String name in currentItems.Keys)

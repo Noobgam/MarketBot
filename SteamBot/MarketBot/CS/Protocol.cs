@@ -20,7 +20,7 @@ namespace CSGOTM
 {
     public class Protocol
     {
-#if DEBUG
+#if CAREFUL
         public int totalwasted = 0;
 #endif
         public Utility.MarketLogger Log;
@@ -449,7 +449,7 @@ namespace CSGOTM
 
         public bool Buy(NewItem item)
         {
-#if DEBUG
+#if CAREFUL
             totalwasted += (int)item.ui_price;
             Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
@@ -481,7 +481,7 @@ namespace CSGOTM
         [System.Obsolete("Specify item, it will parce it by itself.")]
         public bool Buy(string ClasssId, string InstanceId, int price)
         {
-#if DEBUG
+#if CAREFUL
             totalwasted += price;
             Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
@@ -503,7 +503,7 @@ namespace CSGOTM
 
         public bool SellNew(string ClasssId, string InstanceId, int price)
         {
-#if DEBUG //sorry nothing is implemented there, I don't really know what to write as debug
+#if CAREFUL //sorry nothing is implemented there, I don't really know what to write as debug
             return false;
 
 #else
@@ -535,7 +535,7 @@ namespace CSGOTM
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
-                Log.ApiError($"Tried to call massinfo with such data: {data}");
+                Log.ApiError($"Tried to call {uri} with such data: {data}");
                 Log.ApiError(ex.Message);
             }
             return null;
@@ -578,7 +578,7 @@ namespace CSGOTM
 
         public bool SetOrder(string classid, string instanceid, int price)
         {
-#if DEBUG   
+#if CAREFUL   
             return false;
 #else
             string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;

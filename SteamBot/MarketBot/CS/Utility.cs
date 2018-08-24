@@ -10,7 +10,7 @@ namespace CSGOTM {
         public const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         public const int APICOOLDOWN = 1000 * 3; // 3 seconds
         public const int SECOND = 1050; //used to restrict rps.
-        public const int GLOBALRPSLIMIT = 5;
+        public const int GLOBALRPSLIMIT = 4;
         public const int DAY = 86400;
         public const double DEFAULTRPS = 0.05; //TODO(noobgam): make it great again
     }
