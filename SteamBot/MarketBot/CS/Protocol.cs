@@ -162,7 +162,7 @@ namespace CSGOTM
             }      
             if (totalrps > Consts.GLOBALRPSLIMIT)
             {
-                throw new Exception($"Total RPS amount exceeds {Consts.GLOBALRPSLIMIT}.");
+                //throw new Exception($"Total RPS amount exceeds {Consts.GLOBALRPSLIMIT}.");
             }
         }
         
