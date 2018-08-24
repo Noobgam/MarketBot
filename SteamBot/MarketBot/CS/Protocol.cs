@@ -535,8 +535,8 @@ namespace CSGOTM
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
-                Log.Error($"Tried to call massinfo with such data: {data}");
-                Log.Error(ex.Message);
+                Log.ApiError($"Tried to call massinfo with such data: {data}");
+                Log.ApiError(ex.Message);
             }
             return null;
         }
