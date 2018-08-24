@@ -131,8 +131,7 @@ namespace CSGOTM {
                     {
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
-
-                    Log.Info("My Price for {0} is {1}, order is {2}", top.i_market_hash_name, price, curPrice);
+                    
                     if (price > 9000 && curPrice < price * 0.765 && !blackList.Contains(top.i_market_hash_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
@@ -200,7 +199,8 @@ namespace CSGOTM {
 
         void AddNewItems() {
             while (true) {
-                SpinWait.SpinUntil(() => (doNotSell || !toBeSold.IsEmpty));
+                Thread.Sleep(3000); //dont want to spin nonstop
+                SpinWait.SpinUntil(() => (doNotSell || toBeSold.IsEmpty));
                 if (doNotSell)
                 {
                     doNotSell = false;
@@ -213,7 +213,6 @@ namespace CSGOTM {
                         Inventory inventory = Protocol.GetSteamInventory();
                         foreach (Inventory.SteamItem item in inventory.content)
                         {
-                            Log.Info(item.i_market_name + " is going to be sold.");
                             toBeSold.Enqueue(item);
                         }
                     }
@@ -324,7 +323,9 @@ namespace CSGOTM {
         }
 
         void SellFromQueue() {
-            while (true) {
+            while (true)
+            {
+                Thread.Sleep(10); //dont want to spin nonstop
                 SpinWait.SpinUntil(() => (refreshPrice.Count != 0 || !toBeSold.IsEmpty));
                 if (refreshPrice.Count != 0)
                 {
