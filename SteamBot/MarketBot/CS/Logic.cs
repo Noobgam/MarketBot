@@ -110,6 +110,8 @@ namespace CSGOTM {
                         new List<Tuple<string, string>> {new Tuple<string, string>(top.i_classid, top.i_instanceid)},
                         buy: 2, history: 1);
                     Thread.Sleep(1000);
+                    if (info == null)
+                        continue; //unlucky
                     if (info == null || (string) info["success"] == "false") {
                         needOrderUnstickered.Dequeue();
                         continue;
