@@ -162,7 +162,7 @@ namespace CSGOTM
             }      
             if (totalrps > Consts.GLOBALRPSLIMIT)
             {
-                //throw new Exception($"Total RPS amount exceeds {Consts.GLOBALRPSLIMIT}.");
+                Log.Info($"Total RPS of {totalrps} exceeds {Consts.GLOBALRPSLIMIT}.");
             }
         }
         
@@ -531,7 +531,7 @@ namespace CSGOTM
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
             try
             {
-                string result = Utility.Request.Post(uri, data);
+                string result = ExecuteApiPostRequest(uri, data);
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
