@@ -529,11 +529,13 @@ namespace CSGOTM
         public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0, ApiMethod method = ApiMethod.GenericMassInfo) {
             string uri = $"/api/MassInfo/{sell}/{buy}/{history}/{info}?key={Api}";
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
-            string result = ExecuteApiPostRequest(uri, data, method);
-            try {
+            try
+            {
+                string result = Utility.Request.Post(uri, data);
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
+                Log.Error($"Tried to call massinfo with such data: {data}");
                 Log.Error(ex.Message);
             }
             return null;

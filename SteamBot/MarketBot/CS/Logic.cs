@@ -96,6 +96,8 @@ namespace CSGOTM {
                     var info = Protocol.MassInfo(
                         new List<Tuple<string, string>> {new Tuple<string, string>(top.i_classid, top.i_instanceid)},
                         buy: 2, history: 1);
+                    if (info == null)
+                        continue; //unlucky
                     if (info == null || (string) info["success"] == "false") {
                         needOrderUnstickered.Dequeue();
                         continue;
