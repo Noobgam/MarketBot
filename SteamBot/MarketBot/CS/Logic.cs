@@ -92,6 +92,7 @@ namespace CSGOTM {
 
         private void SetOrderForUnstickered() {
             while (true) {
+                Thread.Sleep(1000);
                 if (needOrderUnstickered.Count > 0) {
                     var top = needOrderUnstickered.Peek();
                     var info = Protocol.MassInfo(
@@ -150,7 +151,7 @@ namespace CSGOTM {
                     //{
                     //    unstickeredRefresh.Enqueue(cur);
                     //}
-                    //else 
+                    //else
                     if (i <= 7 && cur.ui_status == "1")
                     {
                         refreshPrice.Enqueue(cur);
@@ -174,6 +175,7 @@ namespace CSGOTM {
 
         void SetNewOrder() {
             while (true) {
+                Thread.Sleep(1000);
                 if (needOrder.Count != 0) {
                     HistoryItem item = needOrder.Dequeue();
                     try {
@@ -254,6 +256,7 @@ namespace CSGOTM {
         {
             while (true)
             {
+                Thread.Sleep(1000);
                 Queue<TMTrade> unstickeredTemp;
                 lock (UnstickeredRefreshItemsLock)
                 {
@@ -325,18 +328,20 @@ namespace CSGOTM {
         void SellFromQueue() {
             while (true)
             {
-                Thread.Sleep(10); //dont want to spin nonstop
-                SpinWait.SpinUntil(() => (refreshPrice.Count != 0 || !toBeSold.IsEmpty));
-                if (refreshPrice.Count != 0)
+                Thread.Sleep(1000); //dont want to spin nonstop
+                SpinWait.SpinUntil(() => (!refreshPrice.IsEmpty || !toBeSold.IsEmpty));
+                if (!refreshPrice.IsEmpty)
                 {
-                    List<Tuple<string, int>> items = new List<Tuple<string, int>>();
-                    items = new List<Tuple<string, int>>();
-                    foreach (TMTrade trade in refreshPrice)
+                    lock (RefreshItemsLock)
                     {
-                        items.Add(new Tuple<string, int>(trade.ui_id, 0));
+                        List<Tuple<string, int>> items = new List<Tuple<string, int>>();
+                        items = new List<Tuple<string, int>>();
+                        while (refreshPrice.TryDequeue(out TMTrade trade))
+                        {
+                            items.Add(new Tuple<string, int>(trade.ui_id, 0));
+                        }
+                        /*JOBject obj = */Protocol.MassSetPriceById(items);
                     }
-                    /*JOBject obj =*/Protocol.MassSetPriceById(items);
-                    refreshPrice.Clear();
                 }
                 else if (toBeSold.TryDequeue(out Inventory.SteamItem item))
                 {
@@ -367,7 +372,7 @@ namespace CSGOTM {
                 else {
                     Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
+                Thread.Sleep(Consts.PARSEDATABASEINTERVAL);
             }
         }
 
@@ -438,35 +443,34 @@ namespace CSGOTM {
                     if (NewItem.mapping.Count == 0)
                         foreach (var str in indexes)
                             NewItem.mapping[str] = id++;
+                    Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
 
+                    for (id = 1; id < lines.Length - 1; ++id)
+                    {
+                        string[] item = lines[id].Split(';');
+                        if (item[NewItem.mapping["c_stickers"]] == "0")
+
+                            unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
+                                            item[NewItem.mapping["c_instanceid"]]);
+                        // new logic
+                        else
+                        {
+                            String name = item[NewItem.mapping["c_market_name"]];
+                            if (name.Length >= 2)
+                            {
+                                name = name.Remove(0, 1);
+                                name = name.Remove(name.Length - 1);
+                            }
+
+                            if (!currentItems.ContainsKey(name))
+                                currentItems[name] = new List<int>();
+                            currentItems[name].Add(int.Parse(item[NewItem.mapping["c_price"]]));
+                        }
+                    }
                     lock (CurrentItemsLock)
                     {
-                        currentItems.Clear();
-
-                        for (id = 1; id < lines.Length - 1; ++id)
-                        {
-                            string[] item = lines[id].Split(';');
-                            if (item[NewItem.mapping["c_stickers"]] == "0")
-
-                                unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
-                                                item[NewItem.mapping["c_instanceid"]]);
-                            // new logic
-                            else
-                            {
-                                String name = item[NewItem.mapping["c_market_name"]];
-                                if (name.Length >= 2)
-                                {
-                                    name = name.Remove(0, 1);
-                                    name = name.Remove(name.Length - 1);
-                                }
-
-                                if (!currentItems.ContainsKey(name))
-                                    currentItems[name] = new List<int>();
-                                currentItems[name].Add(int.Parse(item[NewItem.mapping["c_price"]]));
-                            }
-                        }
-
-                        SaveNonStickeredBase();
+                        this.currentItems = currentItems;
+                        SaveNonStickeredBase(); 
                         SortCurrentItems();
                     }
 
@@ -679,7 +683,7 @@ namespace CSGOTM {
 
 
         private ConcurrentQueue<Inventory.SteamItem> toBeSold = new ConcurrentQueue<Inventory.SteamItem>();
-        private Queue<TMTrade> refreshPrice = new Queue<TMTrade>();
+        private ConcurrentQueue<TMTrade> refreshPrice = new ConcurrentQueue<TMTrade>();
         private Queue<TMTrade> unstickeredRefresh = new Queue<TMTrade>();
 
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();

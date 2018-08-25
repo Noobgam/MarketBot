@@ -14,6 +14,8 @@ namespace CSGOTM {
         public const int DAY = 86400;
         public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
         public const double MAXFROMMEDIAN = 0.78;
+        public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
+        public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
     }
 
     public class Pair<T, U> {

@@ -276,6 +276,8 @@ namespace CSGOTM
                     //Console.WriteLine("Current balance: %f", Double.Parse(x.data.Split('<')[0]));
                     //Console.ForegroundColor = ConsoleColor.White;
                     break;
+                case "additem_go":
+                    break;
                 default:
                     //Console.WriteLine(x.type);
                     x.data = DecodeEncodedNonAsciiCharacters(x.data);
@@ -294,7 +296,7 @@ namespace CSGOTM
             }
         }
 
-        void pinger()
+        void SocketPinger()
         {
             while (!died)
             {
@@ -420,7 +422,8 @@ namespace CSGOTM
             died = false;
             Log.Success("Connection opened!");
             Auth();
-            Task.Run((Action) pinger);
+            Task.Run((Action)SocketPinger);
+            Task.Run((Action)PingPong);
             Task.Run((Action)HandleTrades);
             //andrew is gay
         }
@@ -523,7 +526,20 @@ namespace CSGOTM
 
         public void PingPong()
         {
-
+            while (true)
+            {
+                string uri = $"/api/PingPong/direct/?key={Api}";
+                try
+                {
+                    ExecuteApiRequest(uri);
+                }
+                catch (Exception ex)
+                {
+                    Log.ApiError($"Tried to call {uri}");
+                    Log.ApiError(ex.Message);
+                }
+                Thread.Sleep(120000);
+            }
         }
         
         public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0, ApiMethod method = ApiMethod.GenericMassInfo) {
@@ -656,6 +672,8 @@ namespace CSGOTM
                 return -1;
             }
         }
+
+        DateTime lastRefresh = DateTime.MinValue;
         
         public TMTrade[] GetTradeList()
         {
@@ -663,12 +681,19 @@ namespace CSGOTM
             {
                 JArray json = JArray.Parse(ExecuteApiRequest("/api/Trades/?key=" + Api, ApiMethod.GetTradeList));
                 TMTrade[] arr = new TMTrade[json.Count];
+
+                
                 int iter = 0;
                 foreach (var thing in json)
                 {
                     //Console.WriteLine("{0}", thing);
                     TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
                     arr[iter++] = xx;
+                }
+                if (DateTime.Now.Subtract(lastRefresh).TotalMilliseconds > Consts.REFRESHINTERVAL)
+                {
+                    lastRefresh = DateTime.Now;
+                    Task.Run(() => Logic.RefreshPrices(arr));
                 }
                 return arr;
             }
