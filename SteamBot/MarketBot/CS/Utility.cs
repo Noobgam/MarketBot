@@ -5,6 +5,19 @@ using System.IO;
 using System.Threading;
 
 namespace CSGOTM {
+    public static class Consts
+    {
+        public const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
+        public const int APICOOLDOWN = 1000 * 3; // 3 seconds
+        public const int SECOND = 1050; //used to restrict rps.
+        public const int GLOBALRPSLIMIT = 1;
+        public const int DAY = 86400;
+        public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
+        public const double MAXFROMMEDIAN = 0.78;
+        public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
+        public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
+    }
+
     public class Pair<T, U> {
         public Pair() {
         }

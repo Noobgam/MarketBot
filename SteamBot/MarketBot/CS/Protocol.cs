@@ -13,13 +13,14 @@ using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 
 using System.Linq;
+using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 
 namespace CSGOTM
 {
     public class Protocol
     {
-#if DEBUG
+#if CAREFUL
         public int totalwasted = 0;
 #endif
         public Utility.MarketLogger Log;
@@ -28,19 +29,143 @@ namespace CSGOTM
         public SteamBot.Bot Bot;
         static Random Generator = new Random();
         static string Api = null;
+        private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
 
-        private string ExecuteApiRequest(string url)
-        {
-            return Utility.Request.Get("https://market.csgo.com" + url);
+        //TODO(noobgam): make it great again, probably some of them can be united.
+        public enum ApiMethod {
+            GetTradeList,
+            GetBestOrder,
+            GenericMassInfo,
+            GenericMassSetPriceById,
+            Buy,
+            Sell,
+            UnstickeredMassInfo,
+            UnstickeredMassSetPriceById,
+            SetOrder,
+            MinPrice,
+            GetSteamInventory,
+            GenericCall,
+            UpdateInventory,
+            GetMoney,
+            PingPong = GetMoney,
+            ItemRequest = UpdateInventory,
         }
-        
+
+        readonly Dictionary<ApiMethod, double> rpsLimit = new Dictionary<ApiMethod, double> {
+            { ApiMethod.UnstickeredMassInfo, 1.5 },
+            { ApiMethod.UnstickeredMassSetPriceById, 1.5 },
+            { ApiMethod.Sell, 3 },
+            { ApiMethod.Buy, 3 },
+        };
+
+        private static Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
+        private static Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
+
+        private void ObtainApiSemaphore(ApiMethod method)
+        {
+            rpsRestricter[method].Wait();
+            ApiSemaphore.Wait();
+        }
+
+        private void ReleaseApiSemaphore(ApiMethod method)
+        {
+            Task.Delay(rpsDelay[method])
+                .ContinueWith(tks => rpsRestricter[method].Release());
+            Task.Delay(Consts.SECOND)
+                .ContinueWith(tsk => ApiSemaphore.Release());
+        }
+
+        private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall)
+        {
+            string response = null;
+            try
+            {
+                ObtainApiSemaphore(method);
+                //Log.Success("Executing api call " + url);
+                response = Utility.Request.Get("https://market.csgo.com" + url);
+            }
+            finally
+            {
+                ReleaseApiSemaphore(method);
+            }
+            return response;
+        }
+
+        /// <summary>
+        /// [Leaked resource from csgotm network tab]
+        /// https://market.csgo.com/ajax/i_popularity/all/all/all/1/56/0;100000/all/all/all --- sample query
+        /// Returns popular items, format: [[cid, iid, market_name, lowest_price (RUB), color (or false if doesn't apply), CHEAPER_THAN_STEAM, unknown array (usually empty)]]
+        /// </summary>
+        /// <param name="page">page to return</param>
+        /// <param name="amount">amount of items (can't be above 96)</param>
+        /// <returns></returns>
+        public JArray PopularItems(int page = 1, int amount = 56, int lowest_price = 0, int highest_price = 100000, bool any_stickers = false)
+        {
+            if (any_stickers)
+            {
+                return JArray.Parse(Utility.Request.Get($"https://market.csgo.com/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/-1"));
+            }
+            else
+            {
+                return JArray.Parse(Utility.Request.Get($"https://market.csgo.com/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/all"));
+            }
+        }
+
+        private string ExecuteApiPostRequest(string url, string data, ApiMethod method = ApiMethod.GenericCall)
+        {
+            string response = null;
+            try
+            {
+                ObtainApiSemaphore(method);
+                //Log.Success("Executing api call " + url);
+                response = Utility.Request.Post("https://market.csgo.com" + url, data);
+            }
+            finally
+            {
+                ReleaseApiSemaphore(method);
+            }
+            return response;
+        }
+
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public Protocol(SteamBot.Bot Bot, string api) {
             Api = api;
             this.Bot = Bot;
-            Thread starter = new Thread(new ThreadStart(StartUp));
-            starter.Start();
+            InitializeRPSSemaphores();
+            Task.Run((Action)StartUp);
+        }
+
+        //I'm going to use different semaphores to allow some requests to have higher RPS than others, without bothering one another.
+
+        private void GenerateSemaphore(ApiMethod method, double rps)
+        {
+            rpsRestricter[method] = new SemaphoreSlim(Consts.GLOBALRPSLIMIT);
+            rpsDelay[method] = (int)Math.Ceiling(1000.0 / rps);
+        }
+
+        private void InitializeRPSSemaphores()
+        {
+            double totalrps = 0;
+            foreach (ApiMethod method in ((ApiMethod[]) Enum.GetValues(typeof(ApiMethod))).Distinct())
+            {
+                double limit;
+                bool temp = rpsLimit.TryGetValue(method, out limit);
+                if (temp)
+                {
+                    GenerateSemaphore(method, limit);
+                }
+                else
+                {
+                    limit = Consts.DEFAULTRPS;
+                    GenerateSemaphore(method, limit);
+                }
+                totalrps += limit;
+            }      
+            if (totalrps > Consts.GLOBALRPSLIMIT)
+            {
+                //Log.Info($"Total RPS of {totalrps} exceeds {Consts.GLOBALRPSLIMIT}.");
+            }
         }
         
         private void StartUp() {
@@ -128,7 +253,12 @@ namespace CSGOTM
                         }
                         else
                         {
-                            throw new Exception(x.data + " is not a valid history item.");
+                            historyItem.i_classid = arr[0];
+                            historyItem.i_instanceid = arr[1];
+                            historyItem.i_market_hash_name = arr[2] + "," + arr[3];
+                            historyItem.timesold = arr[4];
+                            historyItem.price = Int32.Parse(arr[5]);
+                            historyItem.i_market_name = arr[6] + "," + arr[7];
                         }
                         Logic.ProcessItem(historyItem);
                     }
@@ -146,6 +276,8 @@ namespace CSGOTM
                     //Console.WriteLine("Current balance: %f", Double.Parse(x.data.Split('<')[0]));
                     //Console.ForegroundColor = ConsoleColor.White;
                     break;
+                case "additem_go":
+                    break;
                 default:
                     //Console.WriteLine(x.type);
                     x.data = DecodeEncodedNonAsciiCharacters(x.data);
@@ -158,13 +290,13 @@ namespace CSGOTM
                     }
                     catch (Exception ex)
                     {
-
+                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                     break;
             }
         }
 
-        void pinger()
+        void SocketPinger()
         {
             while (!died)
             {
@@ -177,7 +309,7 @@ namespace CSGOTM
         {
             Log.Info("Sending " +
                 "items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api));
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api, ApiMethod.ItemRequest));
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
@@ -195,11 +327,11 @@ namespace CSGOTM
                             (long)item["amount"]);
                     }
                     Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-                    //Log.Info("Token: " + (string)json["request"]["token"]);
                     if (offer.Items.NewVersion) {
                         string newOfferId;
                         if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
-                            Bot.AcceptAllMobileTradeConfirmations();
+                            Task.Delay(5000) //the delay might fix #35
+                                .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
                             Log.Success("Trade offer sent : Offer ID " + newOfferId);
                         }
                         return true;
@@ -216,7 +348,7 @@ namespace CSGOTM
         bool RequestPurchasedItems(string botID)
         {
             Log.Info("Requesting items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api));
+            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api, ApiMethod.ItemRequest));
             if (json["success"] == null)
                 return false;
             else if ((bool)json["success"])
@@ -234,33 +366,41 @@ namespace CSGOTM
                 try
                 {
                     TMTrade[] arr = GetTradeList();
-                    UpdateInventory();
                     bool had = false;
                     bool gone = false;
                     for (int i = 0; i < arr.Length; ++i)
                     {
                         if (arr[i].ui_status == "4")
                         {
-                            UpdateInventory();
+                            if (UpdateInventory())
+                            {
+                                Thread.Sleep(10000); //should wait some time if inventory was updated
+                            }
                             RequestPurchasedItems(arr[i].ui_bid);
                             gone = true;
-                            Logic.doNotSell = true;
+                            Logic.doNotSell = true; 
                             break;
                         }
                         had |= arr[i].ui_status == "2";
                     }
                     if (had && !gone)
                     {
-                        UpdateInventory();
+                        if (UpdateInventory())
+                        {
+                            Thread.Sleep(10000); //should wait some time if inventory was updated
+                        }
                         SendSoldItems();
                     }
+                    //if (!gone)
+                    //{
+                    //    Logic.RefreshPrices(arr);
+                    //}
                 }
                 catch (Exception ex)
                 {
-
+                    Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                //once per 30 seconds we check trade list
-                Thread.Sleep(30000);
+                Thread.Sleep(10000);
             }
         }
 
@@ -282,10 +422,9 @@ namespace CSGOTM
             died = false;
             Log.Success("Connection opened!");
             Auth();
-            Thread ping = new Thread(new ThreadStart(pinger));
-            ping.Start();
-            Thread tradeHandler = new Thread(new ThreadStart(HandleTrades));
-            tradeHandler.Start();
+            Task.Run((Action)SocketPinger);
+            Task.Run((Action)PingPong);
+            Task.Run((Action)HandleTrades);
             //andrew is gay
         }
 
@@ -306,20 +445,20 @@ namespace CSGOTM
                 socket.MessageReceived += Msg;
                 socket.Open();
                 Thread.Sleep(5000);
-                Log.Info("Trying to reconnect for the %d-th time", i + 1);
+                Log.ApiError("Trying to reconnect for the %d-th time", i + 1);
             }
         }
 
 
         public bool Buy(NewItem item)
         {
-#if DEBUG
+#if CAREFUL
             totalwasted += (int)item.ui_price;
             Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            string a = ExecuteApiRequest(url);
+            string a = ExecuteApiRequest(url, ApiMethod.Buy);
             JObject parsed = JObject.Parse(a);
 			bool badTrade = false;
 			try {
@@ -329,7 +468,7 @@ namespace CSGOTM
 			}
             if (badTrade)
             {
-                Log.Error($"Missed an item {item.i_market_name} costing {item.ui_price}");
+                Log.ApiError($"Missed an item {item.i_market_name} costing {item.ui_price}");
                 return false;
             }
             if (parsed["result"] == null)
@@ -345,12 +484,12 @@ namespace CSGOTM
         [System.Obsolete("Specify item, it will parce it by itself.")]
         public bool Buy(string ClasssId, string InstanceId, int price)
         {
-#if DEBUG
+#if CAREFUL
             totalwasted += price;
             Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
-            string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+            string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Buy);
             JObject parsed = JObject.Parse(a);
             foreach (var pair in parsed)
             {
@@ -367,54 +506,83 @@ namespace CSGOTM
 
         public bool SellNew(string ClasssId, string InstanceId, int price)
         {
-#if DEBUG //sorry nothing is implemented there, I don't really know what to write as debug
+#if CAREFUL //sorry nothing is implemented there, I don't really know what to write as debug
             return false;
 
 #else
-            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api);
+            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell);
             JObject parsed = JObject.Parse(a);
             foreach (var pair in parsed)
                 Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
             if (parsed["result"] == null)
                 return false;
-            else if ((string)parsed["result"] == "ok")
-                return true;
+            else if ((int)parsed["result"] == 1) {
+                return true; 
+            }
             else
                 return false;
 #endif
         }
+
+        public void PingPong()
+        {
+            while (true)
+            {
+                string uri = $"/api/PingPong/direct/?key={Api}";
+                try
+                {
+                    ExecuteApiRequest(uri);
+                }
+                catch (Exception ex)
+                {
+                    Log.ApiError($"Tried to call {uri}");
+                    Log.ApiError(ex.Message);
+                }
+                Thread.Sleep(120000);
+            }
+        }
         
-        public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0) {
-            string uri = "https://market.csgo.com/api/MassInfo/" + sell + "/" + buy + "/" + history + "/" + info + "?key=" + Api;
+        public JObject MassInfo(List<Tuple<string, string>> items, int sell = 0, int buy = 0, int history = 0, int info = 0, ApiMethod method = ApiMethod.GenericMassInfo) {
+            string uri = $"/api/MassInfo/{sell}/{buy}/{history}/{info}?key={Api}";
             string data = "list=" + String.Join(",", items.Select(lr => lr.Item1 + "_" + lr.Item2).ToArray());
             try
             {
-                string result = Utility.Request.Post(uri, data);
+                string result = ExecuteApiPostRequest(uri, data);
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
-                Log.Error($"Tried to call massinfo with such data: {data}");
+                Log.ApiError($"Tried to call {uri} with such data: {data}");
+                Log.ApiError(ex.Message);
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Provides server response by given list{name : price}
+        /// Beware, server completely ignores failing items, doesn't include them in JObject and completely silently deletes them from answer
+        /// </summary>
+        /// <param name="items"></param>
+        /// <returns></returns>
+        public JObject MassSetPriceById(List<Tuple<string, int>> items, ApiMethod method = ApiMethod.GenericMassSetPriceById)
+        {
+            string uri = $"/api/MassSetPriceById/?key={Api}";
+            string data = String.Join("&", items.Select(lr => $"list[{lr.Item1}]={lr.Item2}"));
+            string result = ExecuteApiPostRequest(uri, data, method);
+            try
+            {
+                JObject temp = JObject.Parse(result);
+                return temp;
+            }
+            catch (Exception ex)
+            {
                 Log.Error(ex.Message);
             }
             return null;
         }
-        
-        public bool Sell(string item_id, int price) {
-            string a = ExecuteApiRequest("/api/SetPrice/" + item_id +  "/" + price + "/?key=" + Api);
-            JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            if (parsed["result"] == null)
-                return false;
-            else if ((string)parsed["result"] == "ok")
-                return true;
-            else
-                return false;
-        }
 
         public Inventory GetSteamInventory()
         {
-            string a = ExecuteApiRequest("/api/GetInv/?key=" + Api);
+            string a = ExecuteApiRequest("/api/GetInv/?key=" + Api, ApiMethod.GetSteamInventory);
             JObject json = JObject.Parse(a);
             Inventory inventory = new Inventory();
             inventory.content = new List<Inventory.SteamItem>();
@@ -426,35 +594,61 @@ namespace CSGOTM
 
         public bool SetOrder(string classid, string instanceid, int price)
         {
-#if DEBUG   
+            try
+            {
+#if CAREFUL
             return false;
 #else
-            string a = ExecuteApiRequest("/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api);
-            JObject json = JObject.Parse(a);
-            if (json["success"] == null)
-                return false;
-            else if ((bool)json["success"])
-                return true;
-            else
-                 return false;
+                string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+                JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
+                if (json["success"] == null)
+                {
+                    Log.ApiError("Was unable to set order, uls is :" + uri);
+                    Log.ApiError(json.ToString());
+                    return false;
+                }
+                else if ((bool)json["success"])
+                {
+                    return true;
+                }
+                else
+                {
+                    if (json.ContainsKey("error"))
+                        Log.ApiError($"Was unable to set: url is {uri}, error message: {(string)json["error"]}");
+                    else
+                        Log.ApiError("Was unable to set order, urls is :" + uri);
+                    return false;
+                }
 #endif
+            }
+            catch (Exception ex)
+            {
+                Log.ApiError("Unknown error happened. Message: " + ex.Message + "\nTrace:" + ex.StackTrace);
+                return false;
+            }
         }
 
         bool UpdateInventory()
         {
             try
             {
-                string a = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api);
-                JObject json = JObject.Parse(a);
+                JObject json = JObject.Parse(ExecuteApiRequest("/api/UpdateInventory/?key=" + Api, ApiMethod.UpdateInventory));
                 if (json["success"] == null)
+                {
+                    Log.ApiError("Was unable to update inventory");
                     return false;
+                }
                 else if ((bool)json["success"])
                     return true;
                 else
+                {
+                    Log.ApiError("Was unable to update inventory");
                     return false;
+                }
             }
             catch (Exception ex)
             {
+                Log.ApiError("Was unable to update inventory. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 return false;
             }
         }
@@ -464,8 +658,7 @@ namespace CSGOTM
         {
             try
             {
-                string a = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-                JObject x = JObject.Parse(a);
+                JObject x = JObject.Parse(ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder));
                 JArray thing = (JArray)x["buy_offers"];
                 if (thing == null || thing.Count == 0)
                     return 49;
@@ -480,31 +673,27 @@ namespace CSGOTM
             }
         }
 
-        public JArray GetItemHistory(string classid, string instanceid) {
-            try {
-                string a = ExecuteApiRequest("/api/ItemHistory/" + classid + "_" + instanceid + "/ru/?key=" + Api);
-                JObject x = JObject.Parse(a);
-                return (JArray) x["history"];
-            }
-            catch (Exception ex) {
-                Log.Error(ex.Message);
-                return null;
-            }
-        }
+        DateTime lastRefresh = DateTime.MinValue;
         
         public TMTrade[] GetTradeList()
         {
             try
             {
-                string a = ExecuteApiRequest("/api/Trades/?key=" + Api);
-                JArray json = JArray.Parse(a);
+                JArray json = JArray.Parse(ExecuteApiRequest("/api/Trades/?key=" + Api, ApiMethod.GetTradeList));
                 TMTrade[] arr = new TMTrade[json.Count];
+
+                
                 int iter = 0;
                 foreach (var thing in json)
                 {
                     //Console.WriteLine("{0}", thing);
                     TMTrade xx = JsonConvert.DeserializeObject<TMTrade>(thing.ToString());
                     arr[iter++] = xx;
+                }
+                if (DateTime.Now.Subtract(lastRefresh).TotalMilliseconds > Consts.REFRESHINTERVAL)
+                {
+                    lastRefresh = DateTime.Now;
+                    Task.Run(() => Logic.RefreshPrices(arr));
                 }
                 return arr;
             }
@@ -515,24 +704,8 @@ namespace CSGOTM
         }
 
         public float GetMoney() {
-            string temp = ExecuteApiRequest("/api/GetMoney/?key=" + Api);
-            JObject temp2 = JObject.Parse(temp);
+            JObject temp2 = JObject.Parse(ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney));
             return float.Parse((string)temp2["money"]);
-        }
-
-        public int MinPrice(string classid, string instanceid)
-        {
-            string url = $"/api/BestSellOffer/{classid}_{instanceid}/?key={Api}";
-            string temp = ExecuteApiRequest(url);
-            JObject temp2 = JObject.Parse(temp);
-            try
-            {
-                return int.Parse((string) temp2["best_offer"]);
-            }
-            catch 
-            {
-                return -1;
-            }
         }
     }
 }
