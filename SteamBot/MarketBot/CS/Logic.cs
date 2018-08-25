@@ -206,7 +206,7 @@ namespace CSGOTM {
                 if (doNotSell)
                 {
                     doNotSell = false;
-                    Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL); //can't lower it due to some weird things in protocol, requires testing
+                    Thread.Sleep(1000 * 60 * 2); //can't lower it due to some weird things in protocol, requires testing
                 }
                 else
                 {    
