@@ -172,6 +172,8 @@ namespace CSGOTM
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
+            Task.Run((Action)PingPong);
+            Task.Run((Action)HandleTrades);
             socket.Opened += Open;
             socket.Closed += Error;
             socket.MessageReceived += Msg;
@@ -423,29 +425,32 @@ namespace CSGOTM
             Log.Success("Connection opened!");
             Auth();
             Task.Run((Action)SocketPinger);
-            Task.Run((Action)PingPong);
-            Task.Run((Action)HandleTrades);
             //andrew is gay
         }
 
         void Error(object sender, EventArgs e)
         {
             Log.Error("Connection error");
-            died = true;
-            ReOpen();
+            if (!died)
+            {
+                if (socket.State == WebSocketState.Open)
+                    socket.Close();
+                died = true;
+                ReOpen();
+            }
         }
 
         void ReOpen()
         {
             for (int i = 0; died && i < 10; ++i)
             {
+                Log.ApiError("Trying to reconnect for the %d-th time", i + 1);
                 socket = new WebSocket("wss://wsn.dota2.net/wsn/");
                 socket.Opened += Open;
                 socket.Closed += Error;
                 socket.MessageReceived += Msg;
                 socket.Open();
-                Thread.Sleep(5000);
-                Log.ApiError("Trying to reconnect for the %d-th time", i + 1);
+                Thread.Sleep(30000);
             }
         }
 
