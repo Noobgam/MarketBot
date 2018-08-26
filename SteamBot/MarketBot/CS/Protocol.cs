@@ -176,7 +176,8 @@ namespace CSGOTM
             Task.Run((Action)ReOpener);
             Task.Run((Action)HandleTrades);
             socket.Opened += Open;
-            socket.Closed += Error;
+            socket.Error += Error;
+            socket.Closed += Close;
             socket.MessageReceived += Msg;
             socket.Open();
         }
@@ -413,6 +414,11 @@ namespace CSGOTM
             socket.Send("history_go");
         }
 
+        void OpenSocket()
+        {
+
+        }
+
         void Auth()
         {
             Auth q = JsonConvert.DeserializeObject<Auth>(ExecuteApiRequest("/api/GetWSAuth/?key=" + Api));
@@ -431,7 +437,12 @@ namespace CSGOTM
 
         void Error(object sender, EventArgs e)
         {
-            Log.Error("Connection error");
+            //Log.Error($"Connection error: " + e.ToString());
+        }
+
+        void Close(object sender, EventArgs e)
+        {
+            //Log.Error($"Connection closed: " + e.ToString());
             if (!died)
             {
                 died = true;
@@ -452,7 +463,8 @@ namespace CSGOTM
                     Log.ApiError("Trying to reconnect for the %d-th time", i++);
                     socket = new WebSocket("wss://wsn.dota2.net/wsn/");
                     socket.Opened += Open;
-                    socket.Closed += Error;
+                    socket.Error += Error;
+                    socket.Closed += Close;
                     socket.MessageReceived += Msg;
                     socket.Open();
                 }
