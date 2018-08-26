@@ -362,11 +362,12 @@ namespace CSGOTM
             else
                 return false;
         }
-
+        
         void HandleTrades()
         {
             while (true)
             {
+                int sleep = 10000;
                 try
                 {
                     TMTrade[] arr = GetTradeList();
@@ -393,6 +394,7 @@ namespace CSGOTM
                         {
                             Thread.Sleep(10000); //should wait some time if inventory was updated
                         }
+                        sleep += 15000;
                         SendSoldItems();
                     }
                     //if (!gone)
@@ -404,7 +406,7 @@ namespace CSGOTM
                 {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(10000);
+                Thread.Sleep(sleep);
             }
         }
 
