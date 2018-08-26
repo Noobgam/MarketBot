@@ -354,6 +354,9 @@ namespace CSGOTM {
                             if (!Protocol.SellNew(ui_id[1], ui_id[2], price))
                             {
                                 Log.ApiError("Could not sell new item, enqueuing it again.");
+                            } else
+                            {
+                                Log.Success($"New {item.i_market_name} is on sale for {price}");
                             }
                         }
                         catch
@@ -652,18 +655,19 @@ namespace CSGOTM {
                 if (item.ui_price < 25000 && prices.Count >= 6 &&
                     item.ui_price < 0.9 * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
-                    prices[2] < dataBase[item.i_market_name].median * 1.25 && prices[2] - item.ui_price > 400)
+                    prices[2] < salesHistory.median * 1.25 && prices[2] - item.ui_price > 400)
                 {
                     JObject log = new JObject();
-                    log["item"] = JsonConvert.SerializeObject(item);
+                    log["item"] = JObject.Parse(JsonConvert.SerializeObject(item));
                     log["curPrice"] = prices[2];
-                    Log.Info("Have seen interesting item: " + log.ToString());
+                    
+                    Log.Info("Have seen interesting item: " + log.ToString(Formatting.None));
                 }
                 
                 if (item.ui_price < 25000 && prices.Count >= 6 &&
                     item.ui_price < 0.8 * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
-                    prices[2] < dataBase[item.i_market_name].median * 1.2 && prices[2] - item.ui_price > 400)
+                    prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 400)
                 {
                     //TODO какое-то условие на время
                     Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
