@@ -282,20 +282,16 @@ namespace CSGOTM
                     break;
                 case "additem_go":
                     break;
+                case "itemstatus_go":
+                    JObject json = JObject.Parse(x.data);
+                    if ((int)json["status"] == 5)
+                        Logic.doNotSell = true;
+                    break;
                 default:
+                    Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
                     //Console.WriteLine(x.type);
-                    x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    Log.Info(x.data);
-                    try
-                    {
-                        JObject json = JObject.Parse(x.data);
-                        if ((int)json["status"] == 5)
-                            Logic.doNotSell = true;
-                    }
-                    catch (Exception ex)
-                    {
-                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
-                    }
+                    //x.data = DecodeEncodedNonAsciiCharacters(x.data);
+                    //Log.Info(x.data);
                     break;
             }
         }
@@ -500,7 +496,7 @@ namespace CSGOTM
             else if ((string)parsed["result"] == "ok")
                 return true;
             else
-                return false;
+                return false;   
 #endif
         }
 
@@ -513,12 +509,7 @@ namespace CSGOTM
             Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
-            string a = ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Buy);
-            JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-            {
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
-            }
+            JObject parsed = JObject.Parse(ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Buy));
             if (parsed["result"] == null)
                 return false;
             else if ((string)parsed["result"] == "ok")
@@ -533,14 +524,12 @@ namespace CSGOTM
 #if CAREFUL //sorry nothing is implemented there, I don't really know what to write as debug
             return false;
 
+
 #else
-            string a = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell);
-            JObject parsed = JObject.Parse(a);
-            foreach (var pair in parsed)
-                Console.WriteLine("{0}: {1}", pair.Key, pair.Value);
+            JObject parsed = JObject.Parse(ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell));
             if (parsed["result"] == null)
                 return false;
-            else if ((int)parsed["result"] == 1) {
+            else if ((bool)parsed["result"] == true) {
                 return true; 
             }
             else
