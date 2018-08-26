@@ -173,6 +173,7 @@ namespace CSGOTM
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             Task.Run((Action)PingPong);
+            Task.Run((Action)ReOpener);
             Task.Run((Action)HandleTrades);
             socket.Opened += Open;
             socket.Closed += Error;
@@ -433,24 +434,28 @@ namespace CSGOTM
             Log.Error("Connection error");
             if (!died)
             {
-                if (socket.State == WebSocketState.Open)
-                    socket.Close();
                 died = true;
-                ReOpen();
+                var temp = socket; //think it might help but I don't have time to check whether it does.
+                if (temp.State == WebSocketState.Open)
+                    temp.Close();
             }
         }
 
-        void ReOpen()
+        void ReOpener()
         {
-            for (int i = 0; died && i < 10; ++i)
+            int i = 1;
+            while (true)
             {
-                Log.ApiError("Trying to reconnect for the %d-th time", i + 1);
-                socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-                socket.Opened += Open;
-                socket.Closed += Error;
-                socket.MessageReceived += Msg;
-                socket.Open();
-                Thread.Sleep(30000);
+                Thread.Sleep(10000);
+                if (died)
+                {
+                    Log.ApiError("Trying to reconnect for the %d-th time", i++);
+                    socket = new WebSocket("wss://wsn.dota2.net/wsn/");
+                    socket.Opened += Open;
+                    socket.Closed += Error;
+                    socket.MessageReceived += Msg;
+                    socket.Open();
+                }
             }
         }
 
