@@ -460,7 +460,7 @@ namespace CSGOTM
                 Thread.Sleep(10000);
                 if (died)
                 {
-                    Log.ApiError("Trying to reconnect for the %d-th time", i++);
+                    Log.ApiError($"Trying to reconnect for the {i++}-th time");
                     socket = new WebSocket("wss://wsn.dota2.net/wsn/");
                     socket.Opened += Open;
                     socket.Error += Error;
