@@ -710,8 +710,9 @@ namespace CSGOTM
                 }
                 return arr;
             }
-            catch
+            catch (Exception ex)
             {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 return null;
             }
         }
