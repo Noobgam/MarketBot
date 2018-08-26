@@ -122,6 +122,7 @@ namespace CSGOTM {
                         continue;
                     }
 
+                    Log.Info(res.ToString(Formatting.None));
                     int curPrice = 50;
                     try {
                         if (res["buy_offers"]?["best_offer"] != null) {
