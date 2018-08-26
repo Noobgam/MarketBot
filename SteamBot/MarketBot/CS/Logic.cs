@@ -58,9 +58,12 @@ namespace CSGOTM {
             {
                 try
                 {
-                    JObject modes = JObject.Parse(Utility.Request.Get(
+                    JObject data = JObject.Parse(Utility.Request.Get(
                         "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/set_true_if_want_to_sell_only.txt"));
-                    sellOnly = Boolean.Parse((string) modes[botName]);
+                    sellOnly = Boolean.Parse((string) data[botName]["sell_only"]);
+                    Consts.WANT_TO_BUY = (double) data[botName]["want_to_buy"];
+                    Consts.MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
+                    Consts.UNSTICKERED_ORDER = (double) data[botName]["unstickered_order"];
                 }
                 catch (Exception ex)
                 {
@@ -134,7 +137,7 @@ namespace CSGOTM {
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                     
-                    if (price > 9000 && curPrice < price * 0.765 && !blackList.Contains(top.i_market_hash_name)) {
+                    if (price > 9000 && curPrice < price * Consts.UNSTICKERED_ORDER && !blackList.Contains(top.i_market_hash_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
@@ -664,9 +667,10 @@ namespace CSGOTM {
                     
                     Log.Info("Have seen interesting item: " + log.ToString(Formatting.None));
                 }
+
                 
                 if (item.ui_price < 25000 && prices.Count >= 6 &&
-                    item.ui_price < 0.8 * prices[2] && !blackList.Contains(item.i_market_name) &&
+                    item.ui_price < Consts.WANT_TO_BUY * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
                     prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 400)
                 {
