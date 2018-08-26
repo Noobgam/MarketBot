@@ -365,7 +365,7 @@ namespace CSGOTM
 
         void HandleTrades()
         {
-            while (!died)
+            while (true)
             {
                 try
                 {
