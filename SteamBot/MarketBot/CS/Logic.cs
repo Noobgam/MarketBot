@@ -125,20 +125,24 @@ namespace CSGOTM {
                         continue;
                     }
 
-                    Log.Info(res.ToString(Formatting.None));
                     int curPrice = 50;
                     try {
-                        if (res["buy_offers"]?["best_offer"] != null) {
+                        if (res["buy_offers"] != null && res["buy_offers"].Type != JTokenType.Boolean
+                            && res["buy_offers"]["best_offer"] != null) {
                             curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
                         }
                     }
                     catch (Exception ex)
                     {
+                        Log.Info(res.ToString(Formatting.None));
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                     
                     if (price > 9000 && curPrice < price * Consts.UNSTICKERED_ORDER && !blackList.Contains(top.i_market_hash_name)) {
-                        Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
+                        if (!Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1))
+                        {
+                            Log.ApiError("Could not set order");
+                        }
                     }
                     needOrderUnstickered.Dequeue();
                 }
