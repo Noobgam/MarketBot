@@ -332,7 +332,14 @@ namespace CSGOTM
                         Log.Info("Inventory was cached");
                         break;
                     case "money":
-                        money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0]) * 100);
+                        try
+                        {
+                            money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0]) * 100);
+                        } catch
+                        {
+                            Log.Error($"Can't parse money from {data}");
+                            money = 90000;
+                        }
                         break;
                     case "additem_go":
                         break;
@@ -389,22 +396,35 @@ namespace CSGOTM
 
                         Log.Info(json.ToString(Formatting.None));
                         var offer = Bot.NewTradeOffer(new SteamID(id));
-                        foreach (JObject item in json["request"]["items"]) {
-                            offer.Items.AddMyItem(
-                                (int)item["appid"],
-                                (long)item["contextid"],
-                                (long)item["assetid"],
-                                (long)item["amount"]);
-                        }
-                        Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-                        if (offer.Items.NewVersion) {
-                            string newOfferId;
-                            if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
-                                Task.Delay(5000) //the delay might fix #35
-                                    .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-                                Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                        for (int triesLeft = 3; triesLeft > 0; triesLeft--)
+                        {
+                            try
+                            {
+                                foreach (JObject item in json["request"]["items"])
+                                {
+                                    offer.Items.AddMyItem(
+                                        (int)item["appid"],
+                                        (long)item["contextid"],
+                                        (long)item["assetid"],
+                                        (long)item["amount"]);
+                                }
+                                Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
+                                if (offer.Items.NewVersion)
+                                {
+                                    string newOfferId;
+                                    if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
+                                    {
+                                        Task.Delay(5000) //the delay might fix #35
+                                            .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                                        Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                        return true;
+                                    }
+                                }
                             }
-                            return true;
+                            catch
+                            {
+                                Thread.Sleep(5000); //sleep tight, steam probably went 500
+                            }
                         }
                         return false;
                     } else {
@@ -477,8 +497,8 @@ namespace CSGOTM
                         {
                             Thread.Sleep(10000); //should wait some time if inventory was updated
                         }
-                        sleep += 15000;
-                        SendSoldItems();
+                        if (SendSoldItems())
+                            sleep += 15000;
                     }
                     //if (!gone)
                     //{
