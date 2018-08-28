@@ -702,7 +702,7 @@ namespace CSGOTM {
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 70;
         private string PREFIXPATH;
-        private SortedSet<string> unStickered = new SortedSet<string>();
+        private HashSet<string> unStickered = new HashSet<string>();
 
         private string UNSTICKEREDPATH;
         private string DATABASEPATH;
@@ -717,7 +717,7 @@ namespace CSGOTM {
 
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private Queue<HistoryItem> needOrderUnstickered = new Queue<HistoryItem>();
-        private SortedSet<string> blackList = new SortedSet<string>();
+        private HashSet<string> blackList = new HashSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
         private Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
