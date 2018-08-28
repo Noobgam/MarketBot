@@ -17,6 +17,7 @@ using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using SteamBot.MarketBot.Utility;
 using System.Diagnostics;
+using System.IO;
 
 namespace CSGOTM
 {
@@ -218,15 +219,62 @@ namespace CSGOTM
             {
                 if (e.Message == "pong")
                     return;
-                var message = e.Message;
-                Message x = JsonConvert.DeserializeObject<Message>(message);
+                string type = string.Empty;
+                string data = string.Empty;
+                JsonTextReader reader = new JsonTextReader(new StringReader(e.Message));
+                string currentProperty = string.Empty;
+                while (reader.Read())
+                {
+                    if (reader.Value != null)
+                    {
+                        if (reader.TokenType == JsonToken.PropertyName)
+                            currentProperty = reader.Value.ToString();
+                        else if (reader.TokenType == JsonToken.String) {
+                            if (currentProperty == "type")
+                                type = reader.Value.ToString();
+                            else
+                                data = reader.Value.ToString();
+                        }
+                    }
+                }
                 //Console.WriteLine(x.type);
-                switch (x.type)
+                switch (type)
                 {
                     case "newitems_go":
-                        NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
+                        reader = new JsonTextReader(new StringReader(data));
+                        currentProperty = string.Empty;
+                        NewItem newItem = new NewItem();
+                        while (reader.Read())
+                        {
+                            if (reader.Value != null)
+                            {
+                                if (reader.TokenType == JsonToken.PropertyName)
+                                    currentProperty = reader.Value.ToString();
+                                else if (reader.TokenType == JsonToken.String)
+                                {
+                                    switch (currentProperty)
+                                    {
+                                        case "i_classid":
+                                            newItem.i_classid = reader.Value.ToString();
+                                            break;
+                                        case "i_instanceid":
+                                            newItem.i_instanceid = reader.Value.ToString();
+                                            break;
+                                        case "i_market_name":
+                                            newItem.i_market_name = reader.Value.ToString();
+                                            break;
+                                        default:
+                                            break;
+                                         }
+                                }
+                                else if (currentProperty == "ui_price")
+                                {
+                                    newItem.ui_price = (int)(float.Parse(reader.Value.ToString()) * 100);
+
+                                }
+                            }
+                        }
                         //getBestOrder(newItem.i_classid, newItem.i_instanceid);
-                        newItem.ui_price = newItem.ui_price * 100 + 0.5f;
                         if (!Logic.sellOnly && Logic.WantToBuy(newItem))
                         {
                             if (Buy(newItem))
@@ -239,9 +287,9 @@ namespace CSGOTM
                         try
                         {
                             char[] trimming = { '[', ']' };
-                            x.data = Encode.DecodeEncodedNonAsciiCharacters(x.data);
-                            x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
-                            string[] arr = x.data.Split(',');
+                            data = Encode.DecodeEncodedNonAsciiCharacters(data);
+                            data = data.Replace("\\", "").Replace("\"", "").Trim(trimming);
+                            string[] arr = data.Split(',');
                             HistoryItem historyItem = new HistoryItem();
                             if (arr.Length == 7)
                             {
@@ -283,21 +331,21 @@ namespace CSGOTM
                         break;
                     case "money":
                         //Console.ForegroundColor = ConsoleColor.Yellow;
-                        //Console.WriteLine("Current balance: %f", Double.Parse(x.data.Split('<')[0]));
+                        //Console.WriteLine("Current balance: %f", Double.Parse(data.Split('<')[0]));
                         //Console.ForegroundColor = ConsoleColor.White;
                         break;
                     case "additem_go":
                         break;
                     case "itemstatus_go":
-                        JObject json = JObject.Parse(x.data);
+                        JObject json = JObject.Parse(data);
                         if ((int)json["status"] == 5)
                             Logic.doNotSell = true;
                         break;
                     default:
-                        Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
+                        //Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
                         //Console.WriteLine(x.type);
-                        //x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                        //Log.Info(x.data);
+                        //data = DecodeEncodedNonAsciiCharacters(data);
+                        //Log.Info(data);
                         break;
                 }
             }
