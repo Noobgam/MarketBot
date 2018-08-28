@@ -334,7 +334,7 @@ namespace CSGOTM
                     case "money":
                         try
                         {
-                            money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0]) * 100);
+                            money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0], new CultureInfo("en")) * 100);
                         } catch
                         {
                             Log.Error($"Can't parse money from {data} [{data.Split('\"')[1].Split('<')[0]}]");
