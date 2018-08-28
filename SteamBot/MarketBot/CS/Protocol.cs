@@ -30,6 +30,7 @@ namespace CSGOTM
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         public SteamBot.Bot Bot;
+        int money = 0;
         Random Generator = new Random();
         string Api = null;
         SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
@@ -187,6 +188,7 @@ namespace CSGOTM
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
+            money = GetMoney();
             Task.Run((Action)PingPong);
             Task.Run((Action)ReOpener);
             Task.Run((Action)HandleTrades);
@@ -330,9 +332,7 @@ namespace CSGOTM
                         Log.Info("Inventory was cached");
                         break;
                     case "money":
-                        //Console.ForegroundColor = ConsoleColor.Yellow;
-                        //Console.WriteLine("Current balance: %f", Double.Parse(data.Split('<')[0]));
-                        //Console.ForegroundColor = ConsoleColor.White;
+                        money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0]) * 100);
                         break;
                     case "additem_go":
                         break;
@@ -352,7 +352,6 @@ namespace CSGOTM
             catch (Exception ex)
             {
                 Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
-
             }
             finally
             {
@@ -628,9 +627,7 @@ namespace CSGOTM
             {
                 string uri = $"/api/PingPong/direct/?key={Api}";
                 string resp = ExecuteApiRequest(uri);
-                if (resp == null)
-                    Thread.Sleep(120000);
-                Thread.Sleep(60000);
+                Thread.Sleep(30000);
             }
         }
         
@@ -700,13 +697,18 @@ namespace CSGOTM
             return false;
 #else
                 string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+                if (money < price)
+                {
+                    Log.ApiError("No money to set order, call to url was optimized :" + uri);
+                    return false;
+                }
                 string resp = ExecuteApiRequest(uri, ApiMethod.SetOrder);
                 if (resp == null)
                     return false;
                 JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
                 if (json["success"] == null)
                 {
-                    Log.ApiError("Was unable to set order, uls is :" + uri);
+                    Log.ApiError("Was unable to set order, url is :" + uri);
                     Log.ApiError(json.ToString());
                     return false;
                 }
@@ -717,9 +719,9 @@ namespace CSGOTM
                 else
                 {
                     if (json.ContainsKey("error"))
-                        Log.ApiError($"Was unable to set: url is {uri}, error message: {(string)json["error"]}");
+                        Log.ApiError($"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
                     else
-                        Log.ApiError("Was unable to set order, urls is :" + uri);
+                        Log.ApiError("Was unable to set order, url is :" + uri);
                     return false;
                 }
 #endif
@@ -816,9 +818,12 @@ namespace CSGOTM
             }
         }
 
-        public float GetMoney() {
+        public int GetMoney() {
+            string resp = ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney);
+            if (resp == null)
+                return 0;
             JObject temp2 = JObject.Parse(ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney));
-            return float.Parse((string)temp2["money"]);
+            return (int)temp2["money"];
         }
     }
 }

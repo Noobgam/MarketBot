@@ -85,7 +85,7 @@ namespace CSGOTM {
             string response = Utility.Request.Get("http://steamcommunity.com/inventory/76561198321472965/730/2?l=russian&count=5000");
             JObject parsed = JObject.Parse(response);
             JArray items = (JArray) parsed["descriptions"];
-            float price = 0;
+            double price = 0;
             foreach (var item in items) {
                 try {
                     string name = (string) item["market_name"];
@@ -146,10 +146,7 @@ namespace CSGOTM {
                     }
                     
                     if (price > 9000 && curPrice < price * Consts.UNSTICKERED_ORDER && !blackList.Contains(top.i_market_hash_name)) {
-                        if (!Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1))
-                        {
-                            Log.ApiError("Could not set order");
-                        }
+                        Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
                 }
