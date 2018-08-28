@@ -337,7 +337,7 @@ namespace CSGOTM
                             money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0]) * 100);
                         } catch
                         {
-                            Log.Error($"Can't parse money from {data}");
+                            Log.Error($"Can't parse money from {data} [{data.Split('\"')[1].Split('<')[0]}]");
                             money = 90000;
                         }
                         break;
