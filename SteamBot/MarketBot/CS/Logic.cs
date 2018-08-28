@@ -49,7 +49,7 @@ namespace CSGOTM {
             Task.Run((Action)SaveDataBaseCycle);
             Task.Run((Action)SellFromQueue);
             Task.Run((Action)AddNewItems);
-            //Task.Run((Action)UnstickeredRefresh);
+            Task.Run((Action)UnstickeredRefresh);
             Task.Run((Action)SetNewOrder);
             if (!sellOnly)
             {
@@ -154,17 +154,17 @@ namespace CSGOTM {
         }
 
         public void RefreshPrices(TMTrade[] trades) {
-            lock (RefreshItemsLock) //lock (UnstickeredRefreshItemsLock)
+            lock (RefreshItemsLock) lock (UnstickeredRefreshItemsLock)
             {
+                unstickeredRefresh.Clear();
                 for (int i = 1; i <= trades.Length; i++)
                 {
                     var cur = trades[trades.Length - i];
-                    //if (!hasStickers(cur.i_classid, cur.i_instanceid))
-                    //{
-                    //    unstickeredRefresh.Enqueue(cur);
-                    //}
-                    //else
-                    if (i <= 7 && cur.ui_status == "1")
+                    if (!hasStickers(cur.i_classid, cur.i_instanceid))
+                    {
+                        unstickeredRefresh.Enqueue(cur);
+                    }
+                    else if (i <= 7 && cur.ui_status == "1")
                     {
                         refreshPrice.Enqueue(cur);
                     }
@@ -320,10 +320,13 @@ namespace CSGOTM {
                             if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 < myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
                             {
                                 int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
-                                if (coolPrice > GetMySellPriceByName(trade.i_market_name) * 0.8)
-                                {
-                                    items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
+                                int careful = -1;
+                                lock (DatabaseLock) {
+                                    careful = dataBase[trade.i_market_name].median;
                                 }
+                                if (coolPrice < careful * 0.8)
+                                    coolPrice = 0;
+                                items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
                             }
                             else
                             {
