@@ -214,10 +214,8 @@ namespace CSGOTM
         
         void Msg(object sender, MessageReceivedEventArgs e)
         {
-            Stopwatch sw = new Stopwatch();
             try
             {
-                sw.Start();
                 if (e.Message == "pong")
                     return;
                 var message = e.Message;
@@ -310,8 +308,6 @@ namespace CSGOTM
             }
             finally
             {
-                sw.Stop();
-                Log.Info($"{sw.ElapsedMilliseconds}");
             }
         }
 
@@ -586,7 +582,7 @@ namespace CSGOTM
                 string resp = ExecuteApiRequest(uri);
                 if (resp == null)
                     Thread.Sleep(120000);
-                Thread.Sleep(120000);
+                Thread.Sleep(60000);
             }
         }
         
