@@ -16,6 +16,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
 using SteamBot.MarketBot.Utility;
+using System.Diagnostics;
 
 namespace CSGOTM
 {
@@ -213,9 +214,10 @@ namespace CSGOTM
         
         void Msg(object sender, MessageReceivedEventArgs e)
         {
-
+            Stopwatch sw = new Stopwatch();
             try
             {
+                sw.Start();
                 if (e.Message == "pong")
                     return;
                 var message = e.Message;
@@ -305,6 +307,11 @@ namespace CSGOTM
             {
                 Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
 
+            }
+            finally
+            {
+                sw.Stop();
+                Log.Info($"{sw.ElapsedMilliseconds}");
             }
         }
 
