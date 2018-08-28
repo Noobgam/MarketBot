@@ -341,7 +341,8 @@ namespace CSGOTM {
             while (true)
             {
                 Thread.Sleep(1000); //dont want to spin nonstop
-                SpinWait.SpinUntil(() => (!refreshPrice.IsEmpty || !toBeSold.IsEmpty));
+                while (refreshPrice.IsEmpty && toBeSold.IsEmpty)
+                    Thread.Sleep(1000);
                 if (!refreshPrice.IsEmpty)
                 {
                     lock (RefreshItemsLock)
