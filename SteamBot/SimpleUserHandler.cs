@@ -99,93 +99,82 @@ namespace SteamBot
             {
                 case TradeOfferState.TradeOfferStateAccepted:
                         return;
-                case TradeOfferState.TradeOfferStateActive: {
-                        var their = offer.Items.GetTheirItems();
-                        var my = offer.Items.GetMyItems();
-                        long aid = -1, cid = -1;
-                        bool unstable = false;
-                        foreach (var item in their) {
-                            if (aid == -1) {
-                                aid = item.AppId;
-                            } else {
-                                if (aid != item.AppId) {
-                                    unstable = true;
-                                }
-                                aid = item.AppId;
+                case TradeOfferState.TradeOfferStateActive:
+                    var their = offer.Items.GetTheirItems();
+                    var my = offer.Items.GetMyItems();
+                    long aid = -1, cid = -1;
+                    bool unstable = false;
+                    foreach (var item in their) {
+                        if (aid == -1) {
+                            aid = item.AppId;
+                        } else {
+                            if (aid != item.AppId) {
+                                unstable = true;
                             }
-
-                            if (cid == -1) {
-                                cid = item.ContextId;
-                            } else {
-                                if (cid != item.ContextId) {
-                                    unstable = true;
-                                }
-                                cid = item.ContextId;
-                            }
-                        }
-                        foreach (var item in my) {
-                            if (aid == -1) {
-                                aid = item.AppId;
-                            } else {
-                                if (aid != item.AppId) {
-                                    unstable = true;
-                                }
-                                aid = item.AppId;
-                            }
-
-                            if (cid == -1) {
-                                cid = item.ContextId;
-                            } else {
-                                if (cid != item.ContextId) {
-                                    unstable = true;
-                                }
-                                cid = item.ContextId;
-                            }
+                            aid = item.AppId;
                         }
 
-                        string appid_contextid;
-                        if (unstable) appid_contextid = "unstable";
-                        else appid_contextid = aid + "-" + cid;
-                        switch (appid_contextid) {
-                            case "730-2":
-                                if (my.Count > 0 && !offer.IsOurOffer) //if the offer is bad we decline it. 
-                                {
-                                    offer.Decline();
-                                    Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.WriteLine("Offer failed.");
-                                    Console.WriteLine("[Reason]: Invalid trade request. (not issued by me, has my items there)");
-                                    Console.ForegroundColor = ConsoleColor.White;
-                                    return;
-                                } else if (offer.Accept().Accepted) {
-                                    Console.ForegroundColor = ConsoleColor.Yellow;
-                                    Console.WriteLine("Offer completed.");
-                                    if (their.Count != 0)
-                                        Console.WriteLine("Received: " + their.Count + " items.");
-                                    if (my.Count != 0)
-                                        Console.WriteLine("Lost:     " + my.Count + " items.");
-                                    Console.ForegroundColor = ConsoleColor.White;
-                                    if (my.Count != 0) {
-                                        Task.Delay(1000).
-                                            ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-                                    }
-                                    return;
-                                } else {
-                                    Console.ForegroundColor = ConsoleColor.Red;
-                                    Console.WriteLine("Offer failed.");
-                                    Console.WriteLine("[Reason]: Unknown error.");
-                                    Console.ForegroundColor = ConsoleColor.White;
-                                    return;
-                                }
-                            case "unstable":
-                                break;
-                            default:
-                                break;
+                        if (cid == -1) {
+                            cid = item.ContextId;
+                        } else {
+                            if (cid != item.ContextId) {
+                                unstable = true;
+                            }
+                            cid = item.ContextId;
                         }
-
-
-
-                        return;
                     }
+                    foreach (var item in my) {
+                        if (aid == -1) {
+                            aid = item.AppId;
+                        } else {
+                            if (aid != item.AppId) {
+                                unstable = true;
+                            }
+                            aid = item.AppId;
+                        }
+
+                        if (cid == -1) {
+                            cid = item.ContextId;
+                        } else {
+                            if (cid != item.ContextId) {
+                                unstable = true;
+                            }
+                            cid = item.ContextId;
+                        }
+                    }
+
+                    string appid_contextid;
+                    if (unstable) appid_contextid = "unstable";
+                    else appid_contextid = aid + "-" + cid;
+                    switch (appid_contextid) {
+                        case "730-2":
+                            if (my.Count > 0 && !offer.IsOurOffer) //if the offer is bad we decline it. 
+                            {
+                                offer.Decline();
+                                Log.Error("Offer failed. Invalid trade request. (not issued by me, has my items there)");
+                                return;
+                            } else if (offer.Accept().Accepted) {
+                                string st = "Offer completed.";
+                                if (their.Count != 0)
+                                    st += " Received: " + their.Count + " items.";
+                                if (my.Count != 0)
+                                    st += " Lost:     " + my.Count + " items.";
+                                Log.Warn(st);
+                                if (my.Count != 0) {
+                                    Task.Delay(1000).
+                                        ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                                }
+                                return;
+                            } else {
+                                Log.Error("Offer failed. Unknown error.");
+                                return;
+                            }
+                        case "unstable":
+                            break;
+                        default:
+                            break;
+                    }
+                     return;
                 case TradeOfferState.TradeOfferStateNeedsConfirmation: {
                         Thread.Sleep(1000);
                         var task = Task.Run(() => {

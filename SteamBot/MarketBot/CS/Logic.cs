@@ -14,14 +14,21 @@ using System.Collections.Concurrent;
 namespace CSGOTM {
     public class Logic {
         public Utility.MarketLogger Log;
-        private static Mutex DatabaseLock = new Mutex();
-        private static Mutex CurrentItemsLock = new Mutex();
-        private static Mutex RefreshItemsLock = new Mutex();
-        private static Mutex UnstickeredRefreshItemsLock = new Mutex();
+        private Mutex DatabaseLock = new Mutex();
+        private Mutex CurrentItemsLock = new Mutex();
+        private Mutex RefreshItemsLock = new Mutex();
+        private Mutex UnstickeredRefreshItemsLock = new Mutex();
 
         public Logic(String botName)
         {
             this.botName = botName;
+            PREFIXPATH = "CS/" + botName;
+            UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
+            DATABASEPATH = PREFIXPATH + "/database.txt";
+            DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
+            DATABASEJSONPATH = PREFIXPATH + "/database.json";
+            BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
+            MONEYTPATH = PREFIXPATH + "/money.txt";
             Thread starter = new Thread(new ThreadStart(StartUp));
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
@@ -531,7 +538,7 @@ namespace CSGOTM {
 #endif
             }
             catch (Exception ex) {
-                Log.Error(ex.Message);
+                Log.Error("Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
             }
         }
 
@@ -697,17 +704,15 @@ namespace CSGOTM {
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 70;
-        private const string PREFIXPATH = "CS";
+        private string PREFIXPATH;
         private SortedSet<string> unStickered = new SortedSet<string>();
 
-        private const string UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
-        private const string DATABASEPATH = PREFIXPATH + "/database.txt";
-        private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
-        private const string DATABASEJSONPATH = PREFIXPATH + "/database.json";
-        private const string BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
-        private const string MONEYTPATH = PREFIXPATH + "/money.txt";
-
-
+        private string UNSTICKEREDPATH;
+        private string DATABASEPATH;
+        private string DATABASETEMPPATH;
+        private string DATABASEJSONPATH;
+        private string BLACKLISTPATH;
+        private string MONEYTPATH;
 
         private ConcurrentQueue<Inventory.SteamItem> toBeSold = new ConcurrentQueue<Inventory.SteamItem>();
         private ConcurrentQueue<TMTrade> refreshPrice = new ConcurrentQueue<TMTrade>();

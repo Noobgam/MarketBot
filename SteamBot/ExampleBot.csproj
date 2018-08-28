@@ -73,6 +73,7 @@
     <Compile Include="MarketBot\CS\Logic.cs" />
     <Compile Include="MarketBot\CS\Protocol.cs" />
     <Compile Include="MarketBot\CS\Utility.cs" />
+    <Compile Include="MarketBot\Utility\Encode.cs" />
     <Compile Include="MarketBot\Utility\Request.cs" />
     <Compile Include="MarketBot\Utility\Item.cs" />
     <Compile Include="MarketBot\Utility\Economy.cs" />

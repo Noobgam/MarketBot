@@ -15,6 +15,7 @@ using Newtonsoft.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using SteamBot.MarketBot.Utility;
 
 namespace CSGOTM
 {
@@ -27,9 +28,9 @@ namespace CSGOTM
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         public SteamBot.Bot Bot;
-        static Random Generator = new Random();
-        static string Api = null;
-        private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
+        Random Generator = new Random();
+        string Api = null;
+        SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
 
         //TODO(noobgam): make it great again, probably some of them can be united.
         public enum ApiMethod {
@@ -58,8 +59,8 @@ namespace CSGOTM
             { ApiMethod.Buy, 3 },
         };
 
-        private static Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
-        private static Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
+        private Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
+        private Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
 
         private void ObtainApiSemaphore(ApiMethod method)
         {
@@ -210,18 +211,19 @@ namespace CSGOTM
             return dummy.s;
         }
 
-        static string DecodeEncodedNonAsciiCharacters(string value)
-        {
-            return Regex.Replace(
-                value,
-                @"\\u(?<Value>[a-zA-Z0-9]{4})",
-                m => {
-                    return ((char)int.Parse(m.Groups["Value"].Value, NumberStyles.HexNumber)).ToString();
-                });
-        }
-
+        DateTime tmp = DateTime.Now;
+        double temp = 0;
+        const double cntt = 0.1;
+        int ite = 0;
         void Msg(object sender, MessageReceivedEventArgs e)
         {
+            if (ite != 0)
+                temp = temp * (1 - cntt) + (DateTime.Now.Subtract(tmp)).TotalMilliseconds * cntt;
+            tmp = DateTime.Now;
+            if (ite++ % 1000 == 0)
+            { 
+                Log.Info($"Socket: {temp}");
+            }
             try
             {
                 if (e.Message == "pong")
@@ -247,7 +249,7 @@ namespace CSGOTM
                         try
                         {
                             char[] trimming = { '[', ']' };
-                            x.data = DecodeEncodedNonAsciiCharacters(x.data);
+                            x.data = Encode.DecodeEncodedNonAsciiCharacters(x.data);
                             x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
                             string[] arr = x.data.Split(',');
                             HistoryItem historyItem = new HistoryItem();
@@ -345,6 +347,7 @@ namespace CSGOTM
                         string profile = (string)json["profile"];
                         ulong id = ulong.Parse(profile.Split('/')[4]);
 
+                        Log.Info(json.ToString(Formatting.None));
                         var offer = Bot.NewTradeOffer(new SteamID(id));
                         foreach (JObject item in json["request"]["items"]) {
                             offer.Items.AddMyItem(
@@ -617,15 +620,17 @@ namespace CSGOTM
         {
             string uri = $"/api/MassSetPriceById/?key={Api}";
             string data = String.Join("&", items.Select(lr => $"list[{lr.Item1}]={lr.Item2}"));
-            string result = ExecuteApiPostRequest(uri, data, method);
             try
             {
+                string result = ExecuteApiPostRequest(uri, data, method);
+                if (result == null)
+                    return null;
                 JObject temp = JObject.Parse(result);
                 return temp;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error("Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
             }
             return null;
         }
