@@ -254,6 +254,8 @@ namespace CSGOTM {
         /// <returns></returns>
         int GetMySellPrice(Inventory.SteamItem item)
         {
+            if (!hasStickers(item.i_classid, item.i_instanceid))
+                return GetMyUnstickeredSellPrice(item);
             if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
             {
                 return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
@@ -261,6 +263,26 @@ namespace CSGOTM {
             else
             {
                 return GetMySellPriceByName(item.i_market_name);
+            }
+        }
+
+
+        /// <summary>
+        /// Returns price to sell for or -1
+        /// </summary>
+        /// <returns></returns>
+        int GetMyUnstickeredSellPrice(Inventory.SteamItem item)
+        {
+            if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
+            {
+                return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
+            }
+            else
+            {
+                lock (DatabaseLock)
+                {
+                    return dataBase[item.i_market_name].median;
+                }
             }
         }
 
@@ -301,15 +323,15 @@ namespace CSGOTM {
                         }
                         catch
                         {
-                            Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
-                            try
-                            {
-                                //int val = GetMySellPriceByName((string)token["name"]);
-                            }
-                            catch
-                            {
-                                Log.ApiError("No stickered price detected");
-                            }
+                            //Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
+                            //try
+                            //{
+                            //    //int val = GetMySellPriceByName((string)token["name"]);
+                            //}
+                            //catch
+                            //{
+                            //    Log.ApiError("No stickered price detected");
+                            //}
                         };
                     }
                     foreach (TMTrade trade in unstickeredChunk)
