@@ -210,20 +210,10 @@ namespace CSGOTM
             var dummy = JsonConvert.DeserializeObject<Dummy>(t);
             return dummy.s;
         }
-
-        DateTime tmp = DateTime.Now;
-        double temp = 0;
-        const double cntt = 0.1;
-        int ite = 0;
+        
         void Msg(object sender, MessageReceivedEventArgs e)
         {
-            if (ite != 0)
-                temp = temp * (1 - cntt) + (DateTime.Now.Subtract(tmp)).TotalMilliseconds * cntt;
-            tmp = DateTime.Now;
-            if (ite++ % 1000 == 0)
-            { 
-                Log.Info($"Socket: {temp}");
-            }
+
             try
             {
                 if (e.Message == "pong")
