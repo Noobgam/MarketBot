@@ -712,10 +712,10 @@ namespace CSGOTM {
                 }
 
                 
-                if (item.ui_price < 25000 && prices.Count >= 6 &&
+                if (item.ui_price < 35000 && prices.Count >= 6 &&
                     item.ui_price < Consts.WANT_TO_BUY * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
-                    prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 400)
+                    prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 1000)
                 {
                     //TODO какое-то условие на время
                     Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
