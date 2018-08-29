@@ -281,7 +281,10 @@ namespace CSGOTM {
             {
                 lock (DatabaseLock)
                 {
-                    return dataBase[item.i_market_name].median;
+                    if (dataBase.ContainsKey(item.i_market_name))
+                        return dataBase[item.i_market_name].median;
+                    else
+                        return -1;
                 }
             }
         }
