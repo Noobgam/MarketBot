@@ -291,73 +291,82 @@ namespace CSGOTM {
             while (true)
             {
                 Thread.Sleep(1000);
-                Queue<TMTrade> unstickeredTemp;
-                lock (UnstickeredRefreshItemsLock)
-                {
-                    unstickeredTemp = new Queue<TMTrade>(unstickeredRefresh);
-                }
-                while (unstickeredTemp.Count > 0)
-                {
-                    Queue<TMTrade> unstickeredChunk = new Queue<TMTrade>(unstickeredTemp.Take(100));
-                    for (int i = 0; i < unstickeredChunk.Count; ++i)
-                        unstickeredTemp.Dequeue();
-                    List<Tuple<string, string>> tpls = new List<Tuple<string, string>>();
-                    foreach (var x in unstickeredChunk)
+                try {
+                    Queue<TMTrade> unstickeredTemp;
+                    lock (UnstickeredRefreshItemsLock)
                     {
-                        tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
+                        unstickeredTemp = new Queue<TMTrade>(unstickeredRefresh);
                     }
-                    JObject info = Protocol.MassInfo(tpls, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
-                    List<Tuple<string, int>> items = new List<Tuple<string, int>>();
-                    Dictionary<string, Tuple<int, int>[]> marketOffers = new Dictionary<string, Tuple<int, int>[]>();
-                    Dictionary<string, int> myOffer = new Dictionary<string, int>();
-                    foreach (JToken token in info["results"])
+                    while (unstickeredTemp.Count > 0)
                     {
-                        string cid = (string)token["classid"];
-                        string iid = (string)token["instanceid"];
-                        Tuple<int, int>[] arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
-                        marketOffers[$"{cid}_{iid}"] = arr;
-                        //think it cant be empty because we have at least one order placed.
-                        try
+                        Queue<TMTrade> unstickeredChunk = new Queue<TMTrade>(unstickeredTemp.Take(100));
+                        for (int i = 0; i < unstickeredChunk.Count; ++i)
+                            unstickeredTemp.Dequeue();
+                        List<Tuple<string, string>> tpls = new List<Tuple<string, string>>();
+                        foreach (var x in unstickeredChunk)
                         {
-                            myOffer[$"{cid}_{iid}"] = (int)token["sell_offers"]["my_offers"].Min();
+                            tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
                         }
-                        catch
+                        JObject info = Protocol.MassInfo(tpls, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
+                        if (info == null)
+                            break;
+                        List<Tuple<string, int>> items = new List<Tuple<string, int>>();
+                        Dictionary<string, Tuple<int, int>[]> marketOffers = new Dictionary<string, Tuple<int, int>[]>();
+                        Dictionary<string, int> myOffer = new Dictionary<string, int>();
+                        foreach (JToken token in info["results"])
                         {
-                            //Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
-                            //try
-                            //{
-                            //    //int val = GetMySellPriceByName((string)token["name"]);
-                            //}
-                            //catch
-                            //{
-                            //    Log.ApiError("No stickered price detected");
-                            //}
-                        };
-                    }
-                    foreach (TMTrade trade in unstickeredChunk)
-                    {
-                        try
-                        {
+                            string cid = (string)token["classid"];
+                            string iid = (string)token["instanceid"];
+                            Tuple<int, int>[] arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
+                            marketOffers[$"{cid}_{iid}"] = arr;
                             //think it cant be empty because we have at least one order placed.
-                            if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 < myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
+                            try
                             {
-                                int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
-                                int careful = -1;
-                                lock (DatabaseLock) {
-                                    careful = dataBase[trade.i_market_name].median;
-                                }
-                                if (coolPrice < careful * 0.8)
-                                    coolPrice = 0;
-                                items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
+                                myOffer[$"{cid}_{iid}"] = (int)token["sell_offers"]["my_offers"].Min();
                             }
-                            else
+                            catch
                             {
-                                //TODO(noobgam): either don't update the price or change price to minprice - 1 if our price is currently lower, or don't change at all.
-                            }
+                                //Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
+                                //try
+                                //{
+                                //    //int val = GetMySellPriceByName((string)token["name"]);
+                                //}
+                                //catch
+                                //{
+                                //    Log.ApiError("No stickered price detected");
+                                //}
+                            };
                         }
-                        catch { }
+                        foreach (TMTrade trade in unstickeredChunk)
+                        {
+                            try
+                            {
+                                //think it cant be empty because we have at least one order placed.
+                                if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 < myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
+                                {
+                                    int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
+                                    int careful = -1;
+                                    lock (DatabaseLock) {
+                                        careful = dataBase[trade.i_market_name].median;
+                                    }
+                                    if (coolPrice < careful * 0.8)
+                                        coolPrice = 0;
+                                    items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
+                                }
+                                else
+                                {
+                                    //TODO(noobgam): either don't update the price or change price to minprice - 1 if our price is currently lower, or don't change at all.
+                                }
+                            }
+                            catch { }
+                        }
+                        /*JOBject obj = */
+                        Protocol.MassSetPriceById(items, method: Protocol.ApiMethod.UnstickeredMassSetPriceById);
                     }
-                    /*JOBject obj = */Protocol.MassSetPriceById(items, method: Protocol.ApiMethod.UnstickeredMassSetPriceById);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Some error happened. Message: {ex.Message} \nTrace: {ex.StackTrace}" );
                 }
             }
         }
