@@ -30,7 +30,7 @@ namespace SteamBot
         public ConsoleColor DefaultConsoleColor = ConsoleColor.White;
         public bool ShowBotName { get; set; }
 
-        public Log(string logFile, string botName = "", LogLevel consoleLogLevel = LogLevel.Info, LogLevel fileLogLevel = LogLevel.Info)
+        public Log(string logFile, string botName = "", LogLevel consoleLogLevel = LogLevel.Info, LogLevel fileLogLevel = LogLevel.Debug)
         {
             Directory.CreateDirectory(Path.Combine(System.Windows.Forms.Application.StartupPath, "logs"));
             _FileStream = File.AppendText(Path.Combine("logs", logFile));
