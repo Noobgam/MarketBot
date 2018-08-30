@@ -49,7 +49,7 @@ namespace CSGOTM {
             Task.Run((Action)SaveDataBaseCycle);
             Task.Run((Action)SellFromQueue);
             Task.Run((Action)AddNewItems);
-            Task.Run((Action)UnstickeredRefresh);
+            //Task.Run((Action)UnstickeredRefresh);
             Task.Run((Action)SetNewOrder);
             if (!sellOnly)
             {
@@ -154,17 +154,17 @@ namespace CSGOTM {
         }
 
         public void RefreshPrices(TMTrade[] trades) {
-            lock (RefreshItemsLock) lock (UnstickeredRefreshItemsLock)
+            lock (RefreshItemsLock) //lock (UnstickeredRefreshItemsLock)
             {
-                unstickeredRefresh.Clear();
+                //unstickeredRefresh.Clear();
                 for (int i = 1; i <= trades.Length; i++)
                 {
                     var cur = trades[trades.Length - i];
-                    if (!hasStickers(cur.i_classid, cur.i_instanceid))
-                    {
-                        unstickeredRefresh.Enqueue(cur);
-                    }
-                    else if (i <= 7 && cur.ui_status == "1")
+                    //if (!hasStickers(cur.i_classid, cur.i_instanceid))
+                    //{
+                    //    unstickeredRefresh.Enqueue(cur);
+                    //}
+                    if (i <= 7 && cur.ui_status == "1")
                     {
                         refreshPrice.Enqueue(cur);
                     }
