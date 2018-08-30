@@ -716,7 +716,7 @@ namespace CSGOTM {
             return false;
         }
 
-        public bool doNotSell = false; // True when we don`t want to sell.  
+        public bool doNotSell = false; // True when we don`t want to sell.
         public bool sellOnly = false;
         public Protocol Protocol;
 

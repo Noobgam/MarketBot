@@ -425,9 +425,9 @@ namespace CSGOTM
                             {
                                 string response = Utility.Request.Get("http://steamcommunity.com/inventory/76561198321472965/730/2?l=russian&count=5000");
                                 JObject parsed = JObject.Parse(response);
-                                Log.Error("Could not send trade. Additional information:");
-                                Log.Error(parsed.ToString(Formatting.None));
-                                Log.Error(json.ToString(Formatting.None));
+                                Log.Error("Could not send trade.");
+                     //           Log.Error(parsed.ToString(Formatting.None));
+                     //           Log.Error(json.ToString(Formatting.None));
                                 Thread.Sleep(5000); //sleep tight, steam probably went 500
                             }
                         }
