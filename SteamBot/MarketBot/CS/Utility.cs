@@ -63,36 +63,35 @@ namespace CSGOTM {
         public string placed;
     }
 
-    public class NewItem {
-        public string i_quality;
-        public string i_name_color;
+    public class NewItem
+    {
         public string i_classid;
         public string i_instanceid;
-        public string i_market_hash_name;
         public string i_market_name;
-        public float ui_price;
-        public string app;
-        public string stickers;
+        public int ui_price;
 
         public static Dictionary<string, int> mapping = new Dictionary<string, int>();
-
 
         public NewItem() {
         }
 
         public NewItem(string[] item) {
-            i_quality = item[mapping["c_quality"]];
             i_classid = item[mapping["c_classid"]];
             i_instanceid = item[mapping["c_instanceid"]];
             i_market_name = item[mapping["c_market_name"]];
-            stickers = item[mapping["c_stickers"]];
-            ui_price = Int64.Parse(item[mapping["c_price"]]);
+            ui_price = int.Parse(item[mapping["c_price"]]);
         }
     }
 
-    public class Message {
+    public struct Message {
         public string type;
         public string data;
+
+        public Message(string type, string data)
+        {
+            this.type = type;
+            this.data = data;
+        }
     }
 
     public class TradeResult {

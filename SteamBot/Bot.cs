@@ -238,7 +238,7 @@ namespace SteamBot
 
             CSConnection = new CSGOTM.Protocol(this, config.MarketApiKey);
             CSLogic = new CSGOTM.Logic(config.Username);
-            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger("CSGO_log", "CS:"));
+            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger($"CSGO_log.{config.Username}", $"{config.DisplayName} CS:"));
         }
 
         ~Bot()

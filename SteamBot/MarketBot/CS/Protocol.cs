@@ -15,6 +15,10 @@ using Newtonsoft.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
+using SteamBot.MarketBot.Utility;
+using System.Diagnostics;
+using System.IO;
+using System.Net;
 
 namespace CSGOTM
 {
@@ -27,9 +31,10 @@ namespace CSGOTM
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         public SteamBot.Bot Bot;
-        static Random Generator = new Random();
-        static string Api = null;
-        private static SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
+        int money = 0;
+        Random Generator = new Random();
+        string Api = null;
+        SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
 
         //TODO(noobgam): make it great again, probably some of them can be united.
         public enum ApiMethod {
@@ -58,8 +63,8 @@ namespace CSGOTM
             { ApiMethod.Buy, 3 },
         };
 
-        private static Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
-        private static Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
+        private Dictionary<ApiMethod, SemaphoreSlim> rpsRestricter = new Dictionary<ApiMethod, SemaphoreSlim>();
+        private Dictionary<ApiMethod, int> rpsDelay = new Dictionary<ApiMethod, int>();
 
         private void ObtainApiSemaphore(ApiMethod method)
         {
@@ -83,6 +88,11 @@ namespace CSGOTM
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
                 response = Utility.Request.Get("https://market.csgo.com" + url);
+            }
+            catch (Exception ex)
+            {
+                Log.ApiError($"GET call to https://market.csgo.com{url} failed");
+                Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
             }
             finally
             {
@@ -120,6 +130,11 @@ namespace CSGOTM
                 //Log.Success("Executing api call " + url);
                 response = Utility.Request.Post("https://market.csgo.com" + url, data);
             }
+            catch (Exception ex)
+            {
+                Log.ApiError($"POST call to https://market.csgo.com{url} with data: {data} failed");
+                Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
+            }
             finally
             {
                 ReleaseApiSemaphore(method);
@@ -130,6 +145,8 @@ namespace CSGOTM
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public Protocol(SteamBot.Bot Bot, string api) {
+            JObject x = new JObject();
+            x["bool"] = false;
             Api = api;
             this.Bot = Bot;
             InitializeRPSSemaphores();
@@ -172,6 +189,7 @@ namespace CSGOTM
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
+            money = GetMoney();
             Task.Run((Action)PingPong);
             Task.Run((Action)ReOpener);
             Task.Run((Action)HandleTrades);
@@ -197,102 +215,154 @@ namespace CSGOTM
             var dummy = JsonConvert.DeserializeObject<Dummy>(t);
             return dummy.s;
         }
-
-        static string DecodeEncodedNonAsciiCharacters(string value)
-        {
-            return Regex.Replace(
-                value,
-                @"\\u(?<Value>[a-zA-Z0-9]{4})",
-                m => {
-                    return ((char)int.Parse(m.Groups["Value"].Value, NumberStyles.HexNumber)).ToString();
-                });
-        }
-
+        
         void Msg(object sender, MessageReceivedEventArgs e)
         {
-            if (e.Message == "pong")
-                return;
-            var message = e.Message;
-            Message x = JsonConvert.DeserializeObject<Message>(message);
-            //Console.WriteLine(x.type);
-            switch (x.type)
+            try
             {
-                case "newitems_go":
-                    NewItem newItem = JsonConvert.DeserializeObject<NewItem>(x.data);
-                    //getBestOrder(newItem.i_classid, newItem.i_instanceid);
-                    newItem.ui_price = newItem.ui_price * 100 + 0.5f;
-                    if (!Logic.sellOnly && Logic.WantToBuy(newItem))
+                if (e.Message == "pong")
+                    return;
+                string type = string.Empty;
+                string data = string.Empty;
+                JsonTextReader reader = new JsonTextReader(new StringReader(e.Message));
+                string currentProperty = string.Empty;
+                while (reader.Read())
+                {
+                    if (reader.Value != null)
                     {
-                        if (Buy(newItem))
-                            Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
-                        else
-                            Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
-                    }
-                    break;
-                case "history_go":
-                    try
-                    {
-                        char[] trimming = { '[', ']' };
-                        x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                        x.data = x.data.Replace("\\", "").Replace("\"", "").Trim(trimming);
-                        string[] arr = x.data.Split(',');
-                        HistoryItem historyItem = new HistoryItem();
-                        if (arr.Length == 7)
-                        {
-                            historyItem.i_classid = arr[0];
-                            historyItem.i_instanceid = arr[1];
-                            historyItem.i_market_hash_name = arr[2];
-                            historyItem.timesold = arr[3];
-                            historyItem.price = Int32.Parse(arr[4]);
-                            historyItem.i_market_name = arr[5];
+                        if (reader.TokenType == JsonToken.PropertyName)
+                            currentProperty = reader.Value.ToString();
+                        else if (reader.TokenType == JsonToken.String) {
+                            if (currentProperty == "type")
+                                type = reader.Value.ToString();
+                            else
+                                data = reader.Value.ToString();
                         }
-                        else if (arr.Length == 8)
-                        {
-                            historyItem.i_classid = arr[0];
-                            historyItem.i_instanceid = arr[1];
-                            historyItem.i_market_hash_name = arr[2] + arr[3];
-                            historyItem.timesold = arr[4];
-                            historyItem.price = Int32.Parse(arr[5]);
-                            historyItem.i_market_name = arr[6];
-                        }
-                        else
-                        {
-                            historyItem.i_classid = arr[0];
-                            historyItem.i_instanceid = arr[1];
-                            historyItem.i_market_hash_name = arr[2] + "," + arr[3];
-                            historyItem.timesold = arr[4];
-                            historyItem.price = Int32.Parse(arr[5]);
-                            historyItem.i_market_name = arr[6] + "," + arr[7];
-                        }
-                        Logic.ProcessItem(historyItem);
                     }
-                    catch (Exception ex)
-                    {
-                        Log.Error(ex.Message);
-                    }
-                    break;
+                }
+                //Console.WriteLine(x.type);
+                switch (type)
+                {
+                    case "newitems_go":
+                        reader = new JsonTextReader(new StringReader(data));
+                        currentProperty = string.Empty;
+                        NewItem newItem = new NewItem();
+                        while (reader.Read())
+                        {
+                            if (reader.Value != null)
+                            {
+                                if (reader.TokenType == JsonToken.PropertyName)
+                                    currentProperty = reader.Value.ToString();
+                                else if (reader.TokenType == JsonToken.String)
+                                {
+                                    switch (currentProperty)
+                                    {
+                                        case "i_classid":
+                                            newItem.i_classid = reader.Value.ToString();
+                                            break;
+                                        case "i_instanceid":
+                                            newItem.i_instanceid = reader.Value.ToString();
+                                            break;
+                                        case "i_market_name":
+                                            newItem.i_market_name = reader.Value.ToString();
+                                            break;
+                                        default:
+                                            break;
+                                         }
+                                }
+                                else if (currentProperty == "ui_price")
+                                {
+                                    newItem.ui_price = (int)(float.Parse(reader.Value.ToString()) * 100);
 
-                case "invcache_go":
-                    Log.Info("Inventory was cached");
-                    break;
-                case "money":
-                    //Console.ForegroundColor = ConsoleColor.Yellow;
-                    //Console.WriteLine("Current balance: %f", Double.Parse(x.data.Split('<')[0]));
-                    //Console.ForegroundColor = ConsoleColor.White;
-                    break;
-                case "additem_go":
-                    break;
-                case "itemstatus_go":
-                    JObject json = JObject.Parse(x.data);
-                    if ((int)json["status"] == 5)
-                        Logic.doNotSell = true;
-                    break;
-                default:
-                    Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
-                    //Console.WriteLine(x.type);
-                    //x.data = DecodeEncodedNonAsciiCharacters(x.data);
-                    //Log.Info(x.data);
-                    break;
+                                }
+                            }
+                        }
+                        //getBestOrder(newItem.i_classid, newItem.i_instanceid);
+                        if (!Logic.sellOnly && Logic.WantToBuy(newItem))
+                        {
+                            if (Buy(newItem))
+                                Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                            else
+                                Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+                        }
+                        break;
+                    case "history_go":
+                        try
+                        {
+                            char[] trimming = { '[', ']' };
+                            data = Encode.DecodeEncodedNonAsciiCharacters(data);
+                            data = data.Replace("\\", "").Replace("\"", "").Trim(trimming);
+                            string[] arr = data.Split(',');
+                            HistoryItem historyItem = new HistoryItem();
+                            if (arr.Length == 7)
+                            {
+                                historyItem.i_classid = arr[0];
+                                historyItem.i_instanceid = arr[1];
+                                historyItem.i_market_hash_name = arr[2];
+                                historyItem.timesold = arr[3];
+                                historyItem.price = Int32.Parse(arr[4]);
+                                historyItem.i_market_name = arr[5];
+                            }
+                            else if (arr.Length == 8)
+                            {
+                                historyItem.i_classid = arr[0];
+                                historyItem.i_instanceid = arr[1];
+                                historyItem.i_market_hash_name = arr[2] + arr[3];
+                                historyItem.timesold = arr[4];
+                                historyItem.price = Int32.Parse(arr[5]);
+                                historyItem.i_market_name = arr[6];
+                            }
+                            else
+                            {
+                                historyItem.i_classid = arr[0];
+                                historyItem.i_instanceid = arr[1];
+                                historyItem.i_market_hash_name = arr[2] + "," + arr[3];
+                                historyItem.timesold = arr[4];
+                                historyItem.price = Int32.Parse(arr[5]);
+                                historyItem.i_market_name = arr[6] + "," + arr[7];
+                            }
+                            Logic.ProcessItem(historyItem);
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Error(ex.Message);
+                        }
+                        break;
+
+                    case "invcache_go":
+                        Log.Info("Inventory was cached");
+                        break;
+                    case "money":
+                        try
+                        {
+                            money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0], new CultureInfo("en")) * 100);
+                        } catch
+                        {
+                            Log.Error($"Can't parse money from {data} [{data.Split('\"')[1].Split('<')[0]}]");
+                            money = 90000;
+                        }
+                        break;
+                    case "additem_go":
+                        break;
+                    case "itemstatus_go":
+                        JObject json = JObject.Parse(data);
+                        if ((int)json["status"] == 5)
+                            Logic.doNotSell = true;
+                        break;
+                    default:
+                        //Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
+                        //Console.WriteLine(x.type);
+                        //data = DecodeEncodedNonAsciiCharacters(data);
+                        //Log.Info(data);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+            }
+            finally
+            {
             }
         }
 
@@ -300,63 +370,112 @@ namespace CSGOTM
         {
             while (!died)
             {
-                socket.Send("ping");
+                try
+                {
+                    socket.Send("ping");
+                }
+                catch (Exception ex)
+                {
+                    Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                }
                 Thread.Sleep(30000);
             }
         }
 
         bool SendSoldItems()
         {
-            Log.Info("Sending " +
-                "items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api, ApiMethod.ItemRequest));
-            if (json["success"] == null)
-                return false;
-            else if ((bool)json["success"])
+            try
             {
-                if ((bool)json["manual"]) {
-                    string profile = (string)json["profile"];
-                    ulong id = ulong.Parse(profile.Split('/')[4]);
-
-                    var offer = Bot.NewTradeOffer(new SteamID(id));
-                    foreach (JObject item in json["request"]["items"]) {
-                        offer.Items.AddMyItem(
-                            (int)item["appid"],
-                            (long)item["contextid"],
-                            (long)item["assetid"],
-                            (long)item["amount"]);
-                    }
-                    Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-                    if (offer.Items.NewVersion) {
-                        string newOfferId;
-                        if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
-                            Task.Delay(5000) //the delay might fix #35
-                                .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-                            Log.Success("Trade offer sent : Offer ID " + newOfferId);
-                        }
-                        return true;
-                    }
+                JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api, ApiMethod.ItemRequest));
+                if (json["success"] == null)
                     return false;
-                } else {
-                    return true; //UHHHHHHHHHHHHHHHHHHHH
+                else if ((bool)json["success"])
+                {
+                    if ((bool)json["manual"]) {
+                        string profile = (string)json["profile"];
+                        ulong id = ulong.Parse(profile.Split('/')[4]);
+
+                        Log.Info(json.ToString(Formatting.None));
+                        for (int triesLeft = 3; triesLeft > 0; triesLeft--)
+                        {
+                            var offer = Bot.NewTradeOffer(new SteamID(id));
+                            try
+                            {
+                                foreach (JObject item in json["request"]["items"])
+                                {
+                                    offer.Items.AddMyItem(
+                                        (int)item["appid"],
+                                        (long)item["contextid"],
+                                        (long)item["assetid"],
+                                        (long)item["amount"]);
+                                }
+                                Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
+                                if (offer.Items.NewVersion)
+                                {
+                                    string newOfferId;
+                                    if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
+                                    {
+                                        Task.Delay(5000) //the delay might fix #35
+                                            .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                                        Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                        return true;
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Log.Debug(ex.Message);
+                                if (ex.InnerException is WebException wex)
+                                {
+                                    string resp = new StreamReader(wex.Response.GetResponseStream()).ReadToEnd();
+                                    Log.Debug(resp);
+                                }
+                                string response = Utility.Request.Get($"http://steamcommunity.com/inventory/{Bot.SteamUser.SteamID.ConvertToUInt64()}/730/2?l=russian&count=5000");
+                                JObject parsed = JObject.Parse(response);
+                                Log.Debug("Could not send trade. Additional information:");
+                                Log.Debug(parsed.ToString(Formatting.None));
+                                Log.Debug(json.ToString(Formatting.None));
+                                Thread.Sleep(5000); //sleep tight, steam probably went 500
+                            }
+                        }
+                        return false;
+                    } else {
+                        return true; //UHHHHHHHHHHHHHHHHHHHH
+                    }
                 }
+                else
+                    return false;
             }
-            else
+            catch (Exception ex)
+            {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 return false;
+            }
         }
         
         bool RequestPurchasedItems(string botID)
         {
             Log.Info("Requesting items");
-            JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api, ApiMethod.ItemRequest));
-            if (json["success"] == null)
-                return false;
-            else if ((bool)json["success"])
+            try
             {
-                return true;
+                string resp = ExecuteApiRequest("/api/ItemRequest/out/" + botID + "/?key=" + Api, ApiMethod.ItemRequest);
+                if (resp == null)
+                    return false;                    
+                JObject json = JObject.Parse(resp);
+                if (json["success"] == null)
+                    return false;
+                else if ((bool)json["success"])
+                {
+                    return true;
+                }
+                else
+                    return false;
             }
-            else
+            catch (Exception ex)
+            {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 return false;
+            }
         }
         
         void HandleTrades()
@@ -390,8 +509,8 @@ namespace CSGOTM
                         {
                             Thread.Sleep(10000); //should wait some time if inventory was updated
                         }
-                        sleep += 15000;
-                        SendSoldItems();
+                        if (SendSoldItems())
+                            sleep += 15000;
                     }
                     //if (!gone)
                     //{
@@ -417,19 +536,23 @@ namespace CSGOTM
 
         }
 
-        void Auth()
+        bool Auth()
         {
-            Auth q = JsonConvert.DeserializeObject<Auth>(ExecuteApiRequest("/api/GetWSAuth/?key=" + Api));
+            string resp = ExecuteApiRequest("/api/GetWSAuth/?key=" + Api);
+            if (resp == null)
+                return false;
+            Auth q = JsonConvert.DeserializeObject<Auth>(resp);
             socket.Send(q.wsAuth);
             Subscribe();
+            return true;
         }
 
         void Open(object sender, EventArgs e)
         {
             died = false;
             Log.Success("Connection opened!");
-            Auth();
-            Task.Run((Action)SocketPinger);
+            if (Auth())
+                Task.Run((Action)SocketPinger);
             //andrew is gay
         }
 
@@ -458,13 +581,20 @@ namespace CSGOTM
                 Thread.Sleep(10000);
                 if (died)
                 {
-                    Log.ApiError($"Trying to reconnect for the {i++}-th time");
-                    socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-                    socket.Opened += Open;
-                    socket.Error += Error;
-                    socket.Closed += Close;
-                    socket.MessageReceived += Msg;
-                    socket.Open();
+                    try
+                    {
+                        Log.ApiError($"Trying to reconnect for the {i++}-th time");
+                        socket = new WebSocket("wss://wsn.dota2.net/wsn/");
+                        socket.Opened += Open;
+                        socket.Error += Error;
+                        socket.Closed += Close;
+                        socket.MessageReceived += Msg;
+                        socket.Open();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                    }
                 }
             }
         }
@@ -479,8 +609,10 @@ namespace CSGOTM
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
             string a = ExecuteApiRequest(url, ApiMethod.Buy);
+            if (a == null)
+                return false;
             JObject parsed = JObject.Parse(a);
-			bool badTrade = false;
+            bool badTrade = false;
 			try {
 				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
 			} catch {
@@ -500,25 +632,6 @@ namespace CSGOTM
 #endif
         }
 
-        //Interface starts here:
-        [System.Obsolete("Specify item, it will parce it by itself.")]
-        public bool Buy(string ClasssId, string InstanceId, int price)
-        {
-#if CAREFUL
-            totalwasted += price;
-            Log.Success("Purchased an item for {0}, total wasted {1}", (price + .0) / 100, (totalwasted + .0) / 100);
-            return true;
-#else
-            JObject parsed = JObject.Parse(ExecuteApiRequest("/api/Buy/" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Buy));
-            if (parsed["result"] == null)
-                return false;
-            else if ((string)parsed["result"] == "ok")
-                return true;
-            else
-                return false;
-#endif
-        }
-
         public bool SellNew(string ClasssId, string InstanceId, int price)
         {
 #if CAREFUL //sorry nothing is implemented there, I don't really know what to write as debug
@@ -526,7 +639,10 @@ namespace CSGOTM
 
 
 #else
-            JObject parsed = JObject.Parse(ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell));
+            string resp = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell);
+            if (resp == null)
+                return false;
+            JObject parsed = JObject.Parse(resp);
             if (parsed["result"] == null)
                 return false;
             else if ((bool)parsed["result"] == true) {
@@ -542,16 +658,8 @@ namespace CSGOTM
             while (true)
             {
                 string uri = $"/api/PingPong/direct/?key={Api}";
-                try
-                {
-                    ExecuteApiRequest(uri);
-                }
-                catch (Exception ex)
-                {
-                    Log.ApiError($"Tried to call {uri}");
-                    Log.ApiError(ex.Message);
-                }
-                Thread.Sleep(120000);
+                string resp = ExecuteApiRequest(uri);
+                Thread.Sleep(30000);
             }
         }
         
@@ -561,6 +669,8 @@ namespace CSGOTM
             try
             {
                 string result = ExecuteApiPostRequest(uri, data);
+                if (result == null)
+                    return null;
                 JObject temp = JObject.Parse(result);
                 return temp;
             } catch (Exception ex) {
@@ -580,15 +690,17 @@ namespace CSGOTM
         {
             string uri = $"/api/MassSetPriceById/?key={Api}";
             string data = String.Join("&", items.Select(lr => $"list[{lr.Item1}]={lr.Item2}"));
-            string result = ExecuteApiPostRequest(uri, data, method);
             try
             {
+                string result = ExecuteApiPostRequest(uri, data, method);
+                if (result == null)
+                    return null;
                 JObject temp = JObject.Parse(result);
                 return temp;
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error("Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
             }
             return null;
         }
@@ -596,9 +708,13 @@ namespace CSGOTM
         public Inventory GetSteamInventory()
         {
             string a = ExecuteApiRequest("/api/GetInv/?key=" + Api, ApiMethod.GetSteamInventory);
-            JObject json = JObject.Parse(a);
             Inventory inventory = new Inventory();
             inventory.content = new List<Inventory.SteamItem>();
+            if (a == null)
+            {
+                return inventory;
+            }
+            JObject json = JObject.Parse(a);
             if (json["ok"] != null && (bool)json["ok"] == false)
                 return inventory;
             inventory.content = json["data"].ToObject<List<Inventory.SteamItem>>();
@@ -613,10 +729,18 @@ namespace CSGOTM
             return false;
 #else
                 string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+                if (money < price)
+                {
+                    Log.ApiError("No money to set order, call to url was optimized :" + uri);
+                    return false;
+                }
+                string resp = ExecuteApiRequest(uri, ApiMethod.SetOrder);
+                if (resp == null)
+                    return false;
                 JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
                 if (json["success"] == null)
                 {
-                    Log.ApiError("Was unable to set order, uls is :" + uri);
+                    Log.ApiError("Was unable to set order, url is :" + uri);
                     Log.ApiError(json.ToString());
                     return false;
                 }
@@ -627,9 +751,9 @@ namespace CSGOTM
                 else
                 {
                     if (json.ContainsKey("error"))
-                        Log.ApiError($"Was unable to set: url is {uri}, error message: {(string)json["error"]}");
+                        Log.ApiError($"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
                     else
-                        Log.ApiError("Was unable to set order, urls is :" + uri);
+                        Log.ApiError("Was unable to set order, url is :" + uri);
                     return false;
                 }
 #endif
@@ -645,7 +769,10 @@ namespace CSGOTM
         {
             try
             {
-                JObject json = JObject.Parse(ExecuteApiRequest("/api/UpdateInventory/?key=" + Api, ApiMethod.UpdateInventory));
+                string resp = ExecuteApiRequest("/api/UpdateInventory/?key=" + Api, ApiMethod.UpdateInventory);
+                if (resp == null)
+                    return false;
+                JObject json = JObject.Parse(resp);
                 if (json["success"] == null)
                 {
                     Log.ApiError("Was unable to update inventory");
@@ -671,7 +798,10 @@ namespace CSGOTM
         {
             try
             {
-                JObject x = JObject.Parse(ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder));
+                string resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);
+                if (resp == null)
+                    return -1;
+                JObject x = JObject.Parse(resp);
                 JArray thing = (JArray)x["buy_offers"];
                 if (thing == null || thing.Count == 0)
                     return 49;
@@ -692,7 +822,10 @@ namespace CSGOTM
         {
             try
             {
-                JArray json = JArray.Parse(ExecuteApiRequest("/api/Trades/?key=" + Api, ApiMethod.GetTradeList));
+                string resp = ExecuteApiRequest("/api/Trades/?key=" + Api, ApiMethod.GetTradeList);
+                if (resp == null)
+                    return new TMTrade[0];
+                JArray json = JArray.Parse(resp);
                 TMTrade[] arr = new TMTrade[json.Count];
 
                 
@@ -713,13 +846,16 @@ namespace CSGOTM
             catch (Exception ex)
             {
                 Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
-                return null;
+                return new TMTrade[0];
             }
         }
 
-        public float GetMoney() {
+        public int GetMoney() {
+            string resp = ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney);
+            if (resp == null)
+                return 0;
             JObject temp2 = JObject.Parse(ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney));
-            return float.Parse((string)temp2["money"]);
+            return (int)temp2["money"];
         }
     }
 }

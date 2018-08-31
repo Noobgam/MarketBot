@@ -6,6 +6,7 @@ namespace Utility {
     public static class Request {
         public static string Get(string uri) {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.Proxy = null;
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
 
             using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
@@ -19,6 +20,7 @@ namespace Utility {
             byte[] dataBytes = Encoding.UTF8.GetBytes(data);
 
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.Proxy = null;
             request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
             request.ContentLength = dataBytes.Length;
             request.ContentType = contentType;

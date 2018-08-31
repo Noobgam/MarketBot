@@ -14,14 +14,21 @@ using System.Collections.Concurrent;
 namespace CSGOTM {
     public class Logic {
         public Utility.MarketLogger Log;
-        private static Mutex DatabaseLock = new Mutex();
-        private static Mutex CurrentItemsLock = new Mutex();
-        private static Mutex RefreshItemsLock = new Mutex();
-        private static Mutex UnstickeredRefreshItemsLock = new Mutex();
+        private Mutex DatabaseLock = new Mutex();
+        private Mutex CurrentItemsLock = new Mutex();
+        private Mutex RefreshItemsLock = new Mutex();
+        private Mutex UnstickeredRefreshItemsLock = new Mutex();
 
         public Logic(String botName)
         {
             this.botName = botName;
+            PREFIXPATH = "CS/" + botName;
+            UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
+            DATABASEPATH = PREFIXPATH + "/database.txt";
+            DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
+            DATABASEJSONPATH = PREFIXPATH + "/database.json";
+            BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
+            MONEYTPATH = PREFIXPATH + "/money.txt";
             Thread starter = new Thread(new ThreadStart(StartUp));
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
@@ -78,7 +85,7 @@ namespace CSGOTM {
             string response = Utility.Request.Get("http://steamcommunity.com/inventory/76561198321472965/730/2?l=russian&count=5000");
             JObject parsed = JObject.Parse(response);
             JArray items = (JArray) parsed["descriptions"];
-            float price = 0;
+            double price = 0;
             foreach (var item in items) {
                 try {
                     string name = (string) item["market_name"];
@@ -125,15 +132,16 @@ namespace CSGOTM {
                         continue;
                     }
 
-                    Log.Info(res.ToString(Formatting.None));
                     int curPrice = 50;
                     try {
-                        if (res["buy_offers"]?["best_offer"] != null) {
+                        if (res["buy_offers"] != null && res["buy_offers"].Type != JTokenType.Boolean
+                            && res["buy_offers"]["best_offer"] != null) {
                             curPrice = int.Parse((string) res["buy_offers"]["best_offer"]);
                         }
                     }
                     catch (Exception ex)
                     {
+                        Log.Info(res.ToString(Formatting.None));
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                     
@@ -148,6 +156,7 @@ namespace CSGOTM {
         public void RefreshPrices(TMTrade[] trades) {
             lock (RefreshItemsLock) //lock (UnstickeredRefreshItemsLock)
             {
+                //unstickeredRefresh.Clear();
                 for (int i = 1; i <= trades.Length; i++)
                 {
                     var cur = trades[trades.Length - i];
@@ -155,7 +164,6 @@ namespace CSGOTM {
                     //{
                     //    unstickeredRefresh.Enqueue(cur);
                     //}
-                    //else
                     if (i <= 7 && cur.ui_status == "1")
                     {
                         refreshPrice.Enqueue(cur);
@@ -246,6 +254,8 @@ namespace CSGOTM {
         /// <returns></returns>
         int GetMySellPrice(Inventory.SteamItem item)
         {
+            if (!hasStickers(item.i_classid, item.i_instanceid))
+                return GetMyUnstickeredSellPrice(item);
             if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
             {
                 return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
@@ -256,75 +266,110 @@ namespace CSGOTM {
             }
         }
 
+
+        /// <summary>
+        /// Returns price to sell for or -1
+        /// </summary>
+        /// <returns></returns>
+        int GetMyUnstickeredSellPrice(Inventory.SteamItem item)
+        {
+            if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
+            {
+                return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
+            }
+            else
+            {
+                lock (DatabaseLock)
+                {
+                    if (dataBase.ContainsKey(item.i_market_name))
+                        return dataBase[item.i_market_name].median;
+                    else
+                        return -1;
+                }
+            }
+        }
+
         void UnstickeredRefresh()
         {
             while (true)
             {
                 Thread.Sleep(1000);
-                Queue<TMTrade> unstickeredTemp;
-                lock (UnstickeredRefreshItemsLock)
-                {
-                    unstickeredTemp = new Queue<TMTrade>(unstickeredRefresh);
-                }
-                while (unstickeredTemp.Count > 0)
-                {
-                    Queue<TMTrade> unstickeredChunk = new Queue<TMTrade>(unstickeredTemp.Take(100));
-                    for (int i = 0; i < unstickeredChunk.Count; ++i)
-                        unstickeredTemp.Dequeue();
-                    List<Tuple<string, string>> tpls = new List<Tuple<string, string>>();
-                    foreach (var x in unstickeredChunk)
+                try {
+                    Queue<TMTrade> unstickeredTemp;
+                    lock (UnstickeredRefreshItemsLock)
                     {
-                        tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
+                        unstickeredTemp = new Queue<TMTrade>(unstickeredRefresh);
                     }
-                    JObject info = Protocol.MassInfo(tpls, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
-                    List<Tuple<string, int>> items = new List<Tuple<string, int>>();
-                    Dictionary<string, Tuple<int, int>[]> marketOffers = new Dictionary<string, Tuple<int, int>[]>();
-                    Dictionary<string, int> myOffer = new Dictionary<string, int>();
-                    foreach (JToken token in info["results"])
+                    while (unstickeredTemp.Count > 0)
                     {
-                        string cid = (string)token["classid"];
-                        string iid = (string)token["instanceid"];
-                        Tuple<int, int>[] arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
-                        marketOffers[$"{cid}_{iid}"] = arr;
-                        //think it cant be empty because we have at least one order placed.
-                        try
+                        Queue<TMTrade> unstickeredChunk = new Queue<TMTrade>(unstickeredTemp.Take(100));
+                        for (int i = 0; i < unstickeredChunk.Count; ++i)
+                            unstickeredTemp.Dequeue();
+                        List<Tuple<string, string>> tpls = new List<Tuple<string, string>>();
+                        foreach (var x in unstickeredChunk)
                         {
-                            myOffer[$"{cid}_{iid}"] = (int)token["sell_offers"]["my_offers"].Min();
+                            tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
                         }
-                        catch
+                        JObject info = Protocol.MassInfo(tpls, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
+                        if (info == null)
+                            break;
+                        List<Tuple<string, int>> items = new List<Tuple<string, int>>();
+                        Dictionary<string, Tuple<int, int>[]> marketOffers = new Dictionary<string, Tuple<int, int>[]>();
+                        Dictionary<string, int> myOffer = new Dictionary<string, int>();
+                        foreach (JToken token in info["results"])
                         {
-                            Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
+                            string cid = (string)token["classid"];
+                            string iid = (string)token["instanceid"];
+                            Tuple<int, int>[] arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
+                            marketOffers[$"{cid}_{iid}"] = arr;
+                            //think it cant be empty because we have at least one order placed.
                             try
                             {
-                                //int val = GetMySellPriceByName((string)token["name"]);
+                                myOffer[$"{cid}_{iid}"] = (int)token["sell_offers"]["my_offers"].Min();
                             }
                             catch
                             {
-                                Log.ApiError("No stickered price detected");
-                            }
-                        };
-                    }
-                    foreach (TMTrade trade in unstickeredChunk)
-                    {
-                        try
+                                //Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
+                                //try
+                                //{
+                                //    //int val = GetMySellPriceByName((string)token["name"]);
+                                //}
+                                //catch
+                                //{
+                                //    Log.ApiError("No stickered price detected");
+                                //}
+                            };
+                        }
+                        foreach (TMTrade trade in unstickeredChunk)
                         {
-                            //think it cant be empty because we have at least one order placed.
-                            if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 < myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
+                            try
                             {
-                                int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
-                                if (coolPrice > GetMySellPriceByName(trade.i_market_name) * 0.8)
+                                //think it cant be empty because we have at least one order placed.
+                                if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 < myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
                                 {
+                                    int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
+                                    int careful = -1;
+                                    lock (DatabaseLock) {
+                                        careful = dataBase[trade.i_market_name].median;
+                                    }
+                                    if (coolPrice < careful * 0.8)
+                                        coolPrice = 0;
                                     items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
                                 }
+                                else
+                                {
+                                    //TODO(noobgam): either don't update the price or change price to minprice - 1 if our price is currently lower, or don't change at all.
+                                }
                             }
-                            else
-                            {
-                                //TODO(noobgam): either don't update the price or change price to minprice - 1 if our price is currently lower, or don't change at all.
-                            }
+                            catch { }
                         }
-                        catch { }
+                        /*JOBject obj = */
+                        Protocol.MassSetPriceById(items, method: Protocol.ApiMethod.UnstickeredMassSetPriceById);
                     }
-                    /*JOBject obj = */Protocol.MassSetPriceById(items, method: Protocol.ApiMethod.UnstickeredMassSetPriceById);
+                }
+                catch (Exception ex)
+                {
+                    Log.Error($"Some error happened. Message: {ex.Message} \nTrace: {ex.StackTrace}" );
                 }
             }
         }
@@ -333,7 +378,8 @@ namespace CSGOTM {
             while (true)
             {
                 Thread.Sleep(1000); //dont want to spin nonstop
-                SpinWait.SpinUntil(() => (!refreshPrice.IsEmpty || !toBeSold.IsEmpty));
+                while (refreshPrice.IsEmpty && toBeSold.IsEmpty)
+                    Thread.Sleep(1000);
                 if (!refreshPrice.IsEmpty)
                 {
                     lock (RefreshItemsLock)
@@ -527,7 +573,7 @@ namespace CSGOTM {
 #endif
             }
             catch (Exception ex) {
-                Log.Error(ex.Message);
+                Log.Error("Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
             }
         }
 
@@ -653,26 +699,11 @@ namespace CSGOTM {
                 HistoryItem oldest = salesHistory.sales[0];
                 List<int> prices = currentItems[item.i_market_name];
                 //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
-
                 
-                 //Logging 
-                if (item.ui_price < 25000 && prices.Count >= 6 &&
-                    item.ui_price < 0.9 * prices[2] && !blackList.Contains(item.i_market_name) &&
-                    salesHistory.cnt >= MINSIZE &&
-                    prices[2] < salesHistory.median * 1.25 && prices[2] - item.ui_price > 400)
-                {
-                    JObject log = new JObject();
-                    log["item"] = JObject.Parse(JsonConvert.SerializeObject(item));
-                    log["curPrice"] = prices[2];
-                    
-                    Log.Info("Have seen interesting item: " + log.ToString(Formatting.None));
-                }
-
-                
-                if (item.ui_price < 25000 && prices.Count >= 6 &&
+                if (item.ui_price < 35000 && prices.Count >= 6 &&
                     item.ui_price < Consts.WANT_TO_BUY * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
-                    prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 400)
+                    prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 1000)
                 {
                     //TODO какое-то условие на время
                     Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
@@ -685,7 +716,7 @@ namespace CSGOTM {
             return false;
         }
 
-        public bool doNotSell = false; // True when we don`t want to sell.  
+        public bool doNotSell = false; // True when we don`t want to sell.
         public bool sellOnly = false;
         public Protocol Protocol;
 
@@ -693,17 +724,15 @@ namespace CSGOTM {
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 70;
-        private const string PREFIXPATH = "CS";
-        private SortedSet<string> unStickered = new SortedSet<string>();
+        private string PREFIXPATH;
+        private HashSet<string> unStickered = new HashSet<string>();
 
-        private const string UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
-        private const string DATABASEPATH = PREFIXPATH + "/database.txt";
-        private const string DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
-        private const string DATABASEJSONPATH = PREFIXPATH + "/database.json";
-        private const string BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
-        private const string MONEYTPATH = PREFIXPATH + "/money.txt";
-
-
+        private string UNSTICKEREDPATH;
+        private string DATABASEPATH;
+        private string DATABASETEMPPATH;
+        private string DATABASEJSONPATH;
+        private string BLACKLISTPATH;
+        private string MONEYTPATH;
 
         private ConcurrentQueue<Inventory.SteamItem> toBeSold = new ConcurrentQueue<Inventory.SteamItem>();
         private ConcurrentQueue<TMTrade> refreshPrice = new ConcurrentQueue<TMTrade>();
@@ -711,7 +740,7 @@ namespace CSGOTM {
 
         private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
         private Queue<HistoryItem> needOrderUnstickered = new Queue<HistoryItem>();
-        private SortedSet<string> blackList = new SortedSet<string>();
+        private HashSet<string> blackList = new HashSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
         private Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
