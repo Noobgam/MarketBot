@@ -418,6 +418,7 @@ namespace CSGOTM
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    Thread.Sleep(1000);
                                 }
                             }
                         }
@@ -561,7 +562,7 @@ namespace CSGOTM
                             Thread.Sleep(10000); //should wait some time if inventory was updated
                         }
                         SendSoldItems(arr.Where(t => t.ui_status == "2"));
-                        sleep += 15000;
+                        sleep += 25000;
                     }
                 }
                 catch (Exception ex)
