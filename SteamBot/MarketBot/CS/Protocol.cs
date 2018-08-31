@@ -768,6 +768,8 @@ namespace CSGOTM
             return inventory;
         }
 
+        private Dictionary<string, int> orders = new Dictionary<string, int>();
+
         public bool SetOrder(string classid, string instanceid, int price)
         {
             try
@@ -779,6 +781,11 @@ namespace CSGOTM
                 if (money < price)
                 {
                     Log.ApiError("No money to set order, call to url was optimized :" + uri);
+                    return false;
+                }
+                if (orders.ContainsKey($"{classid}_{instanceid}") && orders[$"{classid}_{instanceid}"] == price)
+                {
+                    Log.ApiError("Already have same order, call to url was optimized :" + uri);
                     return false;
                 }
                 string resp = ExecuteApiRequest(uri, ApiMethod.SetOrder);
@@ -793,6 +800,7 @@ namespace CSGOTM
                 }
                 else if ((bool)json["success"])
                 {
+                    orders[$"{classid}_{instanceid}"] = price;
                     return true;
                 }
                 else
