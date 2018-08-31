@@ -806,7 +806,11 @@ namespace CSGOTM
                 else
                 {
                     if (json.ContainsKey("error"))
+                    {
+                        if ((string)json["error"] == "same_price")
+                            orders[$"{classid}_{instanceid}"] = price;
                         Log.ApiError($"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                    }
                     else
                         Log.ApiError("Was unable to set order, url is :" + uri);
                     return false;
