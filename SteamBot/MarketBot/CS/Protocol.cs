@@ -18,6 +18,7 @@ using System.Runtime.InteropServices;
 using SteamBot.MarketBot.Utility;
 using System.Diagnostics;
 using System.IO;
+using System.Net;
 
 namespace CSGOTM
 {
@@ -395,9 +396,9 @@ namespace CSGOTM
                         ulong id = ulong.Parse(profile.Split('/')[4]);
 
                         Log.Info(json.ToString(Formatting.None));
-                        var offer = Bot.NewTradeOffer(new SteamID(id));
                         for (int triesLeft = 3; triesLeft > 0; triesLeft--)
                         {
+                            var offer = Bot.NewTradeOffer(new SteamID(id));
                             try
                             {
                                 foreach (JObject item in json["request"]["items"])
@@ -421,8 +422,14 @@ namespace CSGOTM
                                     }
                                 }
                             }
-                            catch
+                            catch (Exception ex)
                             {
+                                Log.Debug(ex.Message);
+                                if (ex.InnerException is WebException wex)
+                                {
+                                    string resp = new StreamReader(wex.Response.GetResponseStream()).ReadToEnd();
+                                    Log.Debug(resp);
+                                }
                                 string response = Utility.Request.Get($"http://steamcommunity.com/inventory/{Bot.SteamUser.SteamID.ConvertToUInt64()}/730/2?l=russian&count=5000");
                                 JObject parsed = JObject.Parse(response);
                                 Log.Debug("Could not send trade. Additional information:");

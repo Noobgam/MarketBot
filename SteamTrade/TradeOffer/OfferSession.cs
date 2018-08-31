@@ -228,7 +228,13 @@ namespace SteamTrade.TradeOffer
 
             string referer = string.Format("https://steamcommunity.com/tradeoffer/new/?partner={0}&token={1}",
                         otherSteamId.AccountID, token);
-            return Request(SendUrl, data, referer, null, out newTradeOfferId);
+            try
+            {
+                return Request(SendUrl, data, referer, null, out newTradeOfferId);
+            } catch (Exception ex)
+            {
+                throw new Exception($"Sent offer to {referer} with message {message}", ex);
+            }
         }
 
         internal bool Request(string url, NameValueCollection data, string referer, string tradeOfferId, out string newTradeOfferId)
