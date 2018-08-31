@@ -382,6 +382,57 @@ namespace CSGOTM
             }
         }
 
+        void SendSoldItems(IEnumerable<TMTrade> trades) {
+            foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
+            {
+                Debug.Assert(trade.ui_status == "2");
+                string resp = ExecuteApiRequest($"/api/ItemRequest/in/{trade.ui_bid}/?key=" + Api, ApiMethod.ItemRequest);
+                if (resp == null)
+                    continue;
+                JObject json = JObject.Parse(resp);
+                Thread.Sleep(1000);
+                if (json["success"] == null)
+                    continue;
+                else if ((bool)json["success"])
+                {
+                    if ((bool)json["manual"])
+                    {
+                        string profile = (string)json["profile"];
+                        ulong id = ulong.Parse(profile.Split('/')[4]);
+
+                        Log.Info(json.ToString(Formatting.None));
+                        var offer = Bot.NewTradeOffer(new SteamID(id));
+                        try
+                        {
+                            foreach (JObject item in json["request"]["items"])
+                            {
+                                offer.Items.AddMyItem(
+                                    (int)item["appid"],
+                                    (long)item["contextid"],
+                                    (long)item["assetid"],
+                                    (long)item["amount"]);
+                            }
+                            Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
+                            if (offer.Items.NewVersion)
+                            {
+                                if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
+                                {
+                                    Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                }
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Log.Debug(ex.Message);
+                            Thread.Sleep(5000); //sleep tight, steam probably went 500
+                        }
+                    }
+                }
+            }
+            Task.Delay(5000) //the delay might fix #35
+                .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+        }
+
         bool SendSoldItems()
         {
             try
@@ -509,13 +560,9 @@ namespace CSGOTM
                         {
                             Thread.Sleep(10000); //should wait some time if inventory was updated
                         }
-                        if (SendSoldItems())
-                            sleep += 15000;
+                        SendSoldItems(arr.Where(t => t.ui_status == "2"));
+                        sleep += 15000;
                     }
-                    //if (!gone)
-                    //{
-                    //    Logic.RefreshPrices(arr);
-                    //}
                 }
                 catch (Exception ex)
                 {
