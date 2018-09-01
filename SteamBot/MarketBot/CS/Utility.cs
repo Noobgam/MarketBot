@@ -63,6 +63,16 @@ namespace CSGOTM {
         public string placed;
     }
 
+    public class Order
+    {
+        public string i_classid;
+        public string i_instanceid;
+        public string i_market_hash_name;
+        public string i_market_name;
+        public string o_price;
+        public string o_state;
+    }
+
     public class NewItem
     {
         public string i_classid;

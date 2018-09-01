@@ -193,6 +193,14 @@ namespace CSGOTM
             Task.Run((Action)PingPong);
             Task.Run((Action)ReOpener);
             Task.Run((Action)HandleTrades);
+            Task.Run(() =>
+            {
+                OrdersCall(order =>
+                {
+                    lock (ordersLock)
+                        orders[$"{order.i_classid}_{order.i_instanceid}"] = int.Parse(order.o_price);
+                });
+            });
             socket.Opened += Open;
             socket.Error += Error;
             socket.Closed += Close;
@@ -539,24 +547,25 @@ namespace CSGOTM
                 {
                     TMTrade[] arr = GetTradeList();
                     bool had = false;
-                    bool gone = false;
+                    bool updated = false;
                     for (int i = 0; i < arr.Length; ++i)
                     {
                         if (arr[i].ui_status == "4")
                         {
-                            if (UpdateInventory())
+                            if (!updated || (updated = UpdateInventory()))
                             {
                                 Thread.Sleep(10000); //should wait some time if inventory was updated
                             }
-                            RequestPurchasedItems(arr[i].ui_bid);
-                            Logic.doNotSell = true; 
-                            break;
+                            if (RequestPurchasedItems(arr[i].ui_bid))
+                            {
+                                Logic.doNotSell = true;
+                            }
                         }
                         had |= arr[i].ui_status == "2";
                     }
                     if (had)
                     {
-                        if (UpdateInventory())
+                        if (!updated || (updated = UpdateInventory()))
                         {
                             Thread.Sleep(10000); //should wait some time if inventory was updated
                         }
@@ -768,6 +777,7 @@ namespace CSGOTM
             return inventory;
         }
 
+        private Mutex ordersLock = new Mutex();
         private Dictionary<string, int> orders = new Dictionary<string, int>();
 
         public bool SetOrder(string classid, string instanceid, int price)
@@ -783,15 +793,16 @@ namespace CSGOTM
                     Log.ApiError("No money to set order, call to url was optimized :" + uri);
                     return false;
                 }
-                if (orders.ContainsKey($"{classid}_{instanceid}") && orders[$"{classid}_{instanceid}"] == price)
-                {
-                    Log.ApiError("Already have same order, call to url was optimized :" + uri);
-                    return false;
-                }
+                lock (ordersLock)
+                    if (orders.ContainsKey($"{classid}_{instanceid}") && orders[$"{classid}_{instanceid}"] == price)
+                    {
+                        Log.ApiError("Already have same order, call to url was optimized :" + uri);
+                        return false;
+                    }
                 string resp = ExecuteApiRequest(uri, ApiMethod.SetOrder);
                 if (resp == null)
                     return false;
-                JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
+                JObject json = JObject.Parse(resp);
                 if (json["success"] == null)
                 {
                     Log.ApiError("Was unable to set order, url is :" + uri);
@@ -800,7 +811,8 @@ namespace CSGOTM
                 }
                 else if ((bool)json["success"])
                 {
-                    orders[$"{classid}_{instanceid}"] = price;
+                    lock (ordersLock)
+                        orders[$"{classid}_{instanceid}"] = price;
                     return true;
                 }
                 else
@@ -808,7 +820,8 @@ namespace CSGOTM
                     if (json.ContainsKey("error"))
                     {
                         if ((string)json["error"] == "same_price")
-                            orders[$"{classid}_{instanceid}"] = price;
+                            lock (ordersLock)
+                                orders[$"{classid}_{instanceid}"] = price;
                         Log.ApiError($"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
                     }
                     else
@@ -913,8 +926,54 @@ namespace CSGOTM
             string resp = ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney);
             if (resp == null)
                 return 0;
-            JObject temp2 = JObject.Parse(ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney));
+            JObject temp2 = JObject.Parse(resp);
             return (int)temp2["money"];
+        }
+
+        public List<Order> GetOrderPage(int pageNumber)
+        {
+            string resp = ExecuteApiRequest($"/api/GetOrders/{pageNumber}/?key=" + Api, ApiMethod.GetMoney);
+            if (resp == null)
+                return null;
+            JObject temp2 = JObject.Parse(resp);
+            if (temp2["Orders"].Type == JTokenType.String)
+                if ((string)temp2["Orders"] == "No orders")
+                    return null;
+            return temp2["Orders"].ToObject<List<Order>>();
+        }
+        
+        //TODO(noobgam): reuse OrdersCall
+        public List<Order> GetOrders()
+        {
+            int page = 1;
+            List<Order> temp = new List<Order>();
+            while (true)
+            {
+                Thread.Sleep(1000);
+                List<Order> temp2 = GetOrderPage(page);
+                if (temp2 == null)
+                    return temp;
+                ++page;
+                temp.AddRange(temp2);
+            }
+        }
+
+        public void OrdersCall(Action<Order> callback)
+        {
+            int page = 1;
+            List<Order> temp = new List<Order>();
+            while (true)
+            {
+                Thread.Sleep(1000);
+                List<Order> temp2 = GetOrderPage(page);
+                if (temp2 == null)
+                    return;
+                ++page;
+                foreach (Order order in temp2)
+                {
+                    callback(order);
+                }
+            }
         }
     }
 }
