@@ -329,7 +329,7 @@ namespace CSGOTM {
                             }
                             catch
                             {
-                                myOffer[$"{cid}_{iid}"] = arr[0].Item1;
+                                myOffer[$"{cid}_{iid}"] = arr[0].Item1 + 1;
                             };
                         }
                         foreach (TMTrade trade in unstickeredChunk)
@@ -347,7 +347,11 @@ namespace CSGOTM {
                                 }
                                 else
                                 {
-                                    //TODO(noobgam): either don't update the price or change price to minprice - 1 if our price is currently lower, or don't change at all.
+                                    int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][1].Item1 - 1;
+                                    int careful = (int)info["results"].Where(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid).First()["history"]["average"];
+                                    if (coolPrice < careful * 0.9)
+                                        coolPrice = 0;
+                                    items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
                                 }
                             }
                             catch { }
