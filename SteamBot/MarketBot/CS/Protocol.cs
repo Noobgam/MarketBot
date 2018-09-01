@@ -549,13 +549,12 @@ namespace CSGOTM
                                 Thread.Sleep(10000); //should wait some time if inventory was updated
                             }
                             RequestPurchasedItems(arr[i].ui_bid);
-                            gone = true;
                             Logic.doNotSell = true; 
                             break;
                         }
                         had |= arr[i].ui_status == "2";
                     }
-                    if (had && !gone)
+                    if (had)
                     {
                         if (UpdateInventory())
                         {
