@@ -145,8 +145,6 @@ namespace CSGOTM
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public Protocol(SteamBot.Bot Bot, string api) {
-            JObject x = new JObject();
-            x["bool"] = false;
             Api = api;
             this.Bot = Bot;
             InitializeRPSSemaphores();
@@ -166,8 +164,7 @@ namespace CSGOTM
             double totalrps = 0;
             foreach (ApiMethod method in ((ApiMethod[]) Enum.GetValues(typeof(ApiMethod))).Distinct())
             {
-                double limit;
-                bool temp = rpsLimit.TryGetValue(method, out limit);
+                bool temp = rpsLimit.TryGetValue(method, out double limit);
                 if (temp)
                 {
                     GenerateSemaphore(method, limit);
