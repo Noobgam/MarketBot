@@ -329,7 +329,8 @@ namespace CSGOTM {
                             }
                             catch
                             {
-                                Log.Info(token.ToString(Formatting.Indented));
+                                throw;
+                                //Log.Info(token.ToString(Formatting.Indented));
                             }
                             marketOffers[$"{cid}_{iid}"] = arr;
                             //think it cant be empty because we have at least one order placed.
