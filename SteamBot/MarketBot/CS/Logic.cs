@@ -322,7 +322,15 @@ namespace CSGOTM {
                             string iid = (string)token["instanceid"];
                             if (token["sell_offers"].Type == JTokenType.Null)
                                 continue;
-                            Tuple<int, int>[] arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
+                            Tuple<int, int>[] arr = new Tuple<int, int>[0];
+                            try
+                            {
+                                arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
+                            }
+                            catch
+                            {
+                                Log.Info(token.ToString(Formatting.Indented));
+                            }
                             marketOffers[$"{cid}_{iid}"] = arr;
                             //think it cant be empty because we have at least one order placed.
                             try
