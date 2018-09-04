@@ -320,7 +320,7 @@ namespace CSGOTM {
                         {
                             string cid = (string)token["classid"];
                             string iid = (string)token["instanceid"];
-                            if (token["sell_offers"].Type == JTokenType.Null)
+                            if (token["sell_offers"].Type == JTokenType.Null || token["sell_offers"].Type == JTokenType.Boolean)
                                 continue;
                             Tuple<int, int>[] arr = new Tuple<int, int>[0];
                             try
