@@ -387,6 +387,29 @@ namespace CSGOTM
             }
         }
 
+        void RequestPurchasedItems(IEnumerable<TMTrade> trades)
+        {
+            Log.Info("Requesting items");
+            foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time)) { 
+                string resp = ExecuteApiRequest($"/api/ItemRequest/in/{trade.ui_bid}/?key=" + Api, ApiMethod.ItemRequest);
+                if (resp == null)
+                    continue;
+                JObject json = JObject.Parse(resp);
+                if (json["success"] == null)
+                    continue;
+                if ((bool)json["manual"] == true)
+                {
+                    Log.Info(json.ToString(Formatting.None));
+                }
+                else if ((bool)json["success"])
+                {
+                    continue;
+                }
+                else
+                    continue;
+            }
+        }
+
         void SendSoldItems(IEnumerable<TMTrade> trades) {
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
@@ -439,6 +462,7 @@ namespace CSGOTM
                 .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
         }
 
+        [System.Obsolete("Specify single item instead")]
         bool SendSoldItems()
         {
             try
@@ -535,46 +559,77 @@ namespace CSGOTM
             }
         }
         
-        void HandleTrades()
+        enum ETradesStatus {
+            Unhandled = 0,
+            SellHandled = 1,
+            BuyHandled = 2,
+            Handled = 3
+        }
+
+        Mutex TradeCacheLock = new Mutex();
+        TMTrade[] CachedTrades = new TMTrade[0];
+        ETradesStatus status = ETradesStatus.Handled;
+
+        void HandleSoldTrades()
         {
             while (true)
             {
-                int sleep = 10000;
+                if ((status & ETradesStatus.SellHandled) == 0)
+                {
+                    TMTrade[] soldTrades;
+                    lock (TradeCacheLock)
+                    {
+                        soldTrades = CachedTrades;
+                        status |= ETradesStatus.SellHandled;
+                    }
+                    soldTrades = soldTrades.Where(t => t.ui_status == "2").ToArray();
+                    if (soldTrades.Length != 0)
+                        SendSoldItems(soldTrades);
+                }
+            }
+        }
+
+        void HandlePurchasedTrades()
+        {
+            while (true)
+            {
+                if ((status & ETradesStatus.BuyHandled) == 0)
+                {
+                    TMTrade[] boughtTrades;
+                    lock (TradeCacheLock)
+                    {
+                        boughtTrades = CachedTrades;
+                        status |= ETradesStatus.BuyHandled;
+                    }
+                    boughtTrades = boughtTrades.Where(t => t.ui_status == "4").ToArray();
+                    if (boughtTrades.Length != 0)
+                        RequestPurchasedItems(boughtTrades);
+                }
+            }
+        }
+
+        void HandleTrades()
+        {
+            Task.Run((Action)HandleSoldTrades);
+            //Task.Run((Action)HandlePurchasedTrades);
+            while (true)
+            {
                 try
                 {
                     TMTrade[] arr = GetTradeList();
-                    bool had = false;
-                    bool updated = false;
-                    for (int i = 0; i < arr.Length; ++i)
+                    lock (TradeCacheLock)
                     {
-                        if (arr[i].ui_status == "4")
-                        {
-                            if (!updated || (updated = UpdateInventory()))
-                            {
-                                Thread.Sleep(10000); //should wait some time if inventory was updated
-                            }
-                            if (RequestPurchasedItems(arr[i].ui_bid))
-                            {
-                                Logic.doNotSell = true;
-                            }
-                        }
-                        had |= arr[i].ui_status == "2";
+                        CachedTrades = arr;
+                        status = ETradesStatus.Unhandled;
                     }
-                    if (had)
-                    {
-                        if (!updated || (updated = UpdateInventory()))
-                        {
-                            Thread.Sleep(10000); //should wait some time if inventory was updated
-                        }
-                        SendSoldItems(arr.Where(t => t.ui_status == "2"));
-                        sleep += 25000;
-                    }
+                    Thread.Sleep(10000);
+                    UpdateInventory();
                 }
                 catch (Exception ex)
                 {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(sleep);
+                Thread.Sleep(10000);
             }
         }
 
