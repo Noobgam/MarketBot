@@ -591,6 +591,7 @@ namespace CSGOTM
                         }
                     }
                 }
+                Thread.Sleep(1000);
                 if ((status & ETradesStatus.SellHandled) != 0)
                 {
                     Thread.Sleep(10000);
