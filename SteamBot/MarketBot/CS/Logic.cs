@@ -166,7 +166,8 @@ namespace CSGOTM {
                     }
                     if (i <= 7 && cur.ui_status == "1")
                     {
-                        refreshPrice.Enqueue(cur);
+                        if (GetMySellPriceByName(cur.i_market_name) != -1)
+                            refreshPrice.Enqueue(cur);
                     }
                 }
             }
