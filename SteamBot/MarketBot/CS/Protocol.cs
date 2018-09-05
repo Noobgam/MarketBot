@@ -568,12 +568,14 @@ namespace CSGOTM
 
         Mutex TradeCacheLock = new Mutex();
         TMTrade[] CachedTrades = new TMTrade[0];
+        AutoResetEvent waitHandle = new AutoResetEvent(false);
         ETradesStatus status = ETradesStatus.Handled;
 
         void HandleSoldTrades()
         {
             while (true)
             {
+                waitHandle.WaitOne();
                 if ((status & ETradesStatus.SellHandled) == 0)
                 {
                     TMTrade[] soldTrades;
@@ -591,7 +593,6 @@ namespace CSGOTM
                         }
                     }
                 }
-                Thread.Sleep(1000);
                 if ((status & ETradesStatus.SellHandled) != 0)
                 {
                     Thread.Sleep(10000);
@@ -632,6 +633,7 @@ namespace CSGOTM
                     lock (TradeCacheLock)
                     {
                         CachedTrades = arr;
+                        waitHandle.Set();
                     }
                     Thread.Sleep(10000);
                     UpdateInventory();
