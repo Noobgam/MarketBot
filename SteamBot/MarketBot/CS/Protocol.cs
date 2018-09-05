@@ -580,12 +580,16 @@ namespace CSGOTM
                     lock (TradeCacheLock)
                     {
                         soldTrades = CachedTrades;
-                        status |= ETradesStatus.SellHandled;
                     }
                     soldTrades = soldTrades.Where(t => t.ui_status == "2").ToArray();
                     if (soldTrades.Length != 0)
                         SendSoldItems(soldTrades);
+                    lock (TradeCacheLock)
+                    {
+                        status |= ETradesStatus.SellHandled;
+                    }
                 }
+                Thread.Sleep(10000);
             }
         }
 
@@ -605,6 +609,7 @@ namespace CSGOTM
                     if (boughtTrades.Length != 0)
                         RequestPurchasedItems(boughtTrades);
                 }
+                Thread.Sleep(10000);
             }
         }
 
