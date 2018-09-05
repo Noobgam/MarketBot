@@ -583,13 +583,19 @@ namespace CSGOTM
                     }
                     soldTrades = soldTrades.Where(t => t.ui_status == "2").ToArray();
                     if (soldTrades.Length != 0)
-                        SendSoldItems(soldTrades);
-                    lock (TradeCacheLock)
                     {
-                        status |= ETradesStatus.SellHandled;
+                        SendSoldItems(soldTrades);
+                        lock (TradeCacheLock)
+                        {
+                            status |= ETradesStatus.SellHandled;
+                        }
                     }
                 }
-                Thread.Sleep(10000);
+                if ((status & ETradesStatus.SellHandled) != 0)
+                {
+                    Thread.Sleep(10000);
+                    status ^= ETradesStatus.SellHandled;
+                }
             }
         }
 
@@ -625,7 +631,6 @@ namespace CSGOTM
                     lock (TradeCacheLock)
                     {
                         CachedTrades = arr;
-                        status = ETradesStatus.Unhandled;
                     }
                     Thread.Sleep(10000);
                     UpdateInventory();
