@@ -71,6 +71,7 @@ namespace CSGOTM {
                     Consts.WANT_TO_BUY = (double) data[botName]["want_to_buy"];
                     Consts.MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
                     Consts.UNSTICKERED_ORDER = (double) data[botName]["unstickered_order"];
+                    Consts.SELL_MULTIPLIER = (double) data[botName]["sell_multiplier"];
                 }
                 catch (Exception ex)
                 {
@@ -244,7 +245,7 @@ namespace CSGOTM {
             lock (CurrentItemsLock)
             {
                 if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
-                    return currentItems[name][2] - 30;
+                    return (int) (currentItems[name][2] * Consts.SELL_MULTIPLIER - 10);
             }
             return -1;
         }

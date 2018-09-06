@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
+using SteamKit2;
 
 namespace CSGOTM {
     public static class Consts
@@ -20,6 +21,7 @@ namespace CSGOTM {
         public static double MAXFROMMEDIAN = 0.78;
         public static double WANT_TO_BUY = 0.8;
         public static double UNSTICKERED_ORDER = 0.78;
+        public static double SELL_MULTIPLIER = 1;
     }
 
     public class Pair<T, U> {
