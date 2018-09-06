@@ -595,7 +595,7 @@ namespace CSGOTM
                 }
                 if ((status & ETradesStatus.SellHandled) != 0)
                 {
-                    Thread.Sleep(10000);
+                    Thread.Sleep(30000); //sorry this revokes sessions too often, because TM is retarded.
                     status ^= ETradesStatus.SellHandled;
                 }
             }
