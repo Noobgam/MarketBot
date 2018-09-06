@@ -441,14 +441,14 @@ namespace CSGOTM
                                     (long)item["amount"]);
                             }
                             Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-                            if (offer.Items.NewVersion)
-                            {
+                            //if (offer.Items.NewVersion)
+                            //{
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
                                     Thread.Sleep(1000);
                                 }
-                            }
+                            //}
                         }
                         catch (Exception ex)
                         {
