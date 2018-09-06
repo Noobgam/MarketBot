@@ -49,7 +49,7 @@ namespace CSGOTM {
             Task.Run((Action)SaveDataBaseCycle);
             Task.Run((Action)SellFromQueue);
             Task.Run((Action)AddNewItems);
-            //Task.Run((Action)UnstickeredRefresh);
+            Task.Run((Action)UnstickeredRefresh);
             Task.Run((Action)SetNewOrder);
             if (!sellOnly)
             {
@@ -154,19 +154,20 @@ namespace CSGOTM {
         }
 
         public void RefreshPrices(TMTrade[] trades) {
-            lock (RefreshItemsLock) //lock (UnstickeredRefreshItemsLock)
+            lock (RefreshItemsLock) lock (UnstickeredRefreshItemsLock)
             {
-                //unstickeredRefresh.Clear();
+                unstickeredRefresh.Clear();
                 for (int i = 1; i <= trades.Length; i++)
                 {
                     var cur = trades[trades.Length - i];
-                    //if (!hasStickers(cur.i_classid, cur.i_instanceid))
-                    //{
-                    //    unstickeredRefresh.Enqueue(cur);
-                    //}
+                    if (!hasStickers(cur.i_classid, cur.i_instanceid))
+                    {
+                        unstickeredRefresh.Enqueue(cur);
+                    }
                     if (i <= 7 && cur.ui_status == "1")
                     {
-                        refreshPrice.Enqueue(cur);
+                        if (GetMySellPriceByName(cur.i_market_name) != -1)
+                            refreshPrice.Enqueue(cur);
                     }
                 }
             }
@@ -310,7 +311,7 @@ namespace CSGOTM {
                         {
                             tpls.Add(new Tuple<string, string>(x.i_classid, x.i_instanceid));
                         }
-                        JObject info = Protocol.MassInfo(tpls, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
+                        JObject info = Protocol.MassInfo(tpls, history:1, sell: 1, method: Protocol.ApiMethod.UnstickeredMassInfo);
                         if (info == null)
                             break;
                         List<Tuple<string, int>> items = new List<Tuple<string, int>>();
@@ -320,7 +321,18 @@ namespace CSGOTM {
                         {
                             string cid = (string)token["classid"];
                             string iid = (string)token["instanceid"];
-                            Tuple<int, int>[] arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
+                            if (token["sell_offers"].Type == JTokenType.Null || token["sell_offers"].Type == JTokenType.Boolean)
+                                continue;
+                            Tuple<int, int>[] arr = new Tuple<int, int>[0];
+                            try
+                            {
+                                arr = token["sell_offers"]["offers"].Select(x => new Tuple<int, int>((int)x[0], (int)x[1])).ToArray();
+                            }
+                            catch
+                            {
+                                throw;
+                                //Log.Info(token.ToString(Formatting.Indented));
+                            }
                             marketOffers[$"{cid}_{iid}"] = arr;
                             //think it cant be empty because we have at least one order placed.
                             try
@@ -329,15 +341,7 @@ namespace CSGOTM {
                             }
                             catch
                             {
-                                //Log.ApiError($"TM refused to return me my order for {cid}_{iid}, using stickered price");
-                                //try
-                                //{
-                                //    //int val = GetMySellPriceByName((string)token["name"]);
-                                //}
-                                //catch
-                                //{
-                                //    Log.ApiError("No stickered price detected");
-                                //}
+                                myOffer[$"{cid}_{iid}"] = arr[0].Item1 + 1;
                             };
                         }
                         foreach (TMTrade trade in unstickeredChunk)
@@ -345,20 +349,21 @@ namespace CSGOTM {
                             try
                             {
                                 //think it cant be empty because we have at least one order placed.
-                                if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 < myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
+                                if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 <= myOffer[$"{trade.i_classid}_{trade.i_instanceid}"])
                                 {
                                     int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
-                                    int careful = -1;
-                                    lock (DatabaseLock) {
-                                        careful = dataBase[trade.i_market_name].median;
-                                    }
-                                    if (coolPrice < careful * 0.8)
+                                    int careful = (int)info["results"].Where(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid).First()["history"]["average"];
+                                    if (coolPrice < careful * 0.9)
                                         coolPrice = 0;
                                     items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
                                 }
                                 else
                                 {
-                                    //TODO(noobgam): either don't update the price or change price to minprice - 1 if our price is currently lower, or don't change at all.
+                                    int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][1].Item1 - 1;
+                                    int careful = (int)info["results"].Where(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid).First()["history"]["average"];
+                                    if (coolPrice < careful * 0.9)
+                                        coolPrice = 0;
+                                    items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
                                 }
                             }
                             catch { }

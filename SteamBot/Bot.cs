@@ -1127,7 +1127,18 @@ namespace SteamBot
                 }
                 catch (SteamAuth.SteamGuardAccount.WGTokenInvalidException)
                 {
-                    Log.Error("Invalid session when trying to fetch trade confirmations.");
+                    Log.Error("Invalid session when trying to fetch trade confirmations. Refreshing it in 5 seconds");
+                    Task.Delay(5000).ContinueWith(tsk =>
+                        {
+                            if (SteamGuardAccount.RefreshSession())
+                            {
+                                Log.Success("Session refreshed.");
+                            } else
+                            {
+                                Log.Error("Session could not be refreshed");
+                            }
+                        }
+                    );
                 }
             }
         }

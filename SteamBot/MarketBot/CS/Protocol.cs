@@ -145,8 +145,6 @@ namespace CSGOTM
         bool died = true;
         WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         public Protocol(SteamBot.Bot Bot, string api) {
-            JObject x = new JObject();
-            x["bool"] = false;
             Api = api;
             this.Bot = Bot;
             InitializeRPSSemaphores();
@@ -166,8 +164,7 @@ namespace CSGOTM
             double totalrps = 0;
             foreach (ApiMethod method in ((ApiMethod[]) Enum.GetValues(typeof(ApiMethod))).Distinct())
             {
-                double limit;
-                bool temp = rpsLimit.TryGetValue(method, out limit);
+                bool temp = rpsLimit.TryGetValue(method, out double limit);
                 if (temp)
                 {
                     GenerateSemaphore(method, limit);
@@ -193,6 +190,14 @@ namespace CSGOTM
             Task.Run((Action)PingPong);
             Task.Run((Action)ReOpener);
             Task.Run((Action)HandleTrades);
+            Task.Run(() =>
+            {
+                OrdersCall(order =>
+                {
+                    lock (ordersLock)
+                        orders[$"{order.i_classid}_{order.i_instanceid}"] = int.Parse(order.o_price);
+                });
+            });
             socket.Opened += Open;
             socket.Error += Error;
             socket.Closed += Close;
@@ -382,6 +387,29 @@ namespace CSGOTM
             }
         }
 
+        void RequestPurchasedItems(IEnumerable<TMTrade> trades)
+        {
+            Log.Info("Requesting items");
+            foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time)) { 
+                string resp = ExecuteApiRequest($"/api/ItemRequest/in/{trade.ui_bid}/?key=" + Api, ApiMethod.ItemRequest);
+                if (resp == null)
+                    continue;
+                JObject json = JObject.Parse(resp);
+                if (json["success"] == null)
+                    continue;
+                if ((bool)json["manual"] == true)
+                {
+                    Log.Info(json.ToString(Formatting.None));
+                }
+                else if ((bool)json["success"])
+                {
+                    continue;
+                }
+                else
+                    continue;
+            }
+        }
+
         void SendSoldItems(IEnumerable<TMTrade> trades) {
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
@@ -418,6 +446,9 @@ namespace CSGOTM
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    Thread.Sleep(1000);
+                                } else {
+                                    Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
                                 }
                             }
                         }
@@ -433,6 +464,7 @@ namespace CSGOTM
                 .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
         }
 
+        [System.Obsolete("Specify single item instead")]
         bool SendSoldItems()
         {
             try
@@ -529,46 +561,90 @@ namespace CSGOTM
             }
         }
         
-        void HandleTrades()
+        enum ETradesStatus {
+            Unhandled = 0,
+            SellHandled = 1,
+            BuyHandled = 2,
+            Handled = 3
+        }
+
+        Mutex TradeCacheLock = new Mutex();
+        TMTrade[] CachedTrades = new TMTrade[0];
+        AutoResetEvent waitHandle = new AutoResetEvent(false);
+        ETradesStatus status = ETradesStatus.Handled;
+
+        void HandleSoldTrades()
         {
             while (true)
             {
-                int sleep = 10000;
+                waitHandle.WaitOne();
+                if ((status & ETradesStatus.SellHandled) == 0)
+                {
+                    TMTrade[] soldTrades;
+                    lock (TradeCacheLock)
+                    {
+                        soldTrades = CachedTrades;
+                    }
+                    soldTrades = soldTrades.Where(t => t.ui_status == "2").ToArray();
+                    if (soldTrades.Length != 0)
+                    {
+                        SendSoldItems(soldTrades);
+                        lock (TradeCacheLock)
+                        {
+                            status |= ETradesStatus.SellHandled;
+                        }
+                    }
+                }
+                if ((status & ETradesStatus.SellHandled) != 0)
+                {
+                    Thread.Sleep(30000); //sorry this revokes sessions too often, because TM is retarded.
+                    status ^= ETradesStatus.SellHandled;
+                }
+            }
+        }
+
+        void HandlePurchasedTrades()
+        {
+            while (true)
+            {
+                if ((status & ETradesStatus.BuyHandled) == 0)
+                {
+                    TMTrade[] boughtTrades;
+                    lock (TradeCacheLock)
+                    {
+                        boughtTrades = CachedTrades;
+                        status |= ETradesStatus.BuyHandled;
+                    }
+                    boughtTrades = boughtTrades.Where(t => t.ui_status == "4").ToArray();
+                    if (boughtTrades.Length != 0)
+                        RequestPurchasedItems(boughtTrades);
+                }
+                Thread.Sleep(10000);
+            }
+        }
+
+        void HandleTrades()
+        {
+            Task.Run((Action)HandleSoldTrades);
+            //Task.Run((Action)HandlePurchasedTrades);
+            while (true)
+            {
                 try
                 {
                     TMTrade[] arr = GetTradeList();
-                    bool had = false;
-                    bool gone = false;
-                    for (int i = 0; i < arr.Length; ++i)
+                    lock (TradeCacheLock)
                     {
-                        if (arr[i].ui_status == "4")
-                        {
-                            if (UpdateInventory())
-                            {
-                                Thread.Sleep(10000); //should wait some time if inventory was updated
-                            }
-                            RequestPurchasedItems(arr[i].ui_bid);
-                            gone = true;
-                            Logic.doNotSell = true; 
-                            break;
-                        }
-                        had |= arr[i].ui_status == "2";
+                        CachedTrades = arr;
+                        waitHandle.Set();
                     }
-                    if (had && !gone)
-                    {
-                        if (UpdateInventory())
-                        {
-                            Thread.Sleep(10000); //should wait some time if inventory was updated
-                        }
-                        SendSoldItems(arr.Where(t => t.ui_status == "2"));
-                        sleep += 15000;
-                    }
+                    Thread.Sleep(10000);
+                    UpdateInventory();
                 }
                 catch (Exception ex)
                 {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(sleep);
+                Thread.Sleep(10000);
             }
         }
 
@@ -660,11 +736,11 @@ namespace CSGOTM
                 return false;
             JObject parsed = JObject.Parse(a);
             bool badTrade = false;
-			try {
-				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
-			} catch {
-				
-			}
+            try {
+                badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
+            } catch {
+                
+            }
             if (badTrade)
             {
                 Log.ApiError($"Missed an item {item.i_market_name} costing {item.ui_price}");
@@ -768,6 +844,7 @@ namespace CSGOTM
             return inventory;
         }
 
+        private Mutex ordersLock = new Mutex();
         private Dictionary<string, int> orders = new Dictionary<string, int>();
 
         public bool SetOrder(string classid, string instanceid, int price)
@@ -783,15 +860,16 @@ namespace CSGOTM
                     Log.ApiError("No money to set order, call to url was optimized :" + uri);
                     return false;
                 }
-                if (orders.ContainsKey($"{classid}_{instanceid}") && orders[$"{classid}_{instanceid}"] == price)
-                {
-                    Log.ApiError("Already have same order, call to url was optimized :" + uri);
-                    return false;
-                }
+                lock (ordersLock)
+                    if (orders.ContainsKey($"{classid}_{instanceid}") && orders[$"{classid}_{instanceid}"] == price)
+                    {
+                        Log.ApiError("Already have same order, call to url was optimized :" + uri);
+                        return false;
+                    }
                 string resp = ExecuteApiRequest(uri, ApiMethod.SetOrder);
                 if (resp == null)
                     return false;
-                JObject json = JObject.Parse(ExecuteApiRequest(uri, ApiMethod.SetOrder));
+                JObject json = JObject.Parse(resp);
                 if (json["success"] == null)
                 {
                     Log.ApiError("Was unable to set order, url is :" + uri);
@@ -800,7 +878,8 @@ namespace CSGOTM
                 }
                 else if ((bool)json["success"])
                 {
-                    orders[$"{classid}_{instanceid}"] = price;
+                    lock (ordersLock)
+                        orders[$"{classid}_{instanceid}"] = price;
                     return true;
                 }
                 else
@@ -808,7 +887,8 @@ namespace CSGOTM
                     if (json.ContainsKey("error"))
                     {
                         if ((string)json["error"] == "same_price")
-                            orders[$"{classid}_{instanceid}"] = price;
+                            lock (ordersLock)
+                                orders[$"{classid}_{instanceid}"] = price;
                         Log.ApiError($"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
                     }
                     else
@@ -913,8 +993,54 @@ namespace CSGOTM
             string resp = ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney);
             if (resp == null)
                 return 0;
-            JObject temp2 = JObject.Parse(ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney));
+            JObject temp2 = JObject.Parse(resp);
             return (int)temp2["money"];
+        }
+
+        public List<Order> GetOrderPage(int pageNumber)
+        {
+            string resp = ExecuteApiRequest($"/api/GetOrders/{pageNumber}/?key=" + Api, ApiMethod.GetMoney);
+            if (resp == null)
+                return null;
+            JObject temp2 = JObject.Parse(resp);
+            if (temp2["Orders"].Type == JTokenType.String)
+                if ((string)temp2["Orders"] == "No orders")
+                    return null;
+            return temp2["Orders"].ToObject<List<Order>>();
+        }
+        
+        //TODO(noobgam): reuse OrdersCall
+        public List<Order> GetOrders()
+        {
+            int page = 1;
+            List<Order> temp = new List<Order>();
+            while (true)
+            {
+                Thread.Sleep(1000);
+                List<Order> temp2 = GetOrderPage(page);
+                if (temp2 == null)
+                    return temp;
+                ++page;
+                temp.AddRange(temp2);
+            }
+        }
+
+        public void OrdersCall(Action<Order> callback)
+        {
+            int page = 1;
+            List<Order> temp = new List<Order>();
+            while (true)
+            {
+                Thread.Sleep(1000);
+                List<Order> temp2 = GetOrderPage(page);
+                if (temp2 == null)
+                    return;
+                ++page;
+                foreach (Order order in temp2)
+                {
+                    callback(order);
+                }
+            }
         }
     }
 }
