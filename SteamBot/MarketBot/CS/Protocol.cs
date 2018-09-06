@@ -447,6 +447,8 @@ namespace CSGOTM
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
                                     Thread.Sleep(1000);
+                                } else {
+                                    Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
                                 }
                             }
                         }
@@ -595,7 +597,7 @@ namespace CSGOTM
                 }
                 if ((status & ETradesStatus.SellHandled) != 0)
                 {
-                    Thread.Sleep(10000);
+                    Thread.Sleep(30000); //sorry this revokes sessions too often, because TM is retarded.
                     status ^= ETradesStatus.SellHandled;
                 }
             }
@@ -734,11 +736,11 @@ namespace CSGOTM
                 return false;
             JObject parsed = JObject.Parse(a);
             bool badTrade = false;
-			try {
-				badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
-			} catch {
-				
-			}
+            try {
+                badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
+            } catch {
+                
+            }
             if (badTrade)
             {
                 Log.ApiError($"Missed an item {item.i_market_name} costing {item.ui_price}");
