@@ -410,7 +410,9 @@ namespace CSGOTM
             }
         }
 
-        void SendSoldItems(IEnumerable<TMTrade> trades) {
+        void SendSoldItems(IEnumerable<TMTrade> trades)
+        {
+            int sent = 0;
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
                 Debug.Assert(trade.ui_status == "2");
@@ -446,6 +448,7 @@ namespace CSGOTM
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    ++sent;
                                     Thread.Sleep(1000);
                                 } else {
                                     Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
@@ -460,8 +463,9 @@ namespace CSGOTM
                     }
                 }
             }
-            Task.Delay(5000) //the delay might fix #35
-                .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+            if (sent > 0)
+                Task.Delay(3000) //the delay might fix #35
+                    .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
         }
 
         [System.Obsolete("Specify single item instead")]
