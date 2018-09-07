@@ -410,11 +410,19 @@ namespace CSGOTM
             }
         }
 
+        private Dictionary<string, DateTime> sentTrades = new Dictionary<string, DateTime>();
+
         void SendSoldItems(IEnumerable<TMTrade> trades)
         {
             int sent = 0;
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
+                if (sentTrades.ContainsKey(trade.ui_bid))
+                {
+                    DateTime tmp = DateTime.Now;
+                    if (tmp.Subtract(sentTrades[trade.ui_bid]).Seconds < 40) //no reason to, chances are it's either fine anyway or is a scam.
+                        continue;
+                }
                 Debug.Assert(trade.ui_status == "2");
                 string resp = ExecuteApiRequest($"/api/ItemRequest/in/{trade.ui_bid}/?key=" + Api, ApiMethod.ItemRequest);
                 if (resp == null)
@@ -449,6 +457,7 @@ namespace CSGOTM
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
                                     ++sent;
+                                    sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
                                     Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
@@ -597,6 +606,10 @@ namespace CSGOTM
                         {
                             status |= ETradesStatus.SellHandled;
                         }
+                    }
+                    else
+                    {
+                        sentTrades.Clear();
                     }
                 }
                 if ((status & ETradesStatus.SellHandled) != 0)
