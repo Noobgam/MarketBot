@@ -17,9 +17,7 @@ namespace CSGOTM {
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
         
         // Loaded from file, so not consts
-        public static double MAXFROMMEDIAN = 0.78;
-        public static double WANT_TO_BUY = 0.8;
-        public static double UNSTICKERED_ORDER = 0.78;
+
     }
 
     public class Pair<T, U> {
