@@ -939,7 +939,7 @@ namespace CSGOTM
         // If best offer is our's returning -1;
         public int getBestOrder(string classid, string instanceid)
         {
-            string resp;
+            string resp = "";
             try
             {
                 resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);
