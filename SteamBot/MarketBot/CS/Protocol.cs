@@ -939,9 +939,10 @@ namespace CSGOTM
         // If best offer is our's returning -1;
         public int getBestOrder(string classid, string instanceid)
         {
+            string resp;
             try
             {
-                string resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);
+                resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);
                 if (resp == null)
                     return -1;
                 JObject x = JObject.Parse(resp);
@@ -954,7 +955,8 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                Log.Error(resp);
                 return -1;
             }
         }
