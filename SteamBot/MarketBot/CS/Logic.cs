@@ -404,6 +404,15 @@ namespace CSGOTM {
                 else if (toBeSold.TryDequeue(out Inventory.SteamItem item))
                 {
                     int price = GetMySellPrice(item);
+                    if (dataBase.ContainsKey(item.i_market_name))
+                    {
+                        if (price == -1)
+                            price = dataBase[item.i_market_name].median;
+                        else if (price > 2 * dataBase[item.i_market_name].median)
+                        {
+                            price = 2 * dataBase[item.i_market_name].median;
+                        }
+                    }
                     if (price != -1)
                     {
                         try
