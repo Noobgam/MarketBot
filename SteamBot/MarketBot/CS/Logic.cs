@@ -247,7 +247,24 @@ namespace CSGOTM {
             lock (CurrentItemsLock)
             {
                 if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
-                    return currentItems[name][2] - 30;
+                {
+                    int price = currentItems[name][2] - 30;
+                    lock (DatabaseLock)
+                    {
+                        if (dataBase.ContainsKey(name) && price > 2 * dataBase[name].median)
+                        {
+                            price = 2 * dataBase[name].median;
+                        }
+                    }
+                    return price;
+                }
+            }
+            lock (DatabaseLock)
+            {
+                if (dataBase.ContainsKey(name))
+                {
+                    return dataBase[name].median;
+                }
             }
             return -1;
         }
@@ -404,15 +421,6 @@ namespace CSGOTM {
                 else if (toBeSold.TryDequeue(out Inventory.SteamItem item))
                 {
                     int price = GetMySellPrice(item);
-                    if (dataBase.ContainsKey(item.i_market_name))
-                    {
-                        if (price == -1)
-                            price = dataBase[item.i_market_name].median;
-                        else if (price > 2 * dataBase[item.i_market_name].median)
-                        {
-                            price = 2 * dataBase[item.i_market_name].median;
-                        }
-                    }
                     if (price != -1)
                     {
                         try
