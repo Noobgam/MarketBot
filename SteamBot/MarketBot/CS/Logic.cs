@@ -18,6 +18,9 @@ namespace CSGOTM {
         private Mutex CurrentItemsLock = new Mutex();
         private Mutex RefreshItemsLock = new Mutex();
         private Mutex UnstickeredRefreshItemsLock = new Mutex();
+        private static double MAXFROMMEDIAN = 0.78;
+        private static double WANT_TO_BUY = 0.8;
+        private static double UNSTICKERED_ORDER = 0.78;
 
         public Logic(String botName)
         {
@@ -68,10 +71,9 @@ namespace CSGOTM {
                     JObject data = JObject.Parse(Utility.Request.Get(
                         "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/set_true_if_want_to_sell_only.txt"));
                     sellOnly = Boolean.Parse((string) data[botName]["sell_only"]);
-                    Consts.WANT_TO_BUY = (double) data[botName]["want_to_buy"];
-                    Consts.MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
-                    Consts.UNSTICKERED_ORDER = (double) data[botName]["unstickered_order"];
-                    Consts.SELL_MULTIPLIER = (double) data[botName]["sell_multiplier"];
+                    WANT_TO_BUY = (double) data[botName]["want_to_buy"];
+                    MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
+                    UNSTICKERED_ORDER = (double) data[botName]["unstickered_order"];
                 }
                 catch (Exception ex)
                 {
@@ -146,7 +148,7 @@ namespace CSGOTM {
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
                     
-                    if (price > 9000 && curPrice < price * Consts.UNSTICKERED_ORDER && !blackList.Contains(top.i_market_hash_name)) {
+                    if (price > 9000 && curPrice < price * UNSTICKERED_ORDER && !blackList.Contains(top.i_market_hash_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
@@ -198,7 +200,7 @@ namespace CSGOTM {
                         {
                             lock (DatabaseLock)
                             {
-                                if (dataBase[item.i_market_name].median * Consts.MAXFROMMEDIAN - price > 30)
+                                if (dataBase[item.i_market_name].median * MAXFROMMEDIAN - price > 30)
                                 {
                                     Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                                 }
@@ -245,7 +247,24 @@ namespace CSGOTM {
             lock (CurrentItemsLock)
             {
                 if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
-                    return (int) (currentItems[name][2] * Consts.SELL_MULTIPLIER - 10);
+                {
+                    int price = currentItems[name][2] - 30;
+                    lock (DatabaseLock)
+                    {
+                        if (dataBase.ContainsKey(name) && price > 2 * dataBase[name].median)
+                        {
+                            price = 2 * dataBase[name].median;
+                        }
+                    }
+                    return price;
+                }
+            }
+            lock (DatabaseLock)
+            {
+                if (dataBase.ContainsKey(name))
+                {
+                    return dataBase[name].median;
+                }
             }
             return -1;
         }
@@ -707,7 +726,7 @@ namespace CSGOTM {
                 //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
                 
                 if (item.ui_price < 35000 && prices.Count >= 6 &&
-                    item.ui_price < Consts.WANT_TO_BUY * prices[2] && !blackList.Contains(item.i_market_name) &&
+                    item.ui_price < WANT_TO_BUY * prices[2] && !blackList.Contains(item.i_market_name) &&
                     salesHistory.cnt >= MINSIZE &&
                     prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 1000)
                 {

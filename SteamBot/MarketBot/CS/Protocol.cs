@@ -410,9 +410,19 @@ namespace CSGOTM
             }
         }
 
-        void SendSoldItems(IEnumerable<TMTrade> trades) {
+        private Dictionary<string, DateTime> sentTrades = new Dictionary<string, DateTime>();
+
+        void SendSoldItems(IEnumerable<TMTrade> trades)
+        {
+            int sent = 0;
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
+                if (sentTrades.ContainsKey(trade.ui_bid))
+                {
+                    DateTime tmp = DateTime.Now;
+                    if (tmp.Subtract(sentTrades[trade.ui_bid]).Seconds < 40) //no reason to, chances are it's either fine anyway or is a scam.
+                        continue;
+                }
                 Debug.Assert(trade.ui_status == "2");
                 string resp = ExecuteApiRequest($"/api/ItemRequest/in/{trade.ui_bid}/?key=" + Api, ApiMethod.ItemRequest);
                 if (resp == null)
@@ -446,6 +456,8 @@ namespace CSGOTM
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    ++sent;
+                                    sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
                                     Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
@@ -460,8 +472,9 @@ namespace CSGOTM
                     }
                 }
             }
-            Task.Delay(5000) //the delay might fix #35
-                .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+            if (sent > 0)
+                Task.Delay(3000) //the delay might fix #35
+                    .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
         }
 
         [System.Obsolete("Specify single item instead")]
@@ -593,6 +606,10 @@ namespace CSGOTM
                         {
                             status |= ETradesStatus.SellHandled;
                         }
+                    }
+                    else
+                    {
+                        sentTrades.Clear();
                     }
                 }
                 if ((status & ETradesStatus.SellHandled) != 0)
@@ -935,9 +952,10 @@ namespace CSGOTM
         // If best offer is our's returning -1;
         public int getBestOrder(string classid, string instanceid)
         {
+            string resp = "";
             try
             {
-                string resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);
+                resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);
                 if (resp == null)
                     return -1;
                 JObject x = JObject.Parse(resp);
@@ -950,7 +968,8 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
-                Log.Error(ex.Message);
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                Log.Error(resp);
                 return -1;
             }
         }
