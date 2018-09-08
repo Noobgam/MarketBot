@@ -149,7 +149,7 @@ namespace SteamTrade.TradeOffer
                 return Session.SendTradeOfferWithToken(message, PartnerSteamId, this.Items, token, out offerId);
             }
             //todo: log
-            Debug.WriteLine("Can't send a trade offer that already exists.");
+            Console.WriteLine("Can't send a trade offer that already exists.");
             return false;
         }
 

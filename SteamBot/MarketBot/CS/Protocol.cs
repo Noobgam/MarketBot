@@ -480,7 +480,7 @@ namespace CSGOTM
                         }
                         catch (Exception ex)
                         {
-                            Log.Debug(ex.Message);
+                            Log.Error(ex.Message);
                             Thread.Sleep(5000); //sleep tight, steam probably went 500
                         }
                     }
