@@ -69,7 +69,7 @@ namespace CSGOTM {
                 try
                 {
                     JObject data = JObject.Parse(Utility.Request.Get(
-                        "https://gist.githubusercontent.com/AndreySmirdin/b93a53b37dd1fa62976f28c7b54cae61/raw/set_true_if_want_to_sell_only.txt"));
+                        "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json"));
                     sellOnly = Boolean.Parse((string) data[botName]["sell_only"]);
                     WANT_TO_BUY = (double) data[botName]["want_to_buy"];
                     MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
