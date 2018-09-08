@@ -462,6 +462,20 @@ namespace CSGOTM
                                 } else {
                                     Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
                                 }
+                            } else
+                            {
+                                Log.Error("Items.NewVersion = 0! Still trying to send.");
+                                if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
+                                {
+                                    Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    ++sent;
+                                    sentTrades[trade.ui_bid] = DateTime.Now;
+                                    Thread.Sleep(1000);
+                                }
+                                else
+                                {
+                                    Log.Error("Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
+                                }
                             }
                         }
                         catch (Exception ex)
@@ -645,7 +659,7 @@ namespace CSGOTM
             Task.Run((Action)HandleSoldTrades);
             //Task.Run((Action)HandlePurchasedTrades);
             while (true)
-            {
+            {   
                 try
                 {
                     TMTrade[] arr = GetTradeList();
