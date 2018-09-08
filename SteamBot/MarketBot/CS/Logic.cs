@@ -21,6 +21,7 @@ namespace CSGOTM {
         private static double MAXFROMMEDIAN = 0.78;
         private static double WANT_TO_BUY = 0.8;
         private static double UNSTICKERED_ORDER = 0.78;
+        private static double SELL_MULTIPLIER = 1;
 
         public Logic(String botName)
         {
@@ -74,6 +75,8 @@ namespace CSGOTM {
                     WANT_TO_BUY = (double) data[botName]["want_to_buy"];
                     MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
                     UNSTICKERED_ORDER = (double) data[botName]["unstickered_order"];
+                    SELL_MULTIPLIER = (double) data[botName]["sell_multiplier"];
+                    
                 }
                 catch (Exception ex)
                 {
