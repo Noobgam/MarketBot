@@ -71,12 +71,34 @@ namespace CSGOTM {
                 {
                     JObject data = JObject.Parse(Utility.Request.Get(
                         "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json"));
-                    sellOnly = Boolean.Parse((string) data[botName]["sell_only"]);
-                    WANT_TO_BUY = (double) data[botName]["want_to_buy"];
-                    MAXFROMMEDIAN = (double) data[botName]["max_from_median"];
-                    UNSTICKERED_ORDER = (double) data[botName]["unstickered_order"];
-                    SELL_MULTIPLIER = (double) data[botName]["sell_multiplier"];
-                    
+                    if (!data.ContainsKey(botName))
+                    {
+                        Log.Error("Config contains no bot definition.");
+                    }
+                    else
+                    {
+                        JToken token = data[botName];
+                        if (token["sell_only"].Type != JTokenType.Boolean)
+                            Log.Error($"Sell only is not a boolean for {botName}");
+                        else
+                            sellOnly = (bool)token["sell_only"];
+
+                        if (token["want_to_buy"].Type != JTokenType.Float)
+                            Log.Error($"Want to buy is not a float for {botName}");
+                        else
+                            WANT_TO_BUY = (double)token["want_to_buy"];
+
+                        if (token["max_from_median"].Type != JTokenType.Float)
+                            Log.Error($"Max from median is not a float for {botName}");
+                        else
+                            MAXFROMMEDIAN = (double)token["max_from_median"];
+
+                        if (token["unstickered_order"].Type != JTokenType.Float)
+                            Log.Error($"Unstickered order is not a float for {botName}");
+                        else
+                            UNSTICKERED_ORDER = (double)token["unstickered_order"];
+                    }
+
                 }
                 catch (Exception ex)
                 {
