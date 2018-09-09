@@ -809,7 +809,8 @@ namespace CSGOTM {
                     {
                         if (item.ui_price < 40000 
                             && item.ui_price < newBuyFormula.WantToBuy * salesHistory.median 
-                            && salesHistory.median - item.ui_price > 1000)
+                            && salesHistory.median - item.ui_price > 1000
+                            && salesHistory.cnt >= MINSIZE)
                         {
                             return true; //back to good ol' dayz
                         }
