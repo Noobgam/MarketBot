@@ -10,6 +10,7 @@ using Newtonsoft.Json;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Concurrent;
+using SteamBot.MarketBot.CS;
 
 namespace CSGOTM {
     public class Logic {
@@ -22,6 +23,7 @@ namespace CSGOTM {
         private static double WANT_TO_BUY = 0.8;
         private static double UNSTICKERED_ORDER = 0.78;
         private static double SELL_MULTIPLIER = 1;
+        NewBuyFormula newBuyFormula = null;
 
         public Logic(String botName)
         {
@@ -60,17 +62,17 @@ namespace CSGOTM {
                 Task.Run((Action)SetOrderForUnstickered);
             }
             Task.Run((Action)AddGraphData);
-            Task.Run((Action)CheckName);
+            Task.Run((Action)RefreshConfig);
         }
 
-        void CheckName()
+        void RefreshConfig()
         {
             while (true)
             {
                 try
                 {
                     JObject data = JObject.Parse(Utility.Request.Get(
-                        "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json"));
+                        "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/"));
                     if (!data.ContainsKey(botName))
                     {
                         Log.Error("Config contains no bot definition.");
@@ -81,22 +83,74 @@ namespace CSGOTM {
                         if (token["sell_only"].Type != JTokenType.Boolean)
                             Log.Error($"Sell only is not a boolean for {botName}");
                         else
-                            sellOnly = (bool)token["sell_only"];
+                        {
+                            if (sellOnly != (bool)token["sell_only"])
+                            {
+                                Log.Info("Sellonly was changed from {0} to {1}", sellOnly, (bool)token["sell_only"]);
+                                sellOnly = (bool)token["sell_only"];
+                            }
+                        }
 
                         if (token["want_to_buy"].Type != JTokenType.Float)
                             Log.Error($"Want to buy is not a float for {botName}");
                         else
-                            WANT_TO_BUY = (double)token["want_to_buy"];
+                        {
+                            if (WANT_TO_BUY != (double)token["want_to_buy"])
+                            {
+                                Log.Info("Want to buy was changed from {0} to {1}", WANT_TO_BUY, (double)token["want_to_buy"]);
+                                WANT_TO_BUY = (double)token["want_to_buy"];
+                            }
+                        }
 
                         if (token["max_from_median"].Type != JTokenType.Float)
                             Log.Error($"Max from median is not a float for {botName}");
                         else
-                            MAXFROMMEDIAN = (double)token["max_from_median"];
+                        {
+                            if (MAXFROMMEDIAN != (double)token["max_from_median"])
+                            {
+                                Log.Info("Max from median was changed from {0} to {1}", WANT_TO_BUY, (double)token["max_from_median"]);
+                                MAXFROMMEDIAN = (double)token["max_from_median"];
+                            }
+                        }
 
                         if (token["unstickered_order"].Type != JTokenType.Float)
                             Log.Error($"Unstickered order is not a float for {botName}");
                         else
-                            UNSTICKERED_ORDER = (double)token["unstickered_order"];
+                        {
+                            if (UNSTICKERED_ORDER != (double)token["unstickered_order"])
+                            {
+                                Log.Info("Unsctickered order was changed from {0} to {1}", UNSTICKERED_ORDER, (double)token["unstickered_order"]);
+                                UNSTICKERED_ORDER = (double)token["unstickered_order"];
+                            }
+                        }
+                        if (token["experiments"] != null)
+                        {
+                            JToken new_buy_formula = token["experiments"]["new_buy_formula"];
+                            if (new_buy_formula != null)
+                            {
+                                try
+                                {
+                                    DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+                                    DateTime start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
+                                    DateTime end = dtDateTime.AddSeconds((double)new_buy_formula["end"]).ToLocalTime();
+                                    if (DateTime.Now < end)
+                                    {
+                                        double want_to_buy = (double)new_buy_formula["want_to_buy"];
+                                        NewBuyFormula temp = new NewBuyFormula(start, end, want_to_buy);
+                                        if (newBuyFormula != temp)
+                                        {
+                                            newBuyFormula = temp;
+                                            Log.Info("New newBuyFormula applied:");
+                                            Log.Info(new_buy_formula.ToString(Formatting.None));
+                                        }
+                                    }
+                                }
+                                catch
+                                {                                    
+                                    Log.Error("Incorrect experiment");
+                                }
+                            }
+                        }
                     }
 
                 }
@@ -733,34 +787,48 @@ namespace CSGOTM {
                 return ManipulatedItems[id] < item.ui_price + 10;
             }
 
-            lock (DatabaseLock) lock (CurrentItemsLock)
+            lock (DatabaseLock)
             {
-                if (!dataBase.ContainsKey(item.i_market_name))
+                lock (CurrentItemsLock)
                 {
-                    return false;
-                }
+                    if (!dataBase.ContainsKey(item.i_market_name))
+                    {
+                        return false;
+                    }
 
-                if (!currentItems.ContainsKey(item.i_market_name))
-                {
-                    return false;
-                }
+                    if (!currentItems.ContainsKey(item.i_market_name))
+                    {
+                        return false;
+                    }
 
-                SalesHistory salesHistory = dataBase[item.i_market_name];
-                HistoryItem oldest = salesHistory.sales[0];
-                List<int> prices = currentItems[item.i_market_name];
-                //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
-                
-                if (item.ui_price < 35000 && prices.Count >= 6 &&
-                    item.ui_price < WANT_TO_BUY * prices[2] && !blackList.Contains(item.i_market_name) &&
-                    salesHistory.cnt >= MINSIZE &&
-                    prices[2] < salesHistory.median * 1.2 && prices[2] - item.ui_price > 1000)
-                {
-                    //TODO какое-то условие на время
-                    Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
-                             (salesHistory.median - item.ui_price));
-                    return true;
+                    SalesHistory salesHistory = dataBase[item.i_market_name];
+                    HistoryItem oldest = salesHistory.sales[0];
+                    List<int> prices = currentItems[item.i_market_name];
+                    //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
+                    if (newBuyFormula != null && newBuyFormula.IsRunning())
+                    {
+                        if (item.ui_price < 40000 
+                            && item.ui_price < newBuyFormula.WantToBuy * salesHistory.median 
+                            && salesHistory.median - item.ui_price > 1000)
+                        {
+                            return true; //back to good ol' dayz
+                        }
+                    }
+                    else
+                    {
+                        if (item.ui_price < 40000 && prices.Count >= 6 
+                            && item.ui_price < WANT_TO_BUY * prices[2] 
+                            && !blackList.Contains(item.i_market_name) 
+                            && salesHistory.cnt >= MINSIZE 
+                            && prices[2] < salesHistory.median * 1.2 
+                            && prices[2] - item.ui_price > 1000)
+                        {
+                            Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
+                                     (salesHistory.median - item.ui_price));
+                            return true;
+                        }
+                    }
                 }
-                
             }
 
             return false;

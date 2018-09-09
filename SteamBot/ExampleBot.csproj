@@ -75,6 +75,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MarketBot\CS\Experiment.cs" />
     <Compile Include="MarketBot\CS\Logic.cs" />
     <Compile Include="MarketBot\CS\Protocol.cs" />
     <Compile Include="MarketBot\CS\Utility.cs" />
