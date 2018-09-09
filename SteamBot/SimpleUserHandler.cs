@@ -168,7 +168,7 @@ namespace SteamBot
                                 }
                                 return;
                             } else {
-                                Log.Error("Offer failed. Unknown error.");
+                                Log.Error($"Offer failed. Unknown error. Offer state: {offer.OfferState}");
                                 return;
                             }
                         case "unstable":
