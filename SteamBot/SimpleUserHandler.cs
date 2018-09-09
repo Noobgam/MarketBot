@@ -160,7 +160,9 @@ namespace SteamBot
                                 if (my.Count != 0)
                                     st += " Lost:     " + my.Count + " items.";
                                 Log.Warn(st);
-                                if (my.Count != 0) {
+                                if (my.Count != 0)
+                                {
+                                    Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
                                     Task.Delay(1000).
                                         ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
                                 }
@@ -176,6 +178,7 @@ namespace SteamBot
                     }
                      return;
                 case TradeOfferState.TradeOfferStateNeedsConfirmation: {
+                        Log.Info("Sending confirmation in 2 seconds [Deprecated, trying to log this]");
                         Thread.Sleep(1000);
                         var task = Task.Run(() => {
                             Bot.AcceptAllMobileTradeConfirmations();
@@ -195,7 +198,7 @@ namespace SteamBot
                 case TradeOfferState.TradeOfferStateDeclined:
                     return;
                 default:
-                    Log.Info($"Trade offer {offer.TradeOfferId} failed");
+                    Log.Info($"Trade offer {offer.TradeOfferId} failed, status is {offer.OfferState}");
                     return;
             }
         }
