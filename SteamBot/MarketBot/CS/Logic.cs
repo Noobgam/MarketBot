@@ -815,7 +815,7 @@ namespace CSGOTM {
                             return true; //back to good ol' dayz
                         }
                     }
-                    else
+                    //else
                     {
                         if (item.ui_price < 40000 && prices.Count >= 6 
                             && item.ui_price < WANT_TO_BUY * prices[2] 
