@@ -166,7 +166,7 @@ namespace CSGOTM {
                                         {
                                             temp = sellMultiplier;
                                             Log.Info("New sellmultiplier applied:");
-                                            Log.Info(new_buy_formula.ToString(Formatting.None));
+                                            Log.Info(sell_multiplier.ToString(Formatting.None));
                                         }
                                     }
                                 }
