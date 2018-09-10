@@ -221,6 +221,9 @@ namespace CSGOTM
             return dummy.s;
         }
         
+        DateTime start = DateTime.Now;
+        double counter = 0;
+        
         void Msg(object sender, MessageReceivedEventArgs e)
         {
             try
@@ -249,6 +252,9 @@ namespace CSGOTM
                 switch (type)
                 {
                     case "newitems_go":
+                        ++counter;
+                        double rps = counter / DateTime.Now.Subtract(start).TotalSeconds;
+                        Console.WriteLine(rps);
                         reader = new JsonTextReader(new StringReader(data));
                         currentProperty = string.Empty;
                         NewItem newItem = new NewItem();
@@ -711,6 +717,7 @@ namespace CSGOTM
             Log.Success("Connection opened!");
             if (Auth())
                 Task.Run((Action)SocketPinger);
+            start = DateTime.Now;
             //andrew is gay
         }
 
