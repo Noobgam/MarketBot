@@ -848,8 +848,7 @@ namespace CSGOTM {
                     }
 
                     if (!currentItems.ContainsKey(item.i_market_name))
-                    {
-                        
+                    {     
                         return false;
                     }
                     HistoryItem oldest = salesHistory.sales[0];

@@ -162,9 +162,9 @@ namespace SteamBot
                                 Log.Warn(st);
                                 if (my.Count != 0)
                                 {
-                                    Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
-                                    Task.Delay(1000).
-                                        ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                                    //Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
+                                    //Task.Delay(1000).
+                                    //    ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
                                 }
                                 return;
                             } else {
@@ -177,17 +177,8 @@ namespace SteamBot
                             break;
                     }
                      return;
-                case TradeOfferState.TradeOfferStateNeedsConfirmation: {
-                        Log.Info("Sending confirmation in 2 seconds [Deprecated, trying to log this]");
-                        Thread.Sleep(1000);
-                        var task = Task.Run(() => {
-                            Bot.AcceptAllMobileTradeConfirmations();
-                        });
-                        if (task.Wait(TimeSpan.FromSeconds(2)))
-                            return;
-                        else
-                            return;
-                    }
+                case TradeOfferState.TradeOfferStateNeedsConfirmation:
+                    return;
                 case TradeOfferState.TradeOfferStateInEscrow:
                     return;
                 case TradeOfferState.TradeOfferStateCountered:
