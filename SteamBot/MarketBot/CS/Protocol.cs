@@ -282,6 +282,10 @@ namespace CSGOTM
                                 }
                             }
                         }
+                        if (newItem.i_market_name == "")
+                        {
+                            Log.Error("!!!!!!!");
+                        }
                         //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                         if (!Logic.sellOnly && Logic.WantToBuy(newItem))
                         {

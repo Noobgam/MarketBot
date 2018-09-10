@@ -22,8 +22,8 @@ namespace CSGOTM {
         private static double MAXFROMMEDIAN = 0.78;
         private static double WANT_TO_BUY = 0.8;
         private static double UNSTICKERED_ORDER = 0.78;
-        private static double SELL_MULTIPLIER = 1;
         NewBuyFormula newBuyFormula = null;
+        SellMultiplier sellMultiplier = null;
 
         public Logic(String botName)
         {
@@ -52,16 +52,16 @@ namespace CSGOTM {
             FulfillBlackList();
             LoadDataBase();
             Task.Run((Action)ParsingCycle);
-            Task.Run((Action)SaveDataBaseCycle);
-            Task.Run((Action)SellFromQueue);
-            Task.Run((Action)AddNewItems);
-            Task.Run((Action)UnstickeredRefresh);
-            Task.Run((Action)SetNewOrder);
-            if (!sellOnly)
-            {
-                Task.Run((Action)SetOrderForUnstickered);
-            }
-            Task.Run((Action)AddGraphData);
+            //Task.Run((Action)SaveDataBaseCycle);
+            //Task.Run((Action)SellFromQueue);
+            //Task.Run((Action)AddNewItems);
+            //Task.Run((Action)UnstickeredRefresh);
+            //Task.Run((Action)SetNewOrder);
+            //if (!sellOnly)
+            //{
+            //    Task.Run((Action)SetOrderForUnstickered);
+            //}
+            //Task.Run((Action)AddGraphData);
             Task.Run((Action)RefreshConfig);
         }
 
@@ -147,6 +147,31 @@ namespace CSGOTM {
                                 }
                                 catch
                                 {                                    
+                                    Log.Error("Incorrect experiment");
+                                }
+                            }
+                            JToken sell_multiplier = token["experiments"]["sell_multiplier"];
+                            if (sell_multiplier != null)
+                            {
+                                try
+                                {
+                                    DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+                                    DateTime start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
+                                    DateTime end = dtDateTime.AddSeconds((double)new_buy_formula["end"]).ToLocalTime();
+                                    if (DateTime.Now < end)
+                                    {
+                                        double sellmultiplier = (double)sell_multiplier["multiplier"];
+                                        SellMultiplier temp = new SellMultiplier(start, end, sellmultiplier);
+                                        if (sellMultiplier != temp)
+                                        {
+                                            temp = sellMultiplier;
+                                            Log.Info("New sellmultiplier applied:");
+                                            Log.Info(new_buy_formula.ToString(Formatting.None));
+                                        }
+                                    }
+                                }
+                                catch
+                                {
                                     Log.Error("Incorrect experiment");
                                 }
                             }
@@ -356,12 +381,19 @@ namespace CSGOTM {
         {
             if (!hasStickers(item.i_classid, item.i_instanceid))
                 return GetMyUnstickeredSellPrice(item);
+
             if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
             {
                 return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
             }
             else
             {
+                int temp = GetMySellPriceByName(item.i_market_name);
+                if (temp != -1)
+                    if (sellMultiplier != null && sellMultiplier.IsRunning())
+                    {
+                        temp = (int)(temp * sellMultiplier.Multiplier);
+                    }
                 return GetMySellPriceByName(item.i_market_name);
             }
         }
@@ -638,6 +670,10 @@ namespace CSGOTM {
                     {
                         string[] itemInString = lines[id].Split(';');
                         NewItem newItem = new NewItem(itemInString);
+                        //if (newItem.i_market_name == "")
+                        //{
+                        //    Log.Info("Item has no name");
+                        //}
                         if (WantToBuy(newItem))
                         {
                             Protocol.Buy(newItem);
@@ -648,7 +684,6 @@ namespace CSGOTM {
                 {
                     Console.WriteLine(ex.Message);
                 }
-
                 return true;
             }
             catch (Exception e) {
@@ -777,8 +812,9 @@ namespace CSGOTM {
                 }
             }
         }
-
+        
         public bool WantToBuy(NewItem item) {
+
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
@@ -789,35 +825,38 @@ namespace CSGOTM {
 
             lock (DatabaseLock)
             {
+
                 lock (CurrentItemsLock)
                 {
                     if (!dataBase.ContainsKey(item.i_market_name))
                     {
                         return false;
                     }
-
-                    if (!currentItems.ContainsKey(item.i_market_name))
-                    {
-                        return false;
-                    }
-
                     SalesHistory salesHistory = dataBase[item.i_market_name];
-                    HistoryItem oldest = salesHistory.sales[0];
-                    List<int> prices = currentItems[item.i_market_name];
-                    //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
                     if (newBuyFormula != null && newBuyFormula.IsRunning())
                     {
-                        if (item.ui_price < 40000 
-                            && item.ui_price < newBuyFormula.WantToBuy * salesHistory.median 
+                        if (item.ui_price < 40000
+                            && item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
                             && salesHistory.median - item.ui_price > 1000
                             && salesHistory.cnt >= MINSIZE)
                         {
                             return true; //back to good ol' dayz
                         }
                     }
+
+                    if (!currentItems.ContainsKey(item.i_market_name))
+                    {
+                        
+                        return false;
+                    }
+                    HistoryItem oldest = salesHistory.sales[0];
+                    List<int> prices = currentItems[item.i_market_name];
+                    //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
+
                     //else
                     {
-                        if (item.ui_price < 40000 && prices.Count >= 6 
+                        if (item.ui_price < 40000 
+                            && prices.Count >= 6 
                             && item.ui_price < WANT_TO_BUY * prices[2] 
                             && !blackList.Contains(item.i_market_name) 
                             && salesHistory.cnt >= MINSIZE 
