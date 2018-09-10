@@ -52,16 +52,16 @@ namespace CSGOTM {
             FulfillBlackList();
             LoadDataBase();
             Task.Run((Action)ParsingCycle);
-            //Task.Run((Action)SaveDataBaseCycle);
-            //Task.Run((Action)SellFromQueue);
-            //Task.Run((Action)AddNewItems);
-            //Task.Run((Action)UnstickeredRefresh);
-            //Task.Run((Action)SetNewOrder);
-            //if (!sellOnly)
-            //{
-            //    Task.Run((Action)SetOrderForUnstickered);
-            //}
-            //Task.Run((Action)AddGraphData);
+            Task.Run((Action)SaveDataBaseCycle);
+            Task.Run((Action)SellFromQueue);
+            Task.Run((Action)AddNewItems);
+            Task.Run((Action)UnstickeredRefresh);
+            Task.Run((Action)SetNewOrder);
+            if (!sellOnly)
+            {
+                Task.Run((Action)SetOrderForUnstickered);
+            }
+            Task.Run((Action)AddGraphData);
             Task.Run((Action)RefreshConfig);
         }
 
@@ -670,10 +670,10 @@ namespace CSGOTM {
                     {
                         string[] itemInString = lines[id].Split(';');
                         NewItem newItem = new NewItem(itemInString);
-                        //if (newItem.i_market_name == "")
-                        //{
-                        //    Log.Info("Item has no name");
-                        //}
+                        if (newItem.i_market_name == "")
+                        {
+                            Log.Info("Item has no name");
+                        }
                         if (WantToBuy(newItem))
                         {
                             Protocol.Buy(newItem);
