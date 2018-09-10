@@ -12,5 +12,4 @@ pipelines:
           - export PROJECT_NAME=SteamBot.sln
           - export TEST_NAME=SteamBotUnitTest.sln
           - dotnet restore
-          - dotnet build $PROJECT_NAME
-          - dotnet test $TEST_NAME
+          - dotnet build
