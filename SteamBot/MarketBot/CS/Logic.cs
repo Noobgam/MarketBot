@@ -650,6 +650,10 @@ namespace CSGOTM {
                                 name = name.Remove(0, 1);
                                 name = name.Remove(name.Length - 1);
                             }
+                            else
+                            {
+                                continue;
+                            }
 
                             if (!currentItems.ContainsKey(name))
                                 currentItems[name] = new List<int>();
@@ -814,7 +818,6 @@ namespace CSGOTM {
         }
         
         public bool WantToBuy(NewItem item) {
-
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;

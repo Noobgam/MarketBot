@@ -87,6 +87,11 @@ namespace CSGOTM {
             i_classid = item[mapping["c_classid"]];
             i_instanceid = item[mapping["c_instanceid"]];
             i_market_name = item[mapping["c_market_name"]];
+            if (i_market_name.Length >= 2)
+            {
+                i_market_name = i_market_name.Remove(0, 1);
+                i_market_name = i_market_name.Remove(i_market_name.Length - 1);
+            }
             ui_price = int.Parse(item[mapping["c_price"]]);
         }
     }
