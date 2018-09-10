@@ -13,6 +13,6 @@ pipelines:
         script: # Modify the comma`nds below to build your repository.
           - export PROJECT_NAME=yourProjectName
           - export TEST_NAME=yourTestName
-          - dotnet restore
-          - dotnet build SteamBot.sln
-          - dotnet test SteamBotUnitTest.sln
+          - dotnet restore $PROJECT_NAME
+          - dotnet build $PROJECT_NAME
+          - dotnet test $TEST_NAME
