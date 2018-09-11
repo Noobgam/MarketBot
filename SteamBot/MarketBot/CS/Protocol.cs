@@ -92,7 +92,7 @@ namespace CSGOTM
                 temp.Start();
                 response = Utility.Request.Get("https://market.csgo.com" + url);
                 temp.Stop();
-                File.AppendAllText($"get_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}");
+                File.AppendAllText($"get_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
@@ -137,7 +137,7 @@ namespace CSGOTM
                 temp.Start();
                 response = Utility.Request.Post("https://market.csgo.com" + url, data);
                 temp.Stop();
-                File.AppendAllText($"post_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}");
+                File.AppendAllText($"post_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
