@@ -90,7 +90,7 @@ namespace CSGOTM
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
                 temp.Start();
-                response = Utility.Request.Get("https://market.csgo.com" + url);
+                response = Utility.Request.Get("http://market.csgo.com" + url);
                 temp.Stop();
                 File.AppendAllText($"get_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}\n");
             }
@@ -135,13 +135,13 @@ namespace CSGOTM
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
                 temp.Start();
-                response = Utility.Request.Post("https://market.csgo.com" + url, data);
+                response = Utility.Request.Post("http://market.csgo.com" + url, data);
                 temp.Stop();
                 File.AppendAllText($"post_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
-                Log.ApiError($"POST call to https://market.csgo.com{url} with data: {data} failed");
+                Log.ApiError($"POST call to http://market.csgo.com{url} with data: {data} failed");
                 Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
             }
             finally
