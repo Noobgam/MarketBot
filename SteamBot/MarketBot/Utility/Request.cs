@@ -4,6 +4,7 @@ using System.Text;
 
 namespace Utility {
     public static class Request {
+
         public static string Get(string uri) {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
             request.Proxy = null;

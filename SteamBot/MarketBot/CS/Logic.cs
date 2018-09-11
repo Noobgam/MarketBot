@@ -880,7 +880,7 @@ namespace CSGOTM {
         public bool sellOnly = false;
         public Protocol Protocol;
 
-        private String botName;
+        public String botName;
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 70;

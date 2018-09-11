@@ -80,14 +80,19 @@ namespace CSGOTM
                 .ContinueWith(tsk => ApiSemaphore.Release());
         }
 
+
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall)
         {
             string response = null;
+            Stopwatch temp = new Stopwatch();
             try
             {
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
+                temp.Start();
                 response = Utility.Request.Get("https://market.csgo.com" + url);
+                temp.Stop();
+                File.AppendAllText($"get_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}");
             }
             catch (Exception ex)
             {
@@ -123,12 +128,16 @@ namespace CSGOTM
 
         private string ExecuteApiPostRequest(string url, string data, ApiMethod method = ApiMethod.GenericCall)
         {
+            Stopwatch temp = new Stopwatch();
             string response = null;
             try
             {
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
+                temp.Start();
                 response = Utility.Request.Post("https://market.csgo.com" + url, data);
+                temp.Stop();
+                File.AppendAllText($"post_log{Logic.botName}", $"{url} : {temp.ElapsedMilliseconds}");
             }
             catch (Exception ex)
             {
