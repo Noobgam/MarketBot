@@ -61,7 +61,6 @@ namespace CSGOTM {
             {
                 Task.Run((Action)SetOrderForUnstickered);
             }
-            Task.Run((Action)AddGraphData);
             Task.Run((Action)RefreshConfig);
         }
 
