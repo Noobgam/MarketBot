@@ -1,10 +1,6 @@
 [Oo]bj
 [Rr]elease
 [Dd]ebug
-[Bb]in
-[Dd]ocs
-*.nuget
-.vs*
 packages
 *.exe
 *.dll

@@ -39,7 +39,7 @@ namespace SteamBot
         {
             Bot = bot;
             OtherSID = sid;
-            //GetOtherInventory();
+            GetOtherInventory();
         }
 
         private bool HandleWaitingOnUserResponse(string message)

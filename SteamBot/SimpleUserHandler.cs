@@ -1,11 +1,9 @@
+using System;
 using SteamKit2;
 using System.Collections.Generic;
 using SteamTrade;
 using SteamTrade.TradeOffer;
 using SteamTrade.TradeWebAPI;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace SteamBot
 {
@@ -22,7 +20,7 @@ namespace SteamBot
 
         public override bool OnFriendAdd () 
         {
-            return false;
+            return true;
         }
 
         public override void OnLoginCompleted()
@@ -39,8 +37,7 @@ namespace SteamBot
         
         public override void OnMessage (string message, EChatEntryType type) 
         {
-            //just because I'm sick of it.
-            //SendChatMessage(Bot.ChatResponse);
+            SendChatMessage(Bot.ChatResponse);
         }
 
         public override bool OnTradeRequest() 
@@ -90,7 +87,7 @@ namespace SteamBot
         public override void OnTradeAwaitingConfirmation(long tradeOfferID)
         {
             Log.Warn("Trade ended awaiting confirmation");
-            //SendChatMessage("Please complete the confirmation to finish the trade");
+            SendChatMessage("Please complete the confirmation to finish the trade");
         }
 
         public override void OnTradeOfferUpdated(TradeOffer offer)
@@ -98,99 +95,20 @@ namespace SteamBot
             switch (offer.OfferState)
             {
                 case TradeOfferState.TradeOfferStateAccepted:
-                        return;
+                    Log.Info(String.Format("Trade offer {0} has been completed!", offer.TradeOfferId));
+                    SendChatMessage("Trade completed, thank you!");
+                    break;
                 case TradeOfferState.TradeOfferStateActive:
-                    var their = offer.Items.GetTheirItems();
-                    var my = offer.Items.GetMyItems();
-                    long aid = -1, cid = -1;
-                    bool unstable = false;
-                    foreach (var item in their) {
-                        if (aid == -1) {
-                            aid = item.AppId;
-                        } else {
-                            if (aid != item.AppId) {
-                                unstable = true;
-                            }
-                            aid = item.AppId;
-                        }
-
-                        if (cid == -1) {
-                            cid = item.ContextId;
-                        } else {
-                            if (cid != item.ContextId) {
-                                unstable = true;
-                            }
-                            cid = item.ContextId;
-                        }
-                    }
-                    foreach (var item in my) {
-                        if (aid == -1) {
-                            aid = item.AppId;
-                        } else {
-                            if (aid != item.AppId) {
-                                unstable = true;
-                            }
-                            aid = item.AppId;
-                        }
-
-                        if (cid == -1) {
-                            cid = item.ContextId;
-                        } else {
-                            if (cid != item.ContextId) {
-                                unstable = true;
-                            }
-                            cid = item.ContextId;
-                        }
-                    }
-
-                    string appid_contextid;
-                    if (unstable) appid_contextid = "unstable";
-                    else appid_contextid = aid + "-" + cid;
-                    switch (appid_contextid) {
-                        case "730-2":
-                            if (my.Count > 0 && !offer.IsOurOffer) //if the offer is bad we decline it. 
-                            {
-                                offer.Decline();
-                                Log.Error("Offer failed. Invalid trade request. (not issued by me, has my items there)");
-                                return;
-                            } else if (offer.Accept().Accepted) {
-                                string st = "Offer completed.";
-                                if (their.Count != 0)
-                                    st += " Received: " + their.Count + " items.";
-                                if (my.Count != 0)
-                                    st += " Lost:     " + my.Count + " items.";
-                                Log.Warn(st);
-                                if (my.Count != 0)
-                                {
-                                    //Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
-                                    //Task.Delay(1000).
-                                    //    ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-                                }
-                                return;
-                            } else {
-                                Log.Error($"Offer failed. Unknown error. Offer state: {offer.OfferState}");
-                                return;
-                            }
-                        case "unstable":
-                            break;
-                        default:
-                            break;
-                    }
-                     return;
                 case TradeOfferState.TradeOfferStateNeedsConfirmation:
-                    return;
                 case TradeOfferState.TradeOfferStateInEscrow:
-                    return;
+                    //Trade is still active but incomplete
+                    break;
                 case TradeOfferState.TradeOfferStateCountered:
-                    Log.Info($"Trade offer {offer.TradeOfferId} was countered");
-                    return;
-                case TradeOfferState.TradeOfferStateCanceled:
-                    return;
-                case TradeOfferState.TradeOfferStateDeclined:
-                    return;
+                    Log.Info(String.Format("Trade offer {0} was countered", offer.TradeOfferId));
+                    break;
                 default:
-                    Log.Info($"Trade offer {offer.TradeOfferId} failed, status is {offer.OfferState}");
-                    return;
+                    Log.Info(String.Format("Trade offer {0} failed", offer.TradeOfferId));
+                    break;
             }
         }
 
