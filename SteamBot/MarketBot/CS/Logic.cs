@@ -351,7 +351,7 @@ namespace CSGOTM {
             {
                 if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
                 {
-                    int price;
+                    int price = -1;
                     if (DateTime.Now.Hour < 15)
                     {
                         if (currentItems[name].Count > 3)
