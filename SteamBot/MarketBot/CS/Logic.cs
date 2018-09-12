@@ -351,7 +351,7 @@ namespace CSGOTM {
             {
                 if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
                 {
-                    int price;
+                    int price = -1;
                     if (DateTime.Now.Hour < 15)
                     {
                         if (currentItems[name].Count > 3)
@@ -359,8 +359,9 @@ namespace CSGOTM {
                             if (currentItems[name][3] / currentItems[name][2] <= 1.2)
                                 price = currentItems[name][3] - 30;
                         }
+                    } else {
+                        price = currentItems[name][2] - 30;
                     }
-                    price = currentItems[name][2] - 30;
                     lock (DatabaseLock)
                     {
                         if (dataBase.ContainsKey(name) && price > 2 * dataBase[name].median)
