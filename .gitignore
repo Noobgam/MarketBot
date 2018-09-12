@@ -29,3 +29,11 @@ packages
 
 # Allow NuGet specific exes and dlls
 !.nuget/Microsoft.Build.dll
+/Bin/Release.zip
+/Bin
+/.vs/SteamBot/v15/Server/sqlite3/storage.ide-wal
+/.vs/SteamBot/v15/Server/sqlite3/storage.ide-shm
+/.vs/SteamBot/v15/Server/sqlite3/storage.ide
+/.vs/SteamBot/v15/Server/sqlite3/db.lock
+/.vs/SteamBot/v15/Server/sqlite3
+/.vs/config/applicationhost.config
