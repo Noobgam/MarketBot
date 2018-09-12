@@ -72,13 +72,12 @@ namespace CSGOTM {
                 {
                     JObject data = JObject.Parse(Utility.Request.Get(
                         "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/"));
-                    if (!data.ContainsKey(botName))
+                    if (!data.TryGetValue(botName, out JToken token))
                     {
                         Log.Error("Config contains no bot definition.");
                     }
                     else
                     {
-                        JToken token = data[botName];
                         if (token["sell_only"].Type != JTokenType.Boolean)
                             Log.Error($"Sell only is not a boolean for {botName}");
                         else
@@ -349,28 +348,28 @@ namespace CSGOTM {
         {
             lock (CurrentItemsLock)
             {
-                if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
+                if (currentItems.TryGetValue(name, out List<int> prices) && prices.Count > 2)
                 {
                     int price = -1;
                     if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 12
-                        && currentItems[name].Count > 4
-                        && currentItems[name][4] / currentItems[name][2] <= 1.3)
+                        && prices.Count > 4
+                        && prices[4] / prices[2] <= 1.3)
                     {
-                        price = currentItems[name][4] - 30;
+                        price = prices[4] - 30;
                     }
                     else if(DateTime.Now.Hour > 10 && DateTime.Now.Hour < 15 
-                        && currentItems[name].Count > 3
-                        && currentItems[name][3] / currentItems[name][2] <= 1.2)
+                        && prices.Count > 3
+                        && prices[3] / prices[2] <= 1.2)
                     {
-                        price = currentItems[name][3] - 30;
+                        price = prices[3] - 30;
                     } else {
-                        price = currentItems[name][2] - 30;
+                        price = prices[2] - 30;
                     }
                     lock (DatabaseLock)
                     {
-                        if (dataBase.ContainsKey(name) && price > 2 * dataBase[name].median)
+                        if (dataBase.TryGetValue(name, out SalesHistory salesHistory) && price > 2 * salesHistory.median)
                         {
-                            price = 2 * dataBase[name].median;
+                            price = 2 * salesHistory.median;
                         }
                     }
                     return price;
@@ -378,9 +377,9 @@ namespace CSGOTM {
             }
             lock (DatabaseLock)
             {
-                if (dataBase.ContainsKey(name))
+                if (dataBase.TryGetValue(name, out SalesHistory salesHistory))
                 {
-                    return dataBase[name].median;
+                    return salesHistory.median;
                 }
             }
             return -1;
@@ -395,9 +394,9 @@ namespace CSGOTM {
             if (!hasStickers(item.i_classid, item.i_instanceid))
                 return GetMyUnstickeredSellPrice(item);
 
-            if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
+            if (ManipulatedItems.TryGetValue(item.i_classid + "_" + item.i_instanceid, out int ret))
             {
-                return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
+                return ret;
             }
             else
             {
@@ -418,16 +417,16 @@ namespace CSGOTM {
         /// <returns></returns>
         int GetMyUnstickeredSellPrice(Inventory.SteamItem item)
         {
-            if (ManipulatedItems.ContainsKey(item.i_classid + "_" + item.i_instanceid))
+            if (ManipulatedItems.TryGetValue(item.i_classid + "_" + item.i_instanceid, out int ret))
             {
-                return ManipulatedItems[item.i_classid + "_" + item.i_instanceid];
+                return ret;
             }
             else
             {
                 lock (DatabaseLock)
                 {
-                    if (dataBase.ContainsKey(item.i_market_name))
-                        return dataBase[item.i_market_name].median;
+                    if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
+                        return salesHistory.median;
                     else
                         return -1;
                 }
@@ -667,9 +666,9 @@ namespace CSGOTM {
                             {
                                 continue;
                             }
-
+                            
                             if (!currentItems.ContainsKey(name))
-                                currentItems[name] = new List<int>();
+                                currentItems.Add(name, new List<int>());
                             currentItems[name].Add(int.Parse(item[NewItem.mapping["c_price"]]));
                         }
                     }
@@ -799,17 +798,15 @@ namespace CSGOTM {
             }
 
             //Console.WriteLine(item.i_market_name);
-            SalesHistory salesHistory;
             lock (DatabaseLock)
             {
-                if (dataBase.ContainsKey(item.i_market_name))
+                if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
                 {
-                    salesHistory = dataBase[item.i_market_name];
-                    if (dataBase[item.i_market_name].cnt == MAXSIZE)
-                        dataBase[item.i_market_name].sales.RemoveAt(0);
+                    if (salesHistory.cnt == MAXSIZE)
+                        salesHistory.sales.RemoveAt(0);
                     else
-                        dataBase[item.i_market_name].cnt++;
-                    dataBase[item.i_market_name].sales.Add(item);
+                        salesHistory.cnt++;
+                    salesHistory.sales.Add(item);
                 }
                 else
                 {
@@ -821,7 +818,7 @@ namespace CSGOTM {
                 for (int i = 0; i < salesHistory.cnt; i++)
                     a[i] = salesHistory.sales[i].price;
                 Array.Sort(a);
-                dataBase[item.i_market_name].median = a[salesHistory.cnt / 2];
+                salesHistory.median = a[salesHistory.cnt / 2];
 
                 if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name))
                 {
@@ -834,9 +831,9 @@ namespace CSGOTM {
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
-                if (!ManipulatedItems.ContainsKey(id))
+                if (!ManipulatedItems.TryGetValue(id, out int price))
                     return false;
-                return ManipulatedItems[id] < item.ui_price + 10;
+                return price < item.ui_price + 10;
             }
 
             lock (DatabaseLock)
@@ -844,11 +841,10 @@ namespace CSGOTM {
 
                 lock (CurrentItemsLock)
                 {
-                    if (!dataBase.ContainsKey(item.i_market_name))
+                    if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
                     {
                         return false;
                     }
-                    SalesHistory salesHistory = dataBase[item.i_market_name];
                     if (newBuyFormula != null && newBuyFormula.IsRunning())
                     {
                         if (item.ui_price < 40000
@@ -860,12 +856,11 @@ namespace CSGOTM {
                         }
                     }
 
-                    if (!currentItems.ContainsKey(item.i_market_name))
+                    if (!currentItems.TryGetValue(item.i_market_name, out List<int> prices))
                     {     
                         return false;
                     }
                     HistoryItem oldest = salesHistory.sales[0];
-                    List<int> prices = currentItems[item.i_market_name];
                     //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
                     //else

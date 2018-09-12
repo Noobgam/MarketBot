@@ -437,10 +437,10 @@ namespace CSGOTM
             List<Pair<string, string>> list = new List<Pair<string, string>>();
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
-                if (sentTrades.ContainsKey(trade.ui_bid))
+                if (sentTrades.TryGetValue(trade.ui_bid, out DateTime lastTradeTime))
                 {
                     DateTime tmp = DateTime.Now;
-                    if (tmp.Subtract(sentTrades[trade.ui_bid]).Seconds < 40) //no reason to, chances are it's either fine anyway or is a scam.
+                    if (tmp.Subtract(lastTradeTime).Seconds < 40) //no reason to, chances are it's either fine anyway or is a scam.
                         continue;
                 }
                 Debug.Assert(trade.ui_status == "2");
