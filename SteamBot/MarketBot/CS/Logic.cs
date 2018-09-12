@@ -351,7 +351,16 @@ namespace CSGOTM {
             {
                 if (currentItems.ContainsKey(name) && currentItems[name].Count > 2)
                 {
-                    int price = currentItems[name][2] - 30;
+                    int price;
+                    if (DateTime.Now.Hour < 15)
+                    {
+                        if (currentItems[name].Count > 3)
+                        {
+                            if (currentItems[name][3] / currentItems[name][2] <= 1.2)
+                                price = currentItems[name][3] - 30;
+                        }
+                    }
+                    price = currentItems[name][2] - 30;
                     lock (DatabaseLock)
                     {
                         if (dataBase.ContainsKey(name) && price > 2 * dataBase[name].median)
@@ -393,7 +402,7 @@ namespace CSGOTM {
                     {
                         temp = (int)(temp * sellMultiplier.Multiplier);
                     }
-                return GetMySellPriceByName(item.i_market_name);
+                return temp;
             }
         }
 
