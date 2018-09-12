@@ -20,7 +20,7 @@ namespace SteamBot
 
         public override bool OnFriendAdd () 
         {
-            return true;
+            return false;
         }
 
         public override void OnLoginCompleted()
@@ -37,7 +37,6 @@ namespace SteamBot
         
         public override void OnMessage (string message, EChatEntryType type) 
         {
-            SendChatMessage(Bot.ChatResponse);
         }
 
         public override bool OnTradeRequest() 
@@ -70,18 +69,6 @@ namespace SteamBot
         
         public override void OnTradeReady (bool ready) 
         {
-            if (!ready)
-            {
-                Trade.SetReady (false);
-            }
-            else
-            {
-                if(Validate ())
-                {
-                    Trade.SetReady (true);
-                }
-                SendTradeMessage("Scrap: {0}", AmountAdded.ScrapTotal);
-            }
         }
 
         public override void OnTradeAwaitingConfirmation(long tradeOfferID)
@@ -95,26 +82,128 @@ namespace SteamBot
             switch (offer.OfferState)
             {
                 case TradeOfferState.TradeOfferStateAccepted:
-                    Log.Info(String.Format("Trade offer {0} has been completed!", offer.TradeOfferId));
-                    SendChatMessage("Trade completed, thank you!");
-                    break;
+                    return;
                 case TradeOfferState.TradeOfferStateActive:
+                    var their = offer.Items.GetTheirItems();
+                    var my = offer.Items.GetMyItems();
+                    long aid = -1, cid = -1;
+                    bool unstable = false;
+                    foreach (var item in their)
+                    {
+                        if (aid == -1)
+                        {
+                            aid = item.AppId;
+                        }
+                        else
+                        {
+                            if (aid != item.AppId)
+                            {
+                                unstable = true;
+                            }
+                            aid = item.AppId;
+                        }
+
+                        if (cid == -1)
+                        {
+                            cid = item.ContextId;
+                        }
+                        else
+                        {
+                            if (cid != item.ContextId)
+                            {
+                                unstable = true;
+                            }
+                            cid = item.ContextId;
+                        }
+                    }
+                    foreach (var item in my)
+                    {
+                        if (aid == -1)
+                        {
+                            aid = item.AppId;
+                        }
+                        else
+                        {
+                            if (aid != item.AppId)
+                            {
+                                unstable = true;
+                            }
+                            aid = item.AppId;
+                        }
+
+                        if (cid == -1)
+                        {
+                            cid = item.ContextId;
+                        }
+                        else
+                        {
+                            if (cid != item.ContextId)
+                            {
+                                unstable = true;
+                            }
+                            cid = item.ContextId;
+                        }
+                    }
+
+                    string appid_contextid;
+                    if (unstable) appid_contextid = "unstable";
+                    else appid_contextid = aid + "-" + cid;
+                    switch (appid_contextid)
+                    {
+                        case "730-2":
+                            if (my.Count > 0 && !offer.IsOurOffer) //if the offer is bad we decline it. 
+                            {
+                                offer.Decline();
+                                Log.Error("Offer failed. Invalid trade request. (not issued by me, has my items there)");
+                                return;
+                            }
+                            else if (offer.Accept().Accepted)
+                            {
+                                string st = "Offer completed.";
+                                if (their.Count != 0)
+                                    st += " Received: " + their.Count + " items.";
+                                if (my.Count != 0)
+                                    st += " Lost:     " + my.Count + " items.";
+                                Log.Warn(st);
+                                if (my.Count != 0)
+                                {
+                                    //Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
+                                    //Task.Delay(1000).
+                                    //    ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                                }
+                                return;
+                            }
+                            else
+                            {
+                                Log.Error($"Offer failed. Unknown error. Offer state: {offer.OfferState}");
+                                return;
+                            }
+                        case "unstable":
+                            break;
+                        default:
+                            break;
+                    }
+                    return;
                 case TradeOfferState.TradeOfferStateNeedsConfirmation:
+                    return;
                 case TradeOfferState.TradeOfferStateInEscrow:
-                    //Trade is still active but incomplete
-                    break;
+                    return;
                 case TradeOfferState.TradeOfferStateCountered:
-                    Log.Info(String.Format("Trade offer {0} was countered", offer.TradeOfferId));
-                    break;
+                    Log.Info($"Trade offer {offer.TradeOfferId} was countered");
+                    return;
+                case TradeOfferState.TradeOfferStateCanceled:
+                    return;
+                case TradeOfferState.TradeOfferStateDeclined:
+                    return;
                 default:
-                    Log.Info(String.Format("Trade offer {0} failed", offer.TradeOfferId));
-                    break;
+                    Log.Info($"Trade offer {offer.TradeOfferId} failed, status is {offer.OfferState}");
+                    return;
             }
         }
 
         public override void OnTradeAccept() 
         {
-            if (Validate() || IsAdmin)
+            if (IsAdmin)
             {
                 //Even if it is successful, AcceptTrade can fail on
                 //trades with a lot of items so we use a try-catch
@@ -126,46 +215,7 @@ namespace SteamBot
                     Log.Warn ("The trade might have failed, but we can't be sure.");
                 }
             }
-        }
-
-        public bool Validate ()
-        {            
-            AmountAdded = TF2Value.Zero;
-            
-            List<string> errors = new List<string> ();
-            
-            foreach (TradeUserAssets asset in Trade.OtherOfferedItems)
-            {
-                var item = Trade.OtherInventory.GetItem(asset.assetid);
-                if (item.Defindex == 5000)
-                    AmountAdded += TF2Value.Scrap;
-                else if (item.Defindex == 5001)
-                    AmountAdded += TF2Value.Reclaimed;
-                else if (item.Defindex == 5002)
-                    AmountAdded += TF2Value.Refined;
-                else
-                {
-                    var schemaItem = Trade.CurrentSchema.GetItem (item.Defindex);
-                    errors.Add ("Item " + schemaItem.Name + " is not a metal.");
-                }
-            }
-            
-            if (AmountAdded == TF2Value.Zero)
-            {
-                errors.Add ("You must put up at least 1 scrap.");
-            }
-            
-            // send the errors
-            if (errors.Count != 0)
-                SendTradeMessage("There were errors in your trade: ");
-            foreach (string error in errors)
-            {
-                SendTradeMessage(error);
-            }
-            
-            return errors.Count == 0;
-        }
-        
+        }        
     }
  
 }

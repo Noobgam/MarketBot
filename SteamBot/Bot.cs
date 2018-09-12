@@ -147,6 +147,9 @@ namespace SteamBot
         [Obsolete("Refactored to be Log instead of log")]
         public Log log { get { return Log; } }
 
+        public CSGOTM.Protocol CSConnection;
+        public CSGOTM.Logic CSLogic;
+
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
             userHandlers = new Dictionary<SteamID, UserHandler>();
@@ -193,6 +196,20 @@ namespace SteamBot
 
             logFile = config.LogFile;
             Log = new Log(logFile, DisplayName, consoleLogLevel, fileLogLevel);
+            bool tryWith2FA = true;
+            if (tryWith2FA)
+            {
+                var mobileAuthCode = GetMobileAuthCode();
+                if (string.IsNullOrEmpty(mobileAuthCode))
+                {
+                    Log.Error("Failed to generate 2FA code. Make sure you have linked the authenticator via SteamBot.");
+                }
+                else
+                {
+                    logOnDetails.TwoFactorCode = mobileAuthCode;
+                    Log.Success("Generated 2FA code.");
+                }
+            }
             createHandler = handlerCreator;
             BotControlClass = config.BotControlClass;
             SteamWeb = new SteamWeb();
@@ -214,6 +231,12 @@ namespace SteamBot
             botThread = new BackgroundWorker { WorkerSupportsCancellation = true };
             botThread.DoWork += BackgroundWorkerOnDoWork;
             botThread.RunWorkerCompleted += BackgroundWorkerOnRunWorkerCompleted;
+
+            //Starting CS:
+
+            CSConnection = new CSGOTM.Protocol(this, config.MarketApiKey);
+            CSLogic = new CSGOTM.Logic(config.Username);
+            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger($"CSGO_log.{config.Username}", $"{config.DisplayName} CS:"));
         }
 
         ~Bot()

@@ -111,7 +111,7 @@ namespace SteamBot
         /// </value>
         public bool IsAdmin
         {
-            get { return Bot.Admins.Contains(OtherSID); }
+            get { return false; }
         }
 
         /// <summary>
