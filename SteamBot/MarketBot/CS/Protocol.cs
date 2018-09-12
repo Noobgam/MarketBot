@@ -434,6 +434,7 @@ namespace CSGOTM
         void SendSoldItems(IEnumerable<TMTrade> trades)
         {
             int sent = 0;
+            List<Pair<string, string>> list = new List<Pair<string, string>>();
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time))
             {
                 if (sentTrades.ContainsKey(trade.ui_bid))
@@ -454,6 +455,16 @@ namespace CSGOTM
                 {
                     if ((bool)json["manual"])
                     {
+                        string requestId = "";
+                        try
+                        {
+                            requestId = (string)json["requestId"];
+                        }
+                        catch
+                        {
+                            Log.Error("Could not parse request id");
+                            Log.Error("Extra info: " + json.ToString(Formatting.None));
+                        }
                         string profile = (string)json["profile"];
                         ulong id = ulong.Parse(profile.Split('/')[4]);
 
@@ -475,6 +486,7 @@ namespace CSGOTM
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    list.Add(new Pair<string, string>(requestId, newOfferId));
                                     ++sent;
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
@@ -487,6 +499,7 @@ namespace CSGOTM
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
                                 {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
+                                    list.Add(new Pair<string, string>(requestId, newOfferId));
                                     ++sent;
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
@@ -507,73 +520,43 @@ namespace CSGOTM
             }
             if (sent > 0)
                 Task.Delay(3000) //the delay might fix #35
-                    .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                    .ContinueWith(tsk =>
+                    {
+                        Bot.AcceptAllMobileTradeConfirmations();
+                        foreach (Pair<string, string> pr in list)
+                        {
+                            Thread.Sleep(1000);
+                            ReportCreatedTrade(pr.First, pr.Second);
+                        }
+                    });
         }
 
-        [System.Obsolete("Specify single item instead")]
-        bool SendSoldItems()
+        bool ReportCreatedTrade(string requestId, string tradeOfferId)
         {
+            if (requestId == "")
+            {
+                return false;
+            }
             try
             {
-                JObject json = JObject.Parse(ExecuteApiRequest("/api/ItemRequest/in/1/?key=" + Api, ApiMethod.ItemRequest));
-                if (json["success"] == null)
+                string resp = ExecuteApiRequest($"/api/ReportCreatedTrade/{requestId}/{tradeOfferId}?key={Api}");
+                if (resp == null)
                     return false;
+                JObject json = JObject.Parse(resp);
+                if (json["success"] == null)
+                {
+                    Log.Error("TM thinks that I did not send the offer.");
+                    return false;
+                }
                 else if ((bool)json["success"])
                 {
-                    if ((bool)json["manual"]) {
-                        string profile = (string)json["profile"];
-                        ulong id = ulong.Parse(profile.Split('/')[4]);
-
-                        Log.Info(json.ToString(Formatting.None));
-                        for (int triesLeft = 3; triesLeft > 0; triesLeft--)
-                        {
-                            var offer = Bot.NewTradeOffer(new SteamID(id));
-                            try
-                            {
-                                foreach (JObject item in json["request"]["items"])
-                                {
-                                    offer.Items.AddMyItem(
-                                        (int)item["appid"],
-                                        (long)item["contextid"],
-                                        (long)item["assetid"],
-                                        (long)item["amount"]);
-                                }
-                                Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-                                if (offer.Items.NewVersion)
-                                {
-                                    string newOfferId;
-                                    if (offer.SendWithToken(out newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"]))
-                                    {
-                                        Task.Delay(5000) //the delay might fix #35
-                                            .ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-                                        Log.Success("Trade offer sent : Offer ID " + newOfferId);
-                                        return true;
-                                    }
-                                }
-                            }
-                            catch (Exception ex)
-                            {
-                                Log.Debug(ex.Message);
-                                if (ex.InnerException is WebException wex)
-                                {
-                                    string resp = new StreamReader(wex.Response.GetResponseStream()).ReadToEnd();
-                                    Log.Debug(resp);
-                                }
-                                string response = Utility.Request.Get($"http://steamcommunity.com/inventory/{Bot.SteamUser.SteamID.ConvertToUInt64()}/730/2?l=russian&count=5000");
-                                JObject parsed = JObject.Parse(response);
-                                Log.Debug("Could not send trade. Additional information:");
-                                Log.Debug(parsed.ToString(Formatting.None));
-                                Log.Debug(json.ToString(Formatting.None));
-                                Thread.Sleep(5000); //sleep tight, steam probably went 500
-                            }
-                        }
-                        return false;
-                    } else {
-                        return true; //UHHHHHHHHHHHHHHHHHHHH
-                    }
+                    return true;
                 }
                 else
+                {
+                    Log.Error("TM thinks that I did not send the offer.");
                     return false;
+                }
             }
             catch (Exception ex)
             {
@@ -581,7 +564,7 @@ namespace CSGOTM
                 return false;
             }
         }
-        
+
         bool RequestPurchasedItems(string botID)
         {
             Log.Info("Requesting items");
