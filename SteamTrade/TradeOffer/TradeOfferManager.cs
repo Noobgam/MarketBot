@@ -77,7 +77,9 @@ namespace SteamTrade.TradeOffer
 
         private bool HandleTradeOfferUpdate(Offer offer)
         {
-            if(knownTradeOffers.ContainsKey(offer.TradeOfferId) && knownTradeOffers[offer.TradeOfferId] == offer.TradeOfferState)
+            if (offer.TradeOfferId == null)
+                return false;
+            if (knownTradeOffers.TryGetValue(offer.TradeOfferId, out TradeOfferState knownState) && knownState == offer.TradeOfferState)
             {
                 return false;
             }
@@ -112,6 +114,7 @@ namespace SteamTrade.TradeOffer
 
         private void SendOfferToHandler(Offer offer)
         {
+            //lock (knownTradeOffers)
             knownTradeOffers[offer.TradeOfferId] = offer.TradeOfferState;
             OnTradeOfferUpdated(new TradeOffer(session, offer));
         }

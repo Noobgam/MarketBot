@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using Newtonsoft.Json;
 using SteamKit2;
-using System.Threading;
 
 namespace SteamTrade
 {
@@ -23,15 +22,8 @@ namespace SteamTrade
             while ((result == null || result.result.items == null) && attempts <= 3)
             {
                 var url = "http://api.steampowered.com/IEconItems_440/GetPlayerItems/v0001/?key=" + apiKey + "&steamid=" + steamId;
-                try
-                {
-                    string response = steamWeb.Fetch(url, "GET", null, false);
-                    result = JsonConvert.DeserializeObject<InventoryResponse>(response);
-                }
-                catch {
-                    //if steam returns with 500 or something, we better wait a little.
-                    Thread.Sleep(1000);
-                } 
+                string response = steamWeb.Fetch(url, "GET", null, false);
+                result = JsonConvert.DeserializeObject<InventoryResponse>(response);
                 attempts++;
             }
             return new Inventory(result.result);

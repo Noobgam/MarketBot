@@ -80,6 +80,12 @@ namespace CSGOTM
                 .ContinueWith(tsk => ApiSemaphore.Release());
         }
 
+        double ALP = 2.0 / 40;
+        double EMA = 0.0;
+        void ShiftEma(double x)
+        {
+            EMA = EMA * (1 - ALP) + x * ALP;
+        }
 
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall)
         {
@@ -92,16 +98,39 @@ namespace CSGOTM
                 temp.Start();
                 response = Utility.Request.Get("https://market.csgo.com" + url);
                 temp.Stop();
-                File.AppendAllText($"get_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
+                ShiftEma(0);
+                //File.AppendAllText($"get_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
                 Log.ApiError($"GET call to https://market.csgo.com{url} failed");
-                Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
+                if (ex is WebException webex)
+                {
+                    if (webex.Status == WebExceptionStatus.ProtocolError) {
+                        if (webex.Response is HttpWebResponse resp)
+                        {
+                            if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521)
+                            {
+                                Log.ApiError($"Status code: {(int)resp.StatusCode}");
+                            }
+                        } 
+                    }
+                }
+                else
+                {
+                    Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
+                }
+                ShiftEma(1);
             }
             finally
             {
                 ReleaseApiSemaphore(method);
+            }
+            Console.WriteLine((100 * EMA).ToString("n2"));
+            if (response == "{\"error\":\"Bad KEY\"}")
+            {
+                Log.ApiError("Bad key");
+                return null;
             }
             return response;
         }
@@ -137,16 +166,39 @@ namespace CSGOTM
                 temp.Start();
                 response = Utility.Request.Post("https://market.csgo.com" + url, data);
                 temp.Stop();
-                File.AppendAllText($"post_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
+                ShiftEma(0);
+                //File.AppendAllText($"post_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
-                Log.ApiError($"POST call to https://market.csgo.com{url} with data: {data} failed");
-                Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
+                Log.ApiError($"POST call to https://market.csgo.com{url} failed");
+                if (ex is WebException webex)
+                {
+                    if (webex.Status == WebExceptionStatus.ProtocolError)
+                    {
+                        if (webex.Response is HttpWebResponse resp)
+                        {
+                            if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521)
+                            {
+                                Log.ApiError($"Status code: {(int)resp.StatusCode}");
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
+                }
+                ShiftEma(1);
             }
             finally
             {
                 ReleaseApiSemaphore(method);
+            }
+            if (response == "{\"error\":\"Bad KEY\"}")
+            {
+                Log.ApiError("Bad key");
+                return null;
             }
             return response;
         }
@@ -451,6 +503,10 @@ namespace CSGOTM
                 Thread.Sleep(1000);
                 if (json["success"] == null)
                     continue;
+                if ((bool)json["success"] == false)
+                {
+                    Log.ApiError((string)json["error"]);
+                }
                 else if ((bool)json["success"])
                 {
                     if ((bool)json["manual"])
@@ -550,6 +606,7 @@ namespace CSGOTM
                 }
                 else if ((bool)json["success"])
                 {
+                    Log.Success("TM knows about my offer");
                     return true;
                 }
                 else
@@ -765,6 +822,7 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
+            //url += "&partner=447962514&token=Bh4hxu3d"; //ugly hack, but nothing else I can do for now
             string a = ExecuteApiRequest(url, ApiMethod.Buy);
             if (a == null)
                 return false;

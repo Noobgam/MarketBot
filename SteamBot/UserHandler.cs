@@ -39,7 +39,7 @@ namespace SteamBot
         {
             Bot = bot;
             OtherSID = sid;
-            //GetOtherInventory();
+            GetOtherInventory();
         }
 
         private bool HandleWaitingOnUserResponse(string message)
@@ -111,7 +111,7 @@ namespace SteamBot
         /// </value>
         public bool IsAdmin
         {
-            get { return Bot.Admins.Contains(OtherSID); }
+            get { return false; }
         }
 
         /// <summary>
