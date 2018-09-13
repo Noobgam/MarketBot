@@ -822,7 +822,7 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            url += "&partner=447962514&token=Bh4hxu3d"; //ugly hack, but nothing else I can do for now
+            //url += "&partner=447962514&token=Bh4hxu3d"; //ugly hack, but nothing else I can do for now
             string a = ExecuteApiRequest(url, ApiMethod.Buy);
             if (a == null)
                 return false;
