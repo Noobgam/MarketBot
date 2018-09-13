@@ -77,6 +77,8 @@ namespace SteamTrade.TradeOffer
 
         private bool HandleTradeOfferUpdate(Offer offer)
         {
+            if (offer.TradeOfferId == null)
+                return false;
             if (knownTradeOffers.TryGetValue(offer.TradeOfferId, out TradeOfferState knownState) && knownState == offer.TradeOfferState)
             {
                 return false;
