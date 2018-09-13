@@ -75,7 +75,7 @@ namespace SteamBot
         public override void OnTradeAwaitingConfirmation(long tradeOfferID)
         {
             Log.Warn("Trade ended awaiting confirmation");
-            SendChatMessage("Please complete the confirmation to finish the trade");
+            //SendChatMessage("Please complete the confirmation to finish the trade");
         }
 
         public override void OnTradeOfferUpdated(TradeOffer offer)
