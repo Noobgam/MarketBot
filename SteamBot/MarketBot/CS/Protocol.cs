@@ -103,6 +103,7 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
+                Log.ApiError($"GET call to https://market.csgo.com{url} failed");
                 if (ex is WebException webex)
                 {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
@@ -117,7 +118,6 @@ namespace CSGOTM
                 }
                 else
                 {
-                    Log.ApiError($"GET call to https://market.csgo.com{url} failed");
                     Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
                 ShiftEma(1);
@@ -171,6 +171,7 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
+                Log.ApiError($"POST call to https://market.csgo.com{url} failed");
                 if (ex is WebException webex)
                 {
                     if (webex.Status == WebExceptionStatus.ProtocolError)
@@ -186,7 +187,6 @@ namespace CSGOTM
                 }
                 else
                 {
-                    Log.ApiError($"POST call to https://market.csgo.com{url} failed");
                     Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
                 ShiftEma(1);
