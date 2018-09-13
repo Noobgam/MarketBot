@@ -451,6 +451,10 @@ namespace CSGOTM
                 Thread.Sleep(1000);
                 if (json["success"] == null)
                     continue;
+                if ((bool)json["success"] == false)
+                {
+                    Log.ApiError((string)json["error"]);
+                }
                 else if ((bool)json["success"])
                 {
                     if ((bool)json["manual"])
@@ -550,6 +554,7 @@ namespace CSGOTM
                 }
                 else if ((bool)json["success"])
                 {
+                    Log.Success("TM knows about my offer");
                     return true;
                 }
                 else

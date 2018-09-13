@@ -196,7 +196,7 @@ namespace SteamBot
 
             logFile = config.LogFile;
             Log = new Log(logFile, DisplayName, consoleLogLevel, fileLogLevel);
-            bool tryWith2FA = true;
+            bool tryWith2FA = false;
             if (tryWith2FA)
             {
                 var mobileAuthCode = GetMobileAuthCode();

@@ -25,6 +25,7 @@ namespace SteamBot
 
         public override void OnLoginCompleted()
         {
+            Bot.SetGamePlaying(730);
         }
 
         public override void OnChatRoomMessage(SteamID chatID, SteamID sender, string message)
