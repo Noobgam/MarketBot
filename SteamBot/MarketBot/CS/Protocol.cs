@@ -96,21 +96,21 @@ namespace CSGOTM
             }
             catch (Exception ex)
             {
-                Log.ApiError($"GET call to https://market.csgo.com{url} failed");
                 if (ex is WebException webex)
                 {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
                         if (webex.Response is HttpWebResponse resp)
                         {
-                            if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520)
+                            if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521)
                             {
-                                Log.ApiError($"Status code: {(int)resp.StatusCode == 500}");
+                                Log.ApiError($"Status code: {(int)resp.StatusCode}");
                             }
-                        }
+                        } 
                     }
                 }
                 else
                 {
+                    Log.ApiError($"GET call to https://market.csgo.com{url} failed");
                     Log.ApiError($"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
             }
