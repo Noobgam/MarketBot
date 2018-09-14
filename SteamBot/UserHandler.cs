@@ -39,7 +39,6 @@ namespace SteamBot
         {
             Bot = bot;
             OtherSID = sid;
-            GetOtherInventory();
         }
 
         private bool HandleWaitingOnUserResponse(string message)
@@ -69,7 +68,7 @@ namespace SteamBot
         /// </example>
         public void GetOtherInventory()
         {
-            otherInventoryTask = Task.Factory.StartNew(() =>Inventory.FetchInventory(OtherSID, Bot.ApiKey, SteamWeb));
+            otherInventoryTask = Task.Factory.StartNew(() => Inventory.FetchInventory(OtherSID, Bot.ApiKey, SteamWeb));
         }
 
         public Inventory OtherInventory
