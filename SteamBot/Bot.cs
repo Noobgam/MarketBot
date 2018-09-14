@@ -1058,18 +1058,7 @@ namespace SteamBot
             #region Login
             steamCallbackManager.Subscribe<SteamClient.ConnectedCallback>(callback =>
             {
-                Log.Debug("Connection Callback: {0}", callback.Result);
-
-                if (callback.Result == EResult.OK)
-                {
-                    UserLogOn();
-                }
-                else
-                {
-                    Log.Error("Failed to connect to Steam Community, trying again...");
-                    SteamClient.Connect();
-                }
-
+                UserLogOn();
             });
 
             steamCallbackManager.Subscribe<SteamUser.LoggedOnCallback>(callback =>
