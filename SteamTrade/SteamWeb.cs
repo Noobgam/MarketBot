@@ -66,6 +66,7 @@ namespace SteamTrade
         /// <remarks>If you want to know how the request method works, use: <see cref="SteamWeb.Request"/></remarks>
         public string Fetch(string url, string method, NameValueCollection data = null, bool ajax = true, string referer = "", bool fetchError = false)
         {
+            Console.WriteLine("Url " + url);
             // Reading the response as stream and read it to the end. After that happened return the result as string.
             using (HttpWebResponse response = Request(url, method, data, ajax, referer, fetchError))
             {
@@ -343,7 +344,7 @@ namespace SteamTrade
 
                 // rsa encrypt it with the public key for the universe we're on
                 byte[] cryptedSessionKey;
-                using (RSACrypto rsa = new RSACrypto(KeyDictionary.GetPublicKey(client.ConnectedUniverse)))
+                using (RSACrypto rsa = new RSACrypto(KeyDictionary.GetPublicKey(client.Universe)))
                 {
                     cryptedSessionKey = rsa.Encrypt(sessionKey);
                 }
