@@ -82,18 +82,20 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
     <Compile Include="MarketBot\CS\Experiment.cs" />
-    <Compile Include="MarketBot\CS\Logic.cs" />
-    <Compile Include="MarketBot\CS\Protocol.cs" />
+    <Compile Include="MarketBot\CS\Bot\Logic.cs" />
+    <Compile Include="MarketBot\CS\Bot\Protocol.cs" />
+    <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
     <Compile Include="MarketBot\CS\Utility.cs" />
     <Compile Include="MarketBot\Utility\Encode.cs" />
     <Compile Include="MarketBot\Utility\Request.cs" />
     <Compile Include="MarketBot\Utility\Item.cs" />
     <Compile Include="MarketBot\Utility\Economy.cs" />
-    <Compile Include="MarketBot\Utility\Linker.cs" />
-    <Compile Include="MarketBot\Utility\MarketLogger.cs" />
+    <Compile Include="MarketBot\CS\Bot\MarketLogger.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MarketBot\Utility\Tasking.cs" />
     <Compile Include="Notifications.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />
     <Compile Include="TF2GC\Crafting.cs" />

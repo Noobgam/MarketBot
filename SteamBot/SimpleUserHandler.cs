@@ -26,10 +26,6 @@ namespace SteamBot
 
         public override void OnLoginCompleted()
         {
-            //Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
-            //Bot.SteamGuardAccount.DeactivateAuthenticator();
-            //Task.Delay(5000).ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-            //Bot.SetGamePlaying(730); I wanna play =(
         }
 
         public override void OnChatRoomMessage(SteamID chatID, SteamID sender, string message)

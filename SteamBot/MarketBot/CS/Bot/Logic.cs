@@ -12,22 +12,25 @@ using System.Linq;
 using System.Collections.Concurrent;
 using SteamBot.MarketBot.CS;
 
-namespace CSGOTM {
+namespace CSGOTM
+{
     public class Logic {
-        public Utility.MarketLogger Log;
-        private Mutex DatabaseLock = new Mutex();
-        private Mutex CurrentItemsLock = new Mutex();
-        private Mutex RefreshItemsLock = new Mutex();
-        private Mutex UnstickeredRefreshItemsLock = new Mutex();
+        public MarketLogger Log;
+        private object DatabaseLock = new object();
+        private object CurrentItemsLock = new object();
+        private object RefreshItemsLock = new object();
+        private object UnstickeredRefreshItemsLock = new object();
         private static double MAXFROMMEDIAN = 0.78;
         private static double WANT_TO_BUY = 0.8;
         private static double UNSTICKERED_ORDER = 0.78;
         NewBuyFormula newBuyFormula = null;
         SellMultiplier sellMultiplier = null;
+        TMBot parent;
 
-        public Logic(String botName)
+        public Logic(TMBot bot)
         {
-            this.botName = botName;
+            this.botName = bot.config.Username;
+            parent = bot;
             PREFIXPATH = "CS/" + botName;
             UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
             DATABASEPATH = PREFIXPATH + "/database.txt";
@@ -43,7 +46,7 @@ namespace CSGOTM {
 
         private void StartUp()
         {
-            while (Protocol == null)
+            while (!parent.ReadyToRun)
             {
                 Thread.Sleep(10);
             }
@@ -66,7 +69,7 @@ namespace CSGOTM {
 
         void RefreshConfig()
         {
-            while (true)
+            while (parent.IsRunning())
             {
                 try
                 {
@@ -74,7 +77,7 @@ namespace CSGOTM {
                         "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/"));
                     if (!data.TryGetValue(botName, out JToken token))
                     {
-                        Log.Error("Config contains no bot definition.");
+                        Log.Error("Gist config contains no bot definition.");
                     }
                     else
                     {
@@ -181,32 +184,12 @@ namespace CSGOTM {
                 {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
+                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
             }
-        }
-
-        private void AddGraphData() {
-            Thread.Sleep(5000);
-            string response = Utility.Request.Get("http://steamcommunity.com/inventory/76561198321472965/730/2?l=russian&count=5000");
-            JObject parsed = JObject.Parse(response);
-            JArray items = (JArray) parsed["descriptions"];
-            double price = 0;
-            foreach (var item in items) {
-                try {
-                    string name = (string) item["market_name"];
-                    price += currentItems[name][0];
-                } catch
-                {
-
-                }
-            }
-            price += Protocol.GetMoney();
-            string line = DateTime.Now + ";" + (price / 100) + "\n";
-            File.AppendAllText(MONEYTPATH, line);
         }
 
         private void SetOrderForUnstickered() {
-            while (true) {
+            while (parent.IsRunning()) {
                 Thread.Sleep(1000);
                 if (needOrderUnstickered.Count > 0) {
                     var top = needOrderUnstickered.Peek();
@@ -292,7 +275,7 @@ namespace CSGOTM {
         }
 
         void SetNewOrder() {
-            while (true) {
+            while (parent.IsRunning()) {
                 Thread.Sleep(1000);
                 if (needOrder.Count != 0) {
                     HistoryItem item = needOrder.Dequeue();
@@ -318,7 +301,7 @@ namespace CSGOTM {
         }
 
         void AddNewItems() {
-            while (true) {
+            while (parent.IsRunning()) {
                 Thread.Sleep(3000); //dont want to spin nonstop
                 SpinWait.SpinUntil(() => (doNotSell || toBeSold.IsEmpty));
                 if (doNotSell)
@@ -435,7 +418,7 @@ namespace CSGOTM {
 
         void UnstickeredRefresh()
         {
-            while (true)
+            while (parent.IsRunning())
             {
                 Thread.Sleep(1000);
                 try {
@@ -523,7 +506,7 @@ namespace CSGOTM {
         }
 
         void SellFromQueue() {
-            while (true)
+            while (parent.IsRunning())
             {
                 Thread.Sleep(1000); //dont want to spin nonstop
                 while (refreshPrice.IsEmpty && toBeSold.IsEmpty)
@@ -551,7 +534,7 @@ namespace CSGOTM {
                             string[] ui_id = item.ui_id.Split('_');
                             if (!Protocol.SellNew(ui_id[1], ui_id[2], price))
                             {
-                                Log.ApiError("Could not sell new item, enqueuing it again.");
+                                Log.ApiError(TMBot.RestartPriority.SmallError, "Could not sell new item, enqueuing it again.");
                             } else
                             {
                                 Log.Success($"New {item.i_market_name} is on sale for {price}");
@@ -566,7 +549,7 @@ namespace CSGOTM {
         }
 
         void ParsingCycle() {
-            while (true) {
+            while (parent.IsRunning()) {
                 if (ParseNewDatabase()) {
                     Log.Success("Finished parsing new DB");
                 }
@@ -577,10 +560,19 @@ namespace CSGOTM {
             }
         }
 
+        bool WaitForTaskOrTimeout(Func<bool> condition, int timeout)
+        {
+            Task waitTask = Task.Run(async () =>
+            {
+                while (!condition()) await Task.Delay(100);
+            });
+            return waitTask == Task.WhenAny(waitTask, Task.Delay(timeout));
+        }
+
         void SaveDataBaseCycle() {
-            while (true) {
+            while (parent.IsRunning()) {
                 SaveDataBase();
-                Thread.Sleep(Consts.MINORCYCLETIMEINTERVAL);
+                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
             }
         }
 

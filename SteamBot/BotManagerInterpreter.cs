@@ -37,12 +37,14 @@ namespace SteamBot
                         new BotManagerOption("clear", "clears this console", s => clearConsole = s != null),
                         new BotManagerOption("auth", "auth (X)=(Y) where X = the username or index of the configured bot and Y = the steamguard code",
                                              AuthSet),
-                        new BotManagerOption("exec", 
+                        new BotManagerOption("exec",
                                              "exec (X) (Y) where X = the username or index of the bot and Y = your custom command to execute",
                                              ExecCommand),
                         new BotManagerOption("input",
                                              "input (X) (Y) where X = the username or index of the bot and Y = your input",
-                                             InputCommand)
+                                             InputCommand),
+                        new BotManagerOption("restart", "restart (X) where X = the username or index of the configured bot",
+                                            RestartBot)
                     };
         }
 
@@ -72,6 +74,11 @@ namespace SteamBot
                     }
                 }
             }
+        }
+
+        public void RestartBot(string command)
+        {
+            manager.RestartBot(command);
         }
 
         /// <summary>

@@ -146,9 +146,19 @@ namespace SteamBot
         /// </summary>
         [Obsolete("Refactored to be Log instead of log")]
         public Log log { get { return Log; } }
+        
+        public CSGOTM.TMBot MarketBot;
+        private bool RestartFlag = false;
 
-        public CSGOTM.Protocol CSConnection;
-        public CSGOTM.Logic CSLogic;
+        public bool WantToRestart()
+        {
+            return RestartFlag;
+        }
+
+        public void ScheduleRestart()
+        {
+            RestartFlag = true;
+        }
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
@@ -196,7 +206,7 @@ namespace SteamBot
 
             logFile = config.LogFile;
             Log = new Log(logFile, DisplayName, consoleLogLevel, fileLogLevel);
-            bool tryWith2FA = true;
+            bool tryWith2FA = true; //2FA by default to avoid error when logging in
             if (tryWith2FA)
             {
                 var mobileAuthCode = GetMobileAuthCode();
@@ -232,11 +242,9 @@ namespace SteamBot
             botThread.DoWork += BackgroundWorkerOnDoWork;
             botThread.RunWorkerCompleted += BackgroundWorkerOnRunWorkerCompleted;
 
-            //Starting CS:
 
-            CSConnection = new CSGOTM.Protocol(this, config.MarketApiKey);
-            CSLogic = new CSGOTM.Logic(config.Username);
-            Utility.Linker.Link(CSConnection, CSLogic, new Utility.MarketLogger($"CSGO_log.{config.Username}", $"{config.DisplayName} CS:"));
+            //Starting CS:
+            MarketBot = new CSGOTM.TMBot(this, config);
         }
 
         ~Bot()
@@ -289,6 +297,7 @@ namespace SteamBot
             IsRunning = false;
             Log.Debug("Trying to shut down bot thread.");
             SteamClient.Disconnect();
+            MarketBot.Stop();
             botThread.CancelAsync();
             while (botThread.IsBusy)
                 Thread.Yield();
@@ -1120,6 +1129,7 @@ namespace SteamBot
 
                 if (Trade.CurrentSchema == null)
                 {
+                    Trade.CurrentSchema = new Schema(); //default constructing to evade multiple downloading.
                     Log.Info("Downloading Schema...");
                     Trade.CurrentSchema = Schema.FetchSchema(ApiKey, schemaLang);
                     Log.Success("Schema Downloaded!");
@@ -1321,6 +1331,9 @@ namespace SteamBot
                     CloseTrade();
                     Log.Warn("Disconnected from Steam Network!");
                     CancelTradeOfferPollingThread();
+                } else
+                {
+                    Log.Debug("Couldn't login, retrying");
                 }
 
                 SteamClient.Connect();

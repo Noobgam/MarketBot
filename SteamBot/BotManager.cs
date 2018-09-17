@@ -7,6 +7,7 @@ using System.Threading;
 using System.Windows.Forms;
 using Newtonsoft.Json;
 using SteamKit2;
+using System.Threading.Tasks;
 
 namespace SteamBot
 {
@@ -23,8 +24,8 @@ namespace SteamBot
         public BotManager()
         {
             useSeparateProcesses = false;
-            new List<Bot>();
             botProcs = new List<RunningBot>();
+            Task.Run((Action)Nanny);
         }
 
         ~BotManager()
@@ -73,6 +74,22 @@ namespace SteamBot
             }
 
             return true;
+        }
+
+        public void Nanny()
+        {
+            while (!disposed)
+            {
+                foreach (RunningBot bot in botProcs)
+                {
+                    if (bot.TheBot.WantToRestart())
+                    {
+                        RestartBot(bot.BotConfig.Username);
+                        Thread.Sleep(100);
+                    }
+                }
+                Thread.Sleep(5000);
+            }
         }
 
         /// <summary>
@@ -140,6 +157,31 @@ namespace SteamBot
             foreach (var bot in res)
             {
                 bot.Stop();
+            }
+        }
+
+        public void RestartBot(int index)
+        {
+            if (index < ConfigObject.Bots.Length)
+            {
+                StopBot(index);
+                StartBot(index);
+            }
+        }
+
+        public void RestartBot(string botname)
+        {
+            if (!String.IsNullOrEmpty(botname))
+            {
+                if (int.TryParse(botname, out int index))
+                {
+                    RestartBot(index);
+                }
+                else
+                {
+                    StopBot(botname);
+                    StartBot(botname);
+                }
             }
         }
 

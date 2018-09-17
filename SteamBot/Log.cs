@@ -13,6 +13,7 @@ namespace SteamBot
             Success,
             Warn,
             Error,
+            ApiError,
             Interface, // if the user needs to input something
             Nothing    // not recommended; it basically silences
                        // the console output because nothing is
@@ -68,6 +69,12 @@ namespace SteamBot
         public void Warn(string data, params object[] formatParams)
         {
             _OutputLine(LogLevel.Warn, data, formatParams);
+        }
+
+        // This outputs a log entry of the level error.
+        public void ApiError(string data, params object[] formatParams)
+        {
+            _OutputLine(LogLevel.ApiError, data, formatParams);
         }
 
         // This outputs a log entry of the level error.
@@ -134,22 +141,24 @@ namespace SteamBot
         {
             switch (level)
             {
-            case LogLevel.Info:
-                return "info";
-            case LogLevel.Debug:
-                return "debug";
-            case LogLevel.Success:
-                return "success";
-            case LogLevel.Warn:
-                return "warn";
-            case LogLevel.Error:
-                return "error";
-            case LogLevel.Interface:
-                return "interface";
-            case LogLevel.Nothing:
-                return "nothing";
-            default:
-                return "undef";
+                case LogLevel.Info:
+                    return "info";
+                case LogLevel.Debug:
+                    return "debug";
+                case LogLevel.Success:
+                    return "success";
+                case LogLevel.Warn:
+                    return "warn";
+                case LogLevel.ApiError:
+                    return "apierror";
+                case LogLevel.Error:
+                    return "error";
+                case LogLevel.Interface:
+                    return "interface";
+                case LogLevel.Nothing:
+                    return "nothing";
+                default:
+                    return "undef";
             }
         }
 
@@ -159,19 +168,22 @@ namespace SteamBot
         {
             switch (level)
             {
-            case LogLevel.Info:
-            case LogLevel.Debug:
-                return ConsoleColor.White;
-            case LogLevel.Success:
-                return ConsoleColor.Green;
-            case LogLevel.Warn:
-                return ConsoleColor.Yellow;
-            case LogLevel.Error:
-                return ConsoleColor.Red;
-            case LogLevel.Interface:
-                return ConsoleColor.DarkCyan;
-            default:
-                return DefaultConsoleColor;
+                case LogLevel.Info:
+                    return ConsoleColor.White;
+                case LogLevel.Debug:
+                    return ConsoleColor.DarkYellow;
+                case LogLevel.ApiError:
+                    return ConsoleColor.Magenta;
+                case LogLevel.Success:
+                    return ConsoleColor.Green;
+                case LogLevel.Warn:
+                    return ConsoleColor.Yellow;
+                case LogLevel.Error:
+                    return ConsoleColor.Red;
+                case LogLevel.Interface:
+                    return ConsoleColor.DarkCyan;
+                default:
+                    return DefaultConsoleColor;
             }
         }
 

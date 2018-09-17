@@ -234,8 +234,15 @@ namespace SteamTrade.TradeOffer
         internal bool Request(string url, NameValueCollection data, string referer, string tradeOfferId, out string newTradeOfferId)
         {
             newTradeOfferId = "";
-
-            string resp = steamWeb.Fetch(url, "POST", data, false, referer);
+            string resp = "";
+            try
+            {
+                resp = steamWeb.Fetch(url, "POST", data, false, referer);
+            }
+            catch
+            {
+                return false;
+            }
             if (!String.IsNullOrEmpty(resp))
             {
                 try
