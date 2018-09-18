@@ -8,22 +8,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace CSGOTM
-{
-    public class TMBot
-    {
-        public void Stop()
-        {
+namespace CSGOTM {
+    public class TMBot {
+        public void Stop() {
             Log.Dispose();
         }
 
-        public TMBot(Bot bot, Configuration.BotInfo config)
-        {
+        public TMBot(Bot bot, Configuration.BotInfo config) {
             this.bot = bot;
             this.config = new BotConfig(config);
 
             logic = new Logic(this);
-            protocol = new Protocol(this);           
+            protocol = new Protocol(this);
             Log = new MarketLogger(this);
 
             logic.Log = Log;
@@ -35,10 +31,8 @@ namespace CSGOTM
             Task.Run((Action)Delayer);
         }
 
-        private void Delayer()
-        {
-            while (!bot.IsLoggedIn)
-            {
+        private void Delayer() {
+            while (!bot.IsLoggedIn) {
                 Thread.Sleep(10);
             }
 
@@ -47,31 +41,25 @@ namespace CSGOTM
             Task.Run((Action)InventoryFetcher);
         }
 
-        private bool Alarm()
-        {
+        private bool Alarm() {
             //TODO(nobogam): implement this
             return false;
         }
 
-        private void InventoryFetcher()
-        {
+        private void InventoryFetcher() {
             while (!WaitingForRestart) {
                 GenericInventory inv = new GenericInventory(bot.SteamWeb);
-                inv.load(730, new long[]{ 2 }, bot.SteamUser.SteamID);
+                inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID);
                 Thread.Sleep(5000); //it might take a while to load
                 LocalRequest.RawPut(Consts.Endpoints.PutCurrentInventory, config.Username, inv.items.Count.ToString());
                 Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //60 minutes this data is pretty much static
-            }            
+            }
         }
 
-        private void Restarter()
-        {
-            while (!WaitingForRestart)
-            {
-                if (prior >= (int)RestartPriority.Alarm)
-                {
-                    if (prior >= (int)RestartPriority.Restart)
-                    {
+        private void Restarter() {
+            while (!WaitingForRestart) {
+                if (prior >= (int)RestartPriority.Alarm) {
+                    if (prior >= (int)RestartPriority.Restart) {
                         WaitingForRestart = true;
                         Task.Delay(5000)
                             .ContinueWith(task => bot.ScheduleRestart());
@@ -84,25 +72,22 @@ namespace CSGOTM
             }
         }
 
-        public void FlagError(RestartPriority error)
-        {
+        public void FlagError(RestartPriority error) {
             prior += (int)error;
         }
 
         //basically percentages
-        public enum RestartPriority
-        {
+        public enum RestartPriority {
             UnknownError = 0,
             SmallError = 3,
             MediumError = 10,
             BigError = 15,
             Alarm = 60,
-            CriticalError = 100, 
+            CriticalError = 100,
             Restart = 100,
         }
 
-        public bool IsRunning()
-        {
+        public bool IsRunning() {
             return !WaitingForRestart;
         }
 

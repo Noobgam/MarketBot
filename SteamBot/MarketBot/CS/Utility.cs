@@ -5,8 +5,7 @@ using System.IO;
 using System.Threading;
 
 namespace CSGOTM {
-    public static class Consts
-    {
+    public static class Consts {
         public const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         public const int APICOOLDOWN = 1000 * 3; // 3 seconds
         public const int SECOND = 1050; //used to restrict rps.
@@ -19,8 +18,7 @@ namespace CSGOTM {
 
         public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
 
-        public static class Endpoints
-        {
+        public static class Endpoints {
             public const string localhost = "http://localhost:4343";
             public const string GetBestToken = "/getbesttoken/";
             public const string PutCurrentInventory = "/putInventory/";
@@ -68,8 +66,7 @@ namespace CSGOTM {
         public string placed;
     }
 
-    public class Order
-    {
+    public class Order {
         public string i_classid;
         public string i_instanceid;
         public string i_market_hash_name;
@@ -78,8 +75,7 @@ namespace CSGOTM {
         public string o_state;
     }
 
-    public class NewItem
-    {
+    public class NewItem {
         public string i_classid;
         public string i_instanceid;
         public string i_market_name;
@@ -94,8 +90,7 @@ namespace CSGOTM {
             i_classid = item[mapping["c_classid"]];
             i_instanceid = item[mapping["c_instanceid"]];
             i_market_name = item[mapping["c_market_name"]];
-            if (i_market_name.Length >= 2)
-            {
+            if (i_market_name.Length >= 2) {
                 i_market_name = i_market_name.Remove(0, 1);
                 i_market_name = i_market_name.Remove(i_market_name.Length - 1);
             }
@@ -107,8 +102,7 @@ namespace CSGOTM {
         public string type;
         public string data;
 
-        public Message(string type, string data)
-        {
+        public Message(string type, string data) {
             this.type = type;
             this.data = data;
         }
@@ -174,7 +168,7 @@ public static class BinarySerialization {
     public static T ReadFromBinaryFile<T>(string filePath) {
         using (Stream stream = File.Open(filePath, FileMode.Open)) {
             var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            return (T) binaryFormatter.Deserialize(stream);
+            return (T)binaryFormatter.Deserialize(stream);
         }
     }
 }
@@ -187,8 +181,7 @@ public static class JsonSerialization {
                 Newtonsoft.Json.JsonConvert.SerializeObject(objectToWrite, Newtonsoft.Json.Formatting.Indented);
             writer = new StreamWriter(filePath, append);
             writer.Write(contentsToWriteToFile);
-        }
-        finally {
+        } finally {
             if (writer != null)
                 writer.Close();
         }
@@ -200,8 +193,7 @@ public static class JsonSerialization {
             reader = new StreamReader(filePath);
             var fileContents = reader.ReadToEnd();
             return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(fileContents);
-        }
-        finally {
+        } finally {
             if (reader != null)
                 reader.Close();
         }

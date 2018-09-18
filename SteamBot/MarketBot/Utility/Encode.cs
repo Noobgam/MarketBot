@@ -1,12 +1,9 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace SteamBot.MarketBot.Utility
-{
-    public class Encode
-    {
-        public static string DecodeEncodedNonAsciiCharacters(string value)
-        {
+namespace SteamBot.MarketBot.Utility {
+    public class Encode {
+        public static string DecodeEncodedNonAsciiCharacters(string value) {
             return Regex.Replace(
                 value,
                 @"\\u(?<Value>[a-zA-Z0-9]{4})",

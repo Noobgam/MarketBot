@@ -11,14 +11,11 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 
-namespace MarketBot.Server
-{
-    public class Core : IDisposable
-    {
+namespace MarketBot.Server {
+    public class Core : IDisposable {
         private HttpListener server;
 
-        public Core()
-        {
+        public Core() {
             server = new HttpListener();
             CurSizes = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.localhost + Consts.Endpoints.GetBestToken);
@@ -36,8 +33,7 @@ namespace MarketBot.Server
             }
         }
 
-        private void Listen()
-        {
+        private void Listen() {
             while (!disposed) {
                 ThreadPool.QueueUserWorkItem(Process, server.GetContext());
             }
@@ -45,8 +41,7 @@ namespace MarketBot.Server
 
         private Dictionary<string, int> CurSizes;
 
-        private void Process(object o)
-        {
+        private void Process(object o) {
             var context = o as HttpListenerContext;
             JObject resp = null;
             try {
@@ -91,8 +86,7 @@ namespace MarketBot.Server
 
         // process request and make response
 
-        private void Respond(HttpListenerContext ctx, JObject json)
-        {
+        private void Respond(HttpListenerContext ctx, JObject json) {
             //TODO(noobgam): prettify if User-Agent is defined
             string resp = json.ToString(
                 ctx.Request.Headers.GetValues("User-Agent") == null
@@ -108,16 +102,14 @@ namespace MarketBot.Server
             output.Close();
         }
 
-        public void Stop()
-        {
+        public void Stop() {
             Dispose(true);
         }
 
         #region IDisposable Support
         private bool disposed = false; // To detect redundant calls
 
-        protected virtual void Dispose(bool disposing)
-        {
+        protected virtual void Dispose(bool disposing) {
             if (!disposed) {
                 if (disposing) {
                     if (server.IsListening)
@@ -128,8 +120,7 @@ namespace MarketBot.Server
             }
         }
 
-        public void Dispose()
-        {
+        public void Dispose() {
             Dispose(true);
         }
         #endregion

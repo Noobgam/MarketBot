@@ -5,12 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CSGOTM
-{
-    public class BotConfig
-    {
-        public BotConfig(Configuration.BotInfo steamConfig)
-        {
+namespace CSGOTM {
+    public class BotConfig {
+        public BotConfig(Configuration.BotInfo steamConfig) {
             Api = steamConfig.MarketApiKey;
             Username = steamConfig.Username;
             DisplayName = steamConfig.DisplayName;
