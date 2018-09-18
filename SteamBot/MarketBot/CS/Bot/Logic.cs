@@ -16,10 +16,10 @@ namespace CSGOTM
 {
     public class Logic {
         public MarketLogger Log;
-        private object DatabaseLock = new object();
-        private object CurrentItemsLock = new object();
-        private object RefreshItemsLock = new object();
-        private object UnstickeredRefreshItemsLock = new object();
+        private readonly object DatabaseLock = new object();
+        private readonly object CurrentItemsLock = new object();
+        private readonly object RefreshItemsLock = new object();
+        private readonly object UnstickeredRefreshItemsLock = new object();
         private static double MAXFROMMEDIAN = 0.78;
         private static double WANT_TO_BUY = 0.8;
         private static double UNSTICKERED_ORDER = 0.78;
@@ -558,15 +558,6 @@ namespace CSGOTM
                 }
                 Thread.Sleep(Consts.PARSEDATABASEINTERVAL);
             }
-        }
-
-        bool WaitForTaskOrTimeout(Func<bool> condition, int timeout)
-        {
-            Task waitTask = Task.Run(async () =>
-            {
-                while (!condition()) await Task.Delay(100);
-            });
-            return waitTask == Task.WhenAny(waitTask, Task.Delay(timeout));
         }
 
         void SaveDataBaseCycle() {

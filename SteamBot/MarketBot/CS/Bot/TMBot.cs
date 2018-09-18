@@ -1,4 +1,5 @@
 ﻿using SteamBot;
+using SteamTrade;
 using SuperSocket.ClientEngine;
 using System;
 using System.Collections.Generic;
@@ -40,14 +41,27 @@ namespace CSGOTM
             {
                 Thread.Sleep(10);
             }
+
             ReadyToRun = true;
             Task.Run((Action)Restarter);
+            Task.Run((Action)InventoryFetcher);
         }
 
         private bool Alarm()
         {
             //TODO(nobogam): implement this
             return false;
+        }
+
+        private void InventoryFetcher()
+        {
+            while (!WaitingForRestart) {
+                GenericInventory inv = new GenericInventory(bot.SteamWeb);
+                inv.load(730, new long[]{ 2 }, bot.SteamUser.SteamID);
+                Thread.Sleep(5000); //it might take a while to load
+                LocalRequest.RawPut(Consts.Endpoints.PutCurrentInventory, config.Username, inv.items.Count.ToString());
+                Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //60 minutes this data is pretty much static
+            }            
         }
 
         private void Restarter()

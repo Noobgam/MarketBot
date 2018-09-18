@@ -245,7 +245,7 @@ namespace SteamBot
 
             //Starting CS:
             MarketBot = new CSGOTM.TMBot(this, config);
-        }
+        }        
 
         ~Bot()
         {
@@ -802,11 +802,10 @@ namespace SteamBot
         /// <summary>
         /// Fetch the Bot's inventory and log a warning if it's private
         /// </summary>
-        private Inventory FetchBotsInventory()
+        public Inventory FetchBotsInventory()
         {
             var inventory = Inventory.FetchInventory(SteamUser.SteamID, ApiKey, SteamWeb);
-            if(inventory.IsPrivate)
-            {
+            if (inventory.IsPrivate) {
                 Log.Warn("The bot's backpack is private! If your bot adds any items it will fail! Your bot's backpack should be Public.");
             }
             return inventory;

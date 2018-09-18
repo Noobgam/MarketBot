@@ -21,10 +21,14 @@ namespace SteamTrade
             InventoryResponse result = null;
             while ((result == null || result.result.items == null) && attempts <= 3)
             {
-                var url = "http://api.steampowered.com/IEconItems_440/GetPlayerItems/v0001/?key=" + apiKey + "&steamid=" + steamId;
-                string response = steamWeb.Fetch(url, "GET", null, false);
-                result = JsonConvert.DeserializeObject<InventoryResponse>(response);
-                attempts++;
+                var url = $"http://api.steampowered.com/IEconItems_440/GetPlayerItems/v0001/?key=" + apiKey + "&steamid=" + steamId;
+                try {
+                    string response = steamWeb.Fetch(url, "GET", null, false);
+                    result = JsonConvert.DeserializeObject<InventoryResponse>(response);
+                }
+                finally {
+                    attempts++;
+                }
             }
             return new Inventory(result.result);
         }

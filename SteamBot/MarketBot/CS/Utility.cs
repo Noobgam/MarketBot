@@ -15,9 +15,16 @@ namespace CSGOTM {
         public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
         public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
-        
-        // Loaded from file, so not consts
+        public const string MARKETENDPOINT = "https://market.csgo.com";
 
+        public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
+
+        public static class Endpoints
+        {
+            public const string localhost = "http://localhost:4343";
+            public const string GetBestToken = "/getbesttoken/";
+            public const string PutCurrentInventory = "/putInventory/";
+        }
     }
 
     public class Pair<T, U> {

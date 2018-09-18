@@ -15,14 +15,14 @@ namespace CSGOTM {
 
         public void ApiError(RestartPriority prior, string data, params object[] formatParams)
         {
-            bot.FlagError(prior);
+            //bot.FlagError(prior);
             base.ApiError(data, formatParams);
         }
 
         // This outputs a log entry of the level error.
         public void Error(RestartPriority prior, string data, params object[] formatParams)
         {
-            bot.FlagError(prior);
+            //bot.FlagError(prior);
             base.Error(data, formatParams);
         }
     }

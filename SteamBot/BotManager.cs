@@ -8,6 +8,8 @@ using System.Windows.Forms;
 using Newtonsoft.Json;
 using SteamKit2;
 using System.Threading.Tasks;
+using System.Net;
+using MarketBot.Server;
 
 namespace SteamBot
 {
@@ -20,11 +22,13 @@ namespace SteamBot
         private Log mainLog;
         private bool useSeparateProcesses;
         private bool disposed;
+        private Core server;
 
         public BotManager()
         {
             useSeparateProcesses = false;
             botProcs = new List<RunningBot>();
+            server = new Core();
             Task.Run((Action)Nanny);
         }
 
@@ -341,6 +345,7 @@ namespace SteamBot
             {
                 foreach (IDisposable bot in botProcs)
                     bot.Dispose();
+                server.Stop();
             }
             disposed = true;
         }

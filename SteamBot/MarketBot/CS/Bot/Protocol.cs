@@ -19,6 +19,7 @@ using SteamBot.MarketBot.Utility;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
+using Utility;
 
 namespace CSGOTM
 {
@@ -31,11 +32,13 @@ namespace CSGOTM
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
         public SteamBot.Bot Bot;
-        int money = 0;
-        Random Generator = new Random();
-        string Api = null;
-        SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
-        TMBot parent;
+        private int money = 0;
+        private readonly Random Generator = new Random();
+        private readonly string Api;
+        private SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
+        private TMBot parent;
+        private string CurrentToken = "";
+        
 
         //TODO(noobgam): make it great again, probably some of them can be united.
         public enum ApiMethod {
@@ -97,14 +100,14 @@ namespace CSGOTM
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
                 temp.Start();
-                response = Utility.Request.Get("https://market.csgo.com" + url);
+                response = Utility.Request.Get(Consts.MARKETENDPOINT + url);
                 temp.Stop();
                 ShiftEma(0);
                 //File.AppendAllText($"get_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
-                Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to https://market.csgo.com{url} failed");
+                Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to {Consts.MARKETENDPOINT}{url} failed");
                 if (ex is WebException webex)
                 {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
@@ -148,11 +151,11 @@ namespace CSGOTM
         {
             if (any_stickers)
             {
-                return JArray.Parse(Utility.Request.Get($"https://market.csgo.com/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/-1"));
+                return JArray.Parse(Utility.Request.Get($"{Consts.MARKETENDPOINT}/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/-1"));
             }
             else
             {
-                return JArray.Parse(Utility.Request.Get($"https://market.csgo.com/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/all"));
+                return JArray.Parse(Utility.Request.Get($"{Consts.MARKETENDPOINT}/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/all"));
             }
         }
 
@@ -165,14 +168,14 @@ namespace CSGOTM
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
                 temp.Start();
-                response = Utility.Request.Post("https://market.csgo.com" + url, data);
+                response = Utility.Request.Post(Consts.MARKETENDPOINT + url, data);
                 temp.Stop();
                 ShiftEma(0);
                 //File.AppendAllText($"post_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
             }
             catch (Exception ex)
             {
-                Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to https://market.csgo.com{url} failed");
+                Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
                 if (ex is WebException webex)
                 {
                     if (webex.Status == WebExceptionStatus.ProtocolError)
@@ -359,6 +362,7 @@ namespace CSGOTM
                         if (newItem.i_market_name == "")
                         {
                             Log.Error("!!!!!!!");
+                            break;
                         }
                         //getBestOrder(newItem.i_classid, newItem.i_instanceid);
                         if (!Logic.sellOnly && Logic.WantToBuy(newItem))
@@ -661,12 +665,30 @@ namespace CSGOTM
             Handled = 3
         }
 
-        Mutex TradeCacheLock = new Mutex();
+        readonly object TradeCacheLock = new object();
         TMTrade[] CachedTrades = new TMTrade[0];
         AutoResetEvent waitHandle = new AutoResetEvent(false);
         ETradesStatus status = ETradesStatus.Handled;
 
-        void HandleSoldTrades()
+
+        private void RefreshToken()
+        {
+            while (parent.IsRunning())
+            {
+                JObject temp;
+                try
+                {
+                    temp = (JObject)LocalRequest.RawGet(Consts.Endpoints.GetBestToken, parent.config.Username);
+                }
+                catch
+                {
+                    Log.Error("Could not get a response from local server");
+                }
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 30000).Wait();
+            }
+        }
+
+        private void HandleSoldTrades()
         {
             while (parent.IsRunning())
             {
@@ -824,7 +846,7 @@ namespace CSGOTM
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            url += "&partner=72901895&token=pzDhEUSi"; //ugly hack, but nothing else I can do for now
+            url += CurrentToken; //ugly hack, but nothing else I can do for now
             string a = ExecuteApiRequest(url, ApiMethod.Buy);
             if (a == null)
                 return false;
@@ -938,7 +960,7 @@ namespace CSGOTM
             return inventory;
         }
 
-        private Mutex ordersLock = new Mutex();
+        private object ordersLock = new object();
         private Dictionary<string, int> orders = new Dictionary<string, int>();
 
         public bool SetOrder(string classid, string instanceid, int price)

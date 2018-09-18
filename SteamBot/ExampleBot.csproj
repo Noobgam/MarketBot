@@ -83,10 +83,12 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
+    <Compile Include="MarketBot\CS\Bot\LocalRequest.cs" />
     <Compile Include="MarketBot\CS\Experiment.cs" />
     <Compile Include="MarketBot\CS\Bot\Logic.cs" />
     <Compile Include="MarketBot\CS\Bot\Protocol.cs" />
     <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
+    <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\CS\Utility.cs" />
     <Compile Include="MarketBot\Utility\Encode.cs" />
     <Compile Include="MarketBot\Utility\Request.cs" />
