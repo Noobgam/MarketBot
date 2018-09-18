@@ -554,6 +554,8 @@ namespace CSGOTM {
                 JObject temp;
                 try {
                     temp = (JObject)LocalRequest.RawGet(Consts.Endpoints.GetBestToken, parent.config.Username);
+                    if ((bool)temp["success"])
+                        CurrentToken = (string)temp["token"];
                 } catch {
                     Log.Error("Could not get a response from local server");
                 }
@@ -687,7 +689,8 @@ namespace CSGOTM {
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
-            url += CurrentToken; //ugly hack, but nothing else I can do for now
+            if (CurrentToken != "")
+                url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
             string a = ExecuteApiRequest(url, ApiMethod.Buy);
             if (a == null)
                 return false;
