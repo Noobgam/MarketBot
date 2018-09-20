@@ -76,8 +76,8 @@ namespace CSGOTM {
     }
 
     public class NewItem {
-        public string i_classid;
-        public string i_instanceid;
+        public long i_classid;
+        public long i_instanceid;
         public string i_market_name;
         public int ui_price;
 
@@ -87,8 +87,8 @@ namespace CSGOTM {
         }
 
         public NewItem(string[] item) {
-            i_classid = item[mapping["c_classid"]];
-            i_instanceid = item[mapping["c_instanceid"]];
+            i_classid = long.Parse(item[mapping["c_classid"]]);
+            i_instanceid = long.Parse(item[mapping["c_instanceid"]]);
             i_market_name = item[mapping["c_market_name"]];
             if (i_market_name.Length >= 2) {
                 i_market_name = i_market_name.Remove(0, 1);
@@ -114,13 +114,11 @@ namespace CSGOTM {
     }
 
     [Serializable]
-    public class HistoryItem {
-        public string i_classid;
-        public string i_instanceid;
-        public string i_market_hash_name;
+    public class NewHistoryItem {
+        public long i_classid;
+        public long i_instanceid;
         public string i_market_name;
         public int price; //price is measured in kopeykas
-        public string timesold;
     }
 
     public class Auth {

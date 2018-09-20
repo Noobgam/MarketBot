@@ -53,7 +53,7 @@ namespace CSGOTM {
                 inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID);
                 Thread.Sleep(5000); //it might take a while to load
                 LocalRequest.RawPut(Consts.Endpoints.PutCurrentInventory, config.Username, inv.items.Count.ToString());
-                Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //60 minutes this data is pretty much static
+                Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
             }
         }
 

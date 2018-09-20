@@ -284,10 +284,10 @@ namespace CSGOTM {
                                 else if (reader.TokenType == JsonToken.String) {
                                     switch (currentProperty) {
                                         case "i_classid":
-                                            newItem.i_classid = reader.Value.ToString();
+                                            newItem.i_classid = long.Parse(reader.Value.ToString());
                                             break;
                                         case "i_instanceid":
-                                            newItem.i_instanceid = reader.Value.ToString();
+                                            newItem.i_instanceid = long.Parse(reader.Value.ToString());
                                             break;
                                         case "i_market_name":
                                             newItem.i_market_name = reader.Value.ToString();
@@ -319,26 +319,20 @@ namespace CSGOTM {
                             data = Encode.DecodeEncodedNonAsciiCharacters(data);
                             data = data.Replace("\\", "").Replace("\"", "").Trim(trimming);
                             string[] arr = data.Split(',');
-                            HistoryItem historyItem = new HistoryItem();
+                            NewHistoryItem historyItem = new NewHistoryItem();
                             if (arr.Length == 7) {
-                                historyItem.i_classid = arr[0];
-                                historyItem.i_instanceid = arr[1];
-                                historyItem.i_market_hash_name = arr[2];
-                                historyItem.timesold = arr[3];
+                                historyItem.i_classid = long.Parse(arr[0]);
+                                historyItem.i_instanceid = long.Parse(arr[1]);
                                 historyItem.price = Int32.Parse(arr[4]);
                                 historyItem.i_market_name = arr[5];
                             } else if (arr.Length == 8) {
-                                historyItem.i_classid = arr[0];
-                                historyItem.i_instanceid = arr[1];
-                                historyItem.i_market_hash_name = arr[2] + arr[3];
-                                historyItem.timesold = arr[4];
+                                historyItem.i_classid = long.Parse(arr[0]);
+                                historyItem.i_instanceid = long.Parse(arr[1]);
                                 historyItem.price = Int32.Parse(arr[5]);
                                 historyItem.i_market_name = arr[6];
                             } else {
-                                historyItem.i_classid = arr[0];
-                                historyItem.i_instanceid = arr[1];
-                                historyItem.i_market_hash_name = arr[2] + "," + arr[3];
-                                historyItem.timesold = arr[4];
+                                historyItem.i_classid = long.Parse(arr[0]);
+                                historyItem.i_instanceid = long.Parse(arr[1]);
                                 historyItem.price = Int32.Parse(arr[5]);
                                 historyItem.i_market_name = arr[6] + "," + arr[7];
                             }
@@ -714,13 +708,13 @@ namespace CSGOTM {
 #endif
         }
 
-        public bool SellNew(string ClasssId, string InstanceId, int price) {
+        public bool SellNew(long classId, long instanceId, int price) {
 #if CAREFUL //sorry nothing is implemented there, I don't really know what to write as debug
             return false;
 
 
 #else
-            string resp = ExecuteApiRequest("/api/SetPrice/new_" + ClasssId + "_" + InstanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell);
+            string resp = ExecuteApiRequest("/api/SetPrice/new_" + classId + "_" + instanceId + "/" + price.ToString() + "/?key=" + Api, ApiMethod.Sell);
             if (resp == null)
                 return false;
             JObject parsed = JObject.Parse(resp);
@@ -795,7 +789,7 @@ namespace CSGOTM {
         private object ordersLock = new object();
         private Dictionary<string, int> orders = new Dictionary<string, int>();
 
-        public bool SetOrder(string classid, string instanceid, int price) {
+        public bool SetOrder(long classid, long instanceid, int price) {
             try {
 #if CAREFUL
             return false;
@@ -860,7 +854,7 @@ namespace CSGOTM {
         }
 
         // If best offer is our's returning -1;
-        public int getBestOrder(string classid, string instanceid) {
+        public int getBestOrder(long classid, long instanceid) {
             string resp = "";
             try {
                 resp = ExecuteApiRequest("/api/ItemInfo/" + classid + "_" + instanceid + "/ru/?key=" + Api, ApiMethod.GetBestOrder);

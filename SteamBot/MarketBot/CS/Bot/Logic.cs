@@ -43,6 +43,7 @@ namespace CSGOTM {
         }
 
         ~Logic() {
+            SaveDataBase();
             _DatabaseLock.Dispose();
         }
 
@@ -164,7 +165,7 @@ namespace CSGOTM {
                 if (needOrderUnstickered.Count > 0) {
                     var top = needOrderUnstickered.Peek();
                     var info = Protocol.MassInfo(
-                        new List<Tuple<string, string>> { new Tuple<string, string>(top.i_classid, top.i_instanceid) },
+                        new List<Tuple<string, string>> { new Tuple<string, string>(top.i_classid.ToString(), top.i_instanceid.ToString()) },
                         buy: 2, history: 1);
                     if (info == null)
                         continue; //unlucky
@@ -201,7 +202,7 @@ namespace CSGOTM {
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                     }
 
-                    if (price > 9000 && curPrice < price * UNSTICKERED_ORDER && !blackList.Contains(top.i_market_hash_name)) {
+                    if (price > 9000 && curPrice < price * UNSTICKERED_ORDER && !blackList.Contains(top.i_market_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
                     needOrderUnstickered.Dequeue();
@@ -226,13 +227,13 @@ namespace CSGOTM {
         }
 
         void FulfillBlackList() {
-            try {
-                string[] lines = File.ReadAllLines(BLACKLISTPATH, Encoding.UTF8);
-                foreach (var line in lines) {
-                    blackList.Add(line);
-                }
-            } catch (Exception ex) {
-                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+            if (!File.Exists(BLACKLISTPATH)) {
+                Log.Warn("Blacklist doesnt exist");
+                return;
+            }
+            string[] lines = File.ReadAllLines(BLACKLISTPATH, Encoding.UTF8);
+            foreach (var line in lines) {
+                blackList.Add(line);
             }
         }
 
@@ -240,7 +241,7 @@ namespace CSGOTM {
             while (parent.IsRunning()) {
                 Thread.Sleep(1000);
                 if (needOrder.Count != 0) {
-                    HistoryItem item = needOrder.Dequeue();
+                    NewHistoryItem item = needOrder.Dequeue();
                     bool took = false;
                     try {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
@@ -440,10 +441,10 @@ namespace CSGOTM {
                     if (price != -1) {
                         try {
                             string[] ui_id = item.ui_id.Split('_');
-                            if (!Protocol.SellNew(ui_id[1], ui_id[2], price)) {
-                                Log.ApiError(TMBot.RestartPriority.SmallError, "Could not sell new item, enqueuing it again.");
-                            } else {
+                            if (Protocol.SellNew(long.Parse(ui_id[1]), long.Parse(ui_id[2]), price)) {
                                 Log.Success($"New {item.i_market_name} is on sale for {price}");
+                            } else {
+                                Log.ApiError(TMBot.RestartPriority.SmallError, "Could not sell new item, enqueuing it again.");
                             }
                         } catch {
                         }
@@ -466,7 +467,7 @@ namespace CSGOTM {
         void SaveDataBaseCycle() {
             while (parent.IsRunning()) {
                 SaveDataBase();
-                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
+                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, 20000).Wait();
             }
         }
 
@@ -479,21 +480,23 @@ namespace CSGOTM {
                 dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
                 if (File.Exists(DATABASETEMPPATH))
                     File.Delete(DATABASETEMPPATH);
+                _DatabaseLock.ExitWriteLock();
             } catch (Exception ex) {
                 Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 if (File.Exists(DATABASEPATH))
                     File.Delete(DATABASEPATH);
                 if (File.Exists(DATABASETEMPPATH))
                     File.Move(DATABASETEMPPATH, DATABASEPATH);
+                _DatabaseLock.ExitWriteLock();
                 LoadDataBase();
             }
-            _DatabaseLock.ExitWriteLock();
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
         public void SaveDataBase() {
             if (File.Exists(DATABASEPATH))
                 File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
+            Log.Info($"Size of db is {dataBase.Count}");
             _DatabaseLock.EnterReadLock();
             BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
             _DatabaseLock.ExitReadLock();
@@ -631,11 +634,11 @@ namespace CSGOTM {
 
         [Serializable]
         public class SalesHistory {
-            public List<HistoryItem> sales = new List<HistoryItem>();
+            public List<NewHistoryItem> sales = new List<NewHistoryItem>();
             public int median;
             public int cnt;
 
-            public SalesHistory(HistoryItem item) {
+            public SalesHistory(NewHistoryItem item) {
                 cnt = 1;
                 sales.Add(item);
             }
@@ -643,19 +646,19 @@ namespace CSGOTM {
 
 
         [System.Obsolete("Specify item type instead of cid and iid")]
-        bool hasStickers(string ClassId, string InstanceId) {
-            return !unStickered.Contains(ClassId + '_' + InstanceId);
+        bool hasStickers(string classId, string instanceId) {
+            return !unStickered.Contains(classId + '_' + instanceId);
         }
 
         bool hasStickers(NewItem item) {
             return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
         }
 
-        bool hasStickers(HistoryItem item) {
+        bool hasStickers(NewHistoryItem item) {
             return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
         }
 
-        public void ProcessItem(HistoryItem item) {
+        public void ProcessItem(NewHistoryItem item) {
             if (!hasStickers(item)) {
                 needOrderUnstickered.Enqueue(item);
                 return;
@@ -716,7 +719,7 @@ namespace CSGOTM {
                     if (!currentItems.TryGetValue(item.i_market_name, out List<int> prices)) {
                         return false;
                     }
-                    HistoryItem oldest = salesHistory.sales[0];
+                    NewHistoryItem oldest = salesHistory.sales[0];
                     //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
                     //else
@@ -745,7 +748,7 @@ namespace CSGOTM {
         public bool sellOnly = false;
         public Protocol Protocol;
 
-        public String botName;
+        public string botName;
 
         private const int MAXSIZE = 12000;
         private const int MINSIZE = 70;
@@ -763,8 +766,8 @@ namespace CSGOTM {
         private ConcurrentQueue<TMTrade> refreshPrice = new ConcurrentQueue<TMTrade>();
         private Queue<TMTrade> unstickeredRefresh = new Queue<TMTrade>();
 
-        private Queue<HistoryItem> needOrder = new Queue<HistoryItem>();
-        private Queue<HistoryItem> needOrderUnstickered = new Queue<HistoryItem>();
+        private Queue<NewHistoryItem> needOrder = new Queue<NewHistoryItem>();
+        private Queue<NewHistoryItem> needOrderUnstickered = new Queue<NewHistoryItem>();
         private HashSet<string> blackList = new HashSet<string>();
         private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 

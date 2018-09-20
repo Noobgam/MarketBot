@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Utility {
     class Tasking {
-        public static async Task<bool> WaitForFalseOrTimeout(Func<bool> condition, int frequency = 25, int timeout = -1) {
+        public static async Task<bool> WaitForFalseOrTimeout(Func<bool> condition, int timeout = -1) {
             Task waitTask = Task.Run(async () => {
-                while (condition()) await Task.Delay(frequency);
+                while (condition()) await Task.Delay(25);
             });
 
             Task temp = await Task.WhenAny(waitTask, Task.Delay(timeout));
