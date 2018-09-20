@@ -15,7 +15,7 @@ using SteamBot.MarketBot.CS;
 namespace CSGOTM {
     public class Logic {
         public MarketLogger Log;
-        private readonly object DatabaseLock = new object();
+        private readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
         private readonly object CurrentItemsLock = new object();
         private readonly object RefreshItemsLock = new object();
         private readonly object UnstickeredRefreshItemsLock = new object();
@@ -40,6 +40,10 @@ namespace CSGOTM {
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
             starter.Start();
+        }
+
+        ~Logic() {
+            _DatabaseLock.Dispose();
         }
 
         private void StartUp() {
@@ -237,17 +241,21 @@ namespace CSGOTM {
                 Thread.Sleep(1000);
                 if (needOrder.Count != 0) {
                     HistoryItem item = needOrder.Dequeue();
+                    bool took = false;
                     try {
                         int price = Protocol.getBestOrder(item.i_classid, item.i_instanceid);
                         if (price != -1 && price < 30000) {
-                            lock (DatabaseLock) {
-                                if (dataBase[item.i_market_name].median * MAXFROMMEDIAN - price > 30) {
-                                    Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
-                                }
+                            _DatabaseLock.EnterReadLock();
+                            took = true;
+                            if (dataBase[item.i_market_name].median * MAXFROMMEDIAN - price > 30) {
+                                Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                             }
                         }
                     } catch (Exception ex) {
                         Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                    } finally {
+                        if (took)
+                            _DatabaseLock.ExitReadLock();
                     }
                 }
 
@@ -289,19 +297,19 @@ namespace CSGOTM {
                     } else {
                         price = prices[2] - 30;
                     }
-                    lock (DatabaseLock) {
-                        if (dataBase.TryGetValue(name, out SalesHistory salesHistory) && price > 2 * salesHistory.median) {
-                            price = 2 * salesHistory.median;
-                        }
+                    _DatabaseLock.EnterReadLock();
+                    if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && price > 2 * saleHistory.median) {
+                        price = 2 * saleHistory.median;
                     }
+                    _DatabaseLock.ExitReadLock();
                     return price;
                 }
             }
-            lock (DatabaseLock) {
-                if (dataBase.TryGetValue(name, out SalesHistory salesHistory)) {
+            _DatabaseLock.EnterReadLock();
+            if (dataBase.TryGetValue(name, out SalesHistory salesHistory)) {
                     return salesHistory.median;
-                }
             }
+            _DatabaseLock.ExitReadLock();
             return -1;
         }
 
@@ -334,12 +342,12 @@ namespace CSGOTM {
             if (ManipulatedItems.TryGetValue(item.i_classid + "_" + item.i_instanceid, out int ret)) {
                 return ret;
             } else {
-                lock (DatabaseLock) {
-                    if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
-                        return salesHistory.median;
-                    else
-                        return -1;
-                }
+                _DatabaseLock.EnterReadLock();
+                int price = -1;
+                if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
+                    price = salesHistory.median;
+                _DatabaseLock.ExitReadLock();
+                return price;
             }
         }
 
@@ -464,32 +472,31 @@ namespace CSGOTM {
 
 
         public void LoadDataBase() {
-            lock (DatabaseLock) {
-                if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
-                    return;
-                try {
-                    dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-                    if (File.Exists(DATABASETEMPPATH))
-                        File.Delete(DATABASETEMPPATH);
-                } catch (Exception ex) {
-                    Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
-                    if (File.Exists(DATABASEPATH))
-                        File.Delete(DATABASEPATH);
-                    if (File.Exists(DATABASETEMPPATH))
-                        File.Move(DATABASETEMPPATH, DATABASEPATH);
-                    LoadDataBase();
-                }
+            _DatabaseLock.EnterWriteLock();
+            if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
+                return;
+            try {
+                dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
+                if (File.Exists(DATABASETEMPPATH))
+                    File.Delete(DATABASETEMPPATH);
+            } catch (Exception ex) {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                if (File.Exists(DATABASEPATH))
+                    File.Delete(DATABASEPATH);
+                if (File.Exists(DATABASETEMPPATH))
+                    File.Move(DATABASETEMPPATH, DATABASEPATH);
+                LoadDataBase();
             }
-
+            _DatabaseLock.ExitWriteLock();
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
         }
 
         public void SaveDataBase() {
-            lock (DatabaseLock) {
-                if (File.Exists(DATABASEPATH))
-                    File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
-                BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
-            }
+            if (File.Exists(DATABASEPATH))
+                File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
+            _DatabaseLock.EnterReadLock();
+            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            _DatabaseLock.ExitReadLock();
         }
 
 #if CAREFUL
@@ -655,7 +662,8 @@ namespace CSGOTM {
             }
 
             //Console.WriteLine(item.i_market_name);
-            lock (DatabaseLock) {
+            _DatabaseLock.EnterWriteLock();
+            try {
                 if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
                     if (salesHistory.cnt == MAXSIZE)
                         salesHistory.sales.RemoveAt(0);
@@ -676,6 +684,8 @@ namespace CSGOTM {
                 if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name)) {
                     needOrder.Enqueue(item);
                 }
+            } finally {
+                _DatabaseLock.ExitWriteLock();
             }
         }
 
@@ -688,8 +698,8 @@ namespace CSGOTM {
                 return price < item.ui_price + 10;
             }
 
-            lock (DatabaseLock) {
-
+            _DatabaseLock.EnterReadLock();
+            try { 
                 lock (CurrentItemsLock) {
                     if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
                         return false;
@@ -724,6 +734,8 @@ namespace CSGOTM {
                         }
                     }
                 }
+            } finally {
+                _DatabaseLock.ExitReadLock();
             }
 
             return false;
