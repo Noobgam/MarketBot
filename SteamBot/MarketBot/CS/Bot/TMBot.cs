@@ -1,4 +1,5 @@
 ﻿using SteamBot;
+using SteamBot.MarketBot.Utility.VK;
 using SteamTrade;
 using SuperSocket.ClientEngine;
 using System;
@@ -10,6 +11,7 @@ using System.Threading.Tasks;
 
 namespace CSGOTM {
     public class TMBot {
+
         public void Stop() {
             Log.Dispose();
         }
@@ -41,9 +43,8 @@ namespace CSGOTM {
             Task.Run((Action)InventoryFetcher);
         }
 
-        private bool Alarm() {
-            //TODO(nobogam): implement this
-            return false;
+        private bool Alert(string message) {
+            return VK.Alert($"[{bot.DisplayName}]: {message}");
         }
 
         private void InventoryFetcher() {
@@ -61,6 +62,7 @@ namespace CSGOTM {
                 if (prior >= (int)RestartPriority.Alarm) {
                     if (prior >= (int)RestartPriority.Restart) {
                         WaitingForRestart = true;
+                        Alert("бот перезапускается, отправь что-нибудь в ответ на это сообщение, показывая, что ты его получил и прочитал.");
                         Task.Delay(5000)
                             .ContinueWith(task => bot.ScheduleRestart());
                         break;
