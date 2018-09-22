@@ -173,8 +173,9 @@ namespace CSGOTM {
             return response;
         }
 
+        bool opening = false;
         bool died = true;
-        WebSocket socket = new WebSocket("wss://wsn.dota2.net/wsn/", receiveBufferSize: 65536);
+        WebSocket socket;
         public Protocol(TMBot bot) {
             parent = bot;
             Api = bot.config.Api;
@@ -224,6 +225,19 @@ namespace CSGOTM {
                         orders[$"{order.i_classid}_{order.i_instanceid}"] = int.Parse(order.o_price);
                 });
             });
+            AllocSocket();
+            OpenSocket();
+        }
+
+        private void AllocSocket() {
+            if (socket != null) {
+                socket.Dispose();
+            }
+            socket = new WebSocket("wss://wsn.dota2.net/wsn/", receiveBufferSize: 65536);
+        }
+
+        private void OpenSocket() {
+            opening = true;
             socket.Opened += Open;
             socket.Error += Error;
             socket.Closed += Close;
@@ -634,6 +648,7 @@ namespace CSGOTM {
 
         void Open(object sender, EventArgs e) {
             died = false;
+            opening = false;
             Log.Success("Connection opened!");
             if (Auth())
                 Task.Run((Action)SocketPinger);
@@ -649,9 +664,8 @@ namespace CSGOTM {
             //Log.Error($"Connection closed: " + e.ToString());
             if (!died) {
                 died = true;
-                var temp = socket; //think it might help but I don't have time to check whether it does.
-                if (temp.State == WebSocketState.Open)
-                    temp.Close();
+                socket.Dispose();
+                socket = null;
             }
         }
 
@@ -660,16 +674,17 @@ namespace CSGOTM {
             while (parent.IsRunning()) {
                 Thread.Sleep(10000);
                 if (died) {
-                    try {
-                        Log.ApiError(TMBot.RestartPriority.MediumError, $"Trying to reconnect for the {i++}-th time");
-                        socket = new WebSocket("wss://wsn.dota2.net/wsn/");
-                        socket.Opened += Open;
-                        socket.Error += Error;
-                        socket.Closed += Close;
-                        socket.MessageReceived += Msg;
-                        socket.Open();
-                    } catch (Exception ex) {
-                        Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                    if (!opening) {
+                        try {
+                            Log.ApiError(TMBot.RestartPriority.MediumError, $"Trying to reconnect for the {i++}-th time");
+                            AllocSocket();
+                            OpenSocket();
+                        } catch (Exception ex) {
+                            Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                        }
+                    } else {
+                        AllocSocket();
+                        OpenSocket();
                     }
                 }
             }
