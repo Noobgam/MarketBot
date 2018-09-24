@@ -79,6 +79,9 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static void HandleMessage(Message message) {
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
+            if (message.FromId == 110139244 || message.FromId == 62228399) {
+                return; //just ignore these two people.
+            }
             if (!alerter.ContainsKey(message.FromId.Value)) {
                 Message(message.FromId.Value, "Пошёл нахуй, не пиши мне больше, урод");
                 Thread.Sleep(500);
