@@ -561,7 +561,7 @@ namespace CSGOTM {
             while (parent.IsRunning()) {
                 JObject temp;
                 try {
-                    temp = (JObject)LocalRequest.RawGet(Consts.Endpoints.GetBestToken, parent.config.Username);
+                    temp = LocalRequest.GetBestToken(parent.config.Username);
                     if ((bool)temp["success"])
                         CurrentToken = (string)temp["token"];
                 } catch {
@@ -746,6 +746,7 @@ namespace CSGOTM {
             while (parent.IsRunning()) {
                 string uri = $"/api/PingPong/direct/?key={Api}";
                 string resp = ExecuteApiRequest(uri);
+                LocalRequest.Ping(parent.config.Username);
                 Thread.Sleep(30000);
             }
         }

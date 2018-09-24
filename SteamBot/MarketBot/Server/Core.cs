@@ -11,10 +11,13 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
 using SteamBot.MarketBot.Utility.VK;
+using Utility;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
         private HttpListener server;
+        private HashSet<BotConfig> botSet = new HashSet<BotConfig>();
+        private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
 
         public Core() {
             server = new HttpListener();
@@ -22,15 +25,38 @@ namespace MarketBot.Server {
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
             VK.Init();
+            CoreConfig coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
+            foreach (BotConfig bot in coreConfig.botList)
+                botSet.Add(bot);
             server.Start();            
             Console.Error.WriteLine("Started!");
+            JObject temp = null;
             Task.Run((Action)Listen);
-            JObject temp;
+            Task.Run((Action)BackgroundCheck);
+#if DEBUG
             try {
-                temp = (JObject)LocalRequest.RawGet(Consts.Endpoints.GetBestToken, "grim2");
+                temp = LocalRequest.GetBestToken("grim2");
                 Console.WriteLine(temp.ToString());
             } catch {
                 Console.Error.WriteLine("Could not get a response from local server");
+            }
+#endif
+        }
+
+        private void BackgroundCheck() {
+            Tasking.WaitForFalseOrTimeout(() => !disposed, 30000).Wait(); //30 sec should be enough to init all bots
+            while (!disposed) {
+                foreach (BotConfig bot in botSet) {
+                    if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
+                        DateTime temp = DateTime.Now;
+                        if (temp.Subtract(dt).TotalSeconds > 60) {
+                            VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                        }
+                    } else {
+                        VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
+                    }
+                }
+                Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
             }
         }
 
@@ -68,6 +94,12 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
+                } else if (context.Request.RawUrl == Consts.Endpoints.PingPong) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    LastPing[usernames[0]] = DateTime.Now;
                 }
             } catch (Exception ex) {
                 resp = new JObject {
