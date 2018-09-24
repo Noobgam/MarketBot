@@ -10,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
+using SteamBot.MarketBot.Utility.VK;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
@@ -20,7 +21,8 @@ namespace MarketBot.Server {
             CurSizes = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
-            server.Start();
+            VK.Init();
+            server.Start();            
             Console.Error.WriteLine("Started!");
             Task.Run((Action)Listen);
             JObject temp;
