@@ -18,8 +18,7 @@ namespace MarketBot.Server {
         public Core() {
             server = new HttpListener();
             CurSizes = new Dictionary<string, int>();
-            server.Prefixes.Add(Consts.Endpoints.localhost + Consts.Endpoints.GetBestToken);
-            server.Prefixes.Add(Consts.Endpoints.localhost + Consts.Endpoints.PutCurrentInventory);
+            server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
             server.Start();
             Console.Error.WriteLine("Started!");

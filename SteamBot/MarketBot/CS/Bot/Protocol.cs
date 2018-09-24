@@ -316,7 +316,7 @@ namespace CSGOTM {
                             }
                         }
                         if (newItem.i_market_name == "") {
-                            Log.Error("!!!!!!!");
+                            Log.Warn("Socket item has no market name");
                             break;
                         }
                         //getBestOrder(newItem.i_classid, newItem.i_instanceid);
