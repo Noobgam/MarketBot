@@ -19,7 +19,7 @@ namespace CSGOTM {
         public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
 
         public static class Endpoints {
-            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/";
+            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw";
             public const string prefix = "http://+:4345/";
             public const string localhost = "http://localhost:4345";
             public const string GetBestToken = "/getbesttoken/";

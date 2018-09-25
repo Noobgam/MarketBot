@@ -714,12 +714,15 @@ namespace CSGOTM {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"Missed an item {item.i_market_name} costing {item.ui_price}");
                 return false;
             }
-            if (parsed["result"] == null)
+            if (parsed["result"] == null) {
+                Log.ApiError("Some huge server sided error happened during buy. " + parsed.ToString(Formatting.None));
                 return false;
-            else if ((string)parsed["result"] == "ok")
+            } else if ((string)parsed["result"] == "ok") {
                 return true;
-            else
+            } else {
+                Log.ApiError("Could not buy an item." + parsed.ToString(Formatting.None));
                 return false;
+            }
 #endif
         }
 
