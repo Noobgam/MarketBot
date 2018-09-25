@@ -75,7 +75,8 @@ namespace MarketBot.Server {
             var context = o as HttpListenerContext;
             JObject resp = null;
             try {
-                if (context.Request.RawUrl == Consts.Endpoints.GetBestToken) {
+                string Endpoint = context.Request.Url.AbsolutePath;
+                if (Endpoint == Consts.Endpoints.GetBestToken) {
                     KeyValuePair<string, int> kv = CurSizes.OrderBy(t => t.Value)
                             .FirstOrDefault();
                     if (kv.Key == null) {
@@ -88,17 +89,19 @@ namespace MarketBot.Server {
                             ["inventorysize"] = kvp.Value
                         };
                     }
-                    foreach (var kvp in salesHistorySizes) {
-                        while (kvp.Value.TryPeek(out var result)) {
-                            if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
-                                break;
+                    if (context.Request.Url.Query.Contains("dbhit=1")) {
+                        foreach (var kvp in salesHistorySizes) {
+                            while (kvp.Value.TryPeek(out var result)) {
+                                if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
+                                    break;
+                                }
+                                if (!kvp.Value.TryDequeue(out result)) {
+                                    break;
+                                }
                             }
-                            if (!kvp.Value.TryDequeue(out result)) {
-                                break;
+                            if (!kvp.Value.IsEmpty) {
+                                extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= Consts.MINSIZE).Count() / (double)kvp.Value.Count;
                             }
-                        }
-                        if (!kvp.Value.IsEmpty) {
-                            extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= Consts.MINSIZE).Count() / (double)kvp.Value.Count;
                         }
                     }
                     resp = new JObject {
@@ -107,7 +110,7 @@ namespace MarketBot.Server {
                         ["botname"] = kv.Key,
                         ["extrainfo"] = extrainfo
                     };
-                } else if (context.Request.RawUrl == Consts.Endpoints.PutCurrentInventory) {
+                } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
@@ -117,13 +120,13 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
-                } else if (context.Request.RawUrl == Consts.Endpoints.PingPong) {
+                } else if (Endpoint == Consts.Endpoints.PingPong) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
                     LastPing[usernames[0]] = DateTime.Now;
-                } else if (context.Request.RawUrl == Consts.Endpoints.SalesHistorySize) {
+                } else if (Endpoint == Consts.Endpoints.SalesHistorySize) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
