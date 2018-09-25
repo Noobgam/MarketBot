@@ -12,6 +12,7 @@ using System.Threading.Tasks;
 using System.Xml;
 using SteamBot.MarketBot.Utility.VK;
 using Utility;
+using System.Collections.Concurrent;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
@@ -67,6 +68,8 @@ namespace MarketBot.Server {
         }
 
         private Dictionary<string, int> CurSizes;
+        private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
+
 
         private void Process(object o) {
             var context = o as HttpListenerContext;
@@ -78,11 +81,31 @@ namespace MarketBot.Server {
                     if (kv.Key == null) {
                         throw new Exception("Don't know about bot inventory sizes");
                     }
+
+                    JToken extrainfo = new JObject();
+                    foreach (var kvp in CurSizes) {
+                        extrainfo[kvp.Key] = new JObject {
+                            ["inventorysize"] = kvp.Value
+                        };
+                    }
+                    foreach (var kvp in salesHistorySizes) {
+                        while (kvp.Value.TryPeek(out var result)) {
+                            if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
+                                break;
+                            }
+                            if (!kvp.Value.TryDequeue(out result)) {
+                                break;
+                            }
+                        }
+                        if (!kvp.Value.IsEmpty) {
+                            extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= Consts.MINSIZE).Count() / (double)kvp.Value.Count;
+                        }
+                    }
                     resp = new JObject {
                         ["success"] = true,
                         ["token"] = Consts.TokenCache[kv.Key],
                         ["botname"] = kv.Key,
-                        ["dictionary"] = JToken.FromObject(CurSizes)
+                        ["extrainfo"] = extrainfo
                     };
                 } else if (context.Request.RawUrl == Consts.Endpoints.PutCurrentInventory) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
@@ -100,6 +123,19 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
                     LastPing[usernames[0]] = DateTime.Now;
+                } else if (context.Request.RawUrl == Consts.Endpoints.SalesHistorySize) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    if (!salesHistorySizes.ContainsKey(usernames[0])) {
+                        salesHistorySizes[usernames[0]] = new ConcurrentQueue<Pair<DateTime, int>>();
+                    }
+                    salesHistorySizes[usernames[0]].Enqueue(new Pair<DateTime, int>(DateTime.Now, int.Parse(data[0])));
                 }
             } catch (Exception ex) {
                 resp = new JObject {

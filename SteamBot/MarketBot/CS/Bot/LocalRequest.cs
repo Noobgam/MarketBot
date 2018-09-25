@@ -32,6 +32,10 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.PutCurrentInventory, botname, inv.items.Count.ToString());
         }
 
+        public static void PutSalesHistorySize(string botname, int cnt) {
+            RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
+        }
+
         public static void Ping(string botname) {
             RawGet(Consts.Endpoints.PingPong, botname);
         }

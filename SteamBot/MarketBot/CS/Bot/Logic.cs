@@ -684,7 +684,7 @@ namespace CSGOTM {
                 Array.Sort(a);
                 salesHistory.median = a[salesHistory.cnt / 2];
 
-                if (salesHistory.cnt >= MINSIZE && !blackList.Contains(item.i_market_name)) {
+                if (salesHistory.cnt >= Consts.MINSIZE && !blackList.Contains(item.i_market_name)) {
                     needOrder.Enqueue(item);
                 }
             } finally {
@@ -711,7 +711,7 @@ namespace CSGOTM {
                         if (item.ui_price < 40000
                             && item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
                             && salesHistory.median - item.ui_price > 1000
-                            && salesHistory.cnt >= MINSIZE) {
+                            && salesHistory.cnt >= Consts.MINSIZE) {
                             return true; //back to good ol' dayz
                         }
                     }
@@ -724,11 +724,12 @@ namespace CSGOTM {
 
                     //else
                     {
+                        LocalRequest.PutSalesHistorySize(parent.config.Username, salesHistory.cnt);
                         if (item.ui_price < 40000
                             && prices.Count >= 6
                             && item.ui_price < WANT_TO_BUY * prices[2]
                             && !blackList.Contains(item.i_market_name)
-                            && salesHistory.cnt >= MINSIZE
+                            && salesHistory.cnt >= Consts.MINSIZE
                             && prices[2] < salesHistory.median * 1.2
                             && prices[2] - item.ui_price > 1000) {
                             Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
@@ -751,7 +752,7 @@ namespace CSGOTM {
         public string botName;
 
         private const int MAXSIZE = 12000;
-        private const int MINSIZE = 70;
+
         private string PREFIXPATH;
         private HashSet<string> unStickered = new HashSet<string>();
 

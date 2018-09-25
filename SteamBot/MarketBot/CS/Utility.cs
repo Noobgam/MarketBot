@@ -11,6 +11,7 @@ namespace CSGOTM {
         public const int SECOND = 1050; //used to restrict rps.
         public const int GLOBALRPSLIMIT = 1;
         public const int DAY = 86400;
+        public const int MINSIZE = 70;
         public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
         public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
@@ -22,9 +23,15 @@ namespace CSGOTM {
             public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw";
             public const string prefix = "http://+:4345/";
             public const string localhost = "http://localhost:4345";
+            #region GET
             public const string GetBestToken = "/getbesttoken/";
-            public const string PutCurrentInventory = "/putInventory/";
             public const string PingPong = "/ping/";
+            #endregion
+
+            #region PUT
+            public const string PutCurrentInventory = "/putInventory/";
+            public const string SalesHistorySize = "/saleshistorysize/";
+            #endregion
         }
     }
 
