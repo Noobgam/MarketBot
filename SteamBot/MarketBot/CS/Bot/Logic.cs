@@ -692,6 +692,10 @@ namespace CSGOTM {
             }
         }
 
+        public bool L1(NewItem item) {
+            return item.ui_price < 40000 && !blackList.Contains(item.i_market_name);
+        }
+
         public bool WantToBuy(NewItem item) {
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
@@ -701,15 +705,18 @@ namespace CSGOTM {
                 return price < item.ui_price + 10;
             }
 
+            if (!L1(item)) {
+                return false;
+            }
             _DatabaseLock.EnterReadLock();
             try { 
                 lock (CurrentItemsLock) {
                     if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
+                        LocalRequest.PutSalesHistorySize(parent.config.Username, 0);
                         return false;
                     }
                     if (newBuyFormula != null && newBuyFormula.IsRunning()) {
-                        if (item.ui_price < 40000
-                            && item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
+                        if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
                             && salesHistory.median - item.ui_price > 1000
                             && salesHistory.cnt >= Consts.MINSIZE) {
                             return true; //back to good ol' dayz
@@ -719,16 +726,13 @@ namespace CSGOTM {
                     if (!currentItems.TryGetValue(item.i_market_name, out List<int> prices)) {
                         return false;
                     }
-                    NewHistoryItem oldest = salesHistory.sales[0];
                     //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
                     //else
                     {
                         LocalRequest.PutSalesHistorySize(parent.config.Username, salesHistory.cnt);
-                        if (item.ui_price < 40000
-                            && prices.Count >= 6
+                        if (prices.Count >= 6
                             && item.ui_price < WANT_TO_BUY * prices[2]
-                            && !blackList.Contains(item.i_market_name)
                             && salesHistory.cnt >= Consts.MINSIZE
                             && prices[2] < salesHistory.median * 1.2
                             && prices[2] - item.ui_price > 1000) {

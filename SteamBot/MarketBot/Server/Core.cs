@@ -13,11 +13,13 @@ using System.Xml;
 using SteamBot.MarketBot.Utility.VK;
 using Utility;
 using System.Collections.Concurrent;
+using System.Collections.Specialized;
+using System.Web;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
         private HttpListener server;
-        private HashSet<BotConfig> botSet = new HashSet<BotConfig>();
+        private CoreConfig coreConfig;
         private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
 
         public Core() {
@@ -26,9 +28,7 @@ namespace MarketBot.Server {
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
             VK.Init();
-            CoreConfig coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
-            foreach (BotConfig bot in coreConfig.botList)
-                botSet.Add(bot);
+            coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
             server.Start();            
             Console.Error.WriteLine("Started!");
             JObject temp = null;
@@ -47,7 +47,7 @@ namespace MarketBot.Server {
         private void BackgroundCheck() {
             Tasking.WaitForFalseOrTimeout(() => !disposed, 30000).Wait(); //30 sec should be enough to init all bots
             while (!disposed) {
-                foreach (BotConfig bot in botSet) {
+                foreach (BotConfig bot in coreConfig.botList) {
                     if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
                         DateTime temp = DateTime.Now;
                         if (temp.Subtract(dt).TotalSeconds > 60) {
@@ -77,8 +77,9 @@ namespace MarketBot.Server {
             try {
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
-                    KeyValuePair<string, int> kv = CurSizes.OrderBy(t => t.Value)
-                            .FirstOrDefault();
+                    KeyValuePair<string, int> kv = CurSizes.OrderBy(
+                        t => t.Value / coreConfig.botList.Where(x => x.Name == t.Key).First().Weight
+                        ).FirstOrDefault();
                     if (kv.Key == null) {
                         throw new Exception("Don't know about bot inventory sizes");
                     }
@@ -89,18 +90,22 @@ namespace MarketBot.Server {
                             ["inventorysize"] = kvp.Value
                         };
                     }
-                    if (context.Request.Url.Query.Contains("dbhit=1")) {
-                        foreach (var kvp in salesHistorySizes) {
-                            while (kvp.Value.TryPeek(out var result)) {
-                                if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
-                                    break;
+                    NameValueCollection qscoll = HttpUtility.ParseQueryString(context.Request.Url.Query);
+                    foreach (var key in qscoll.AllKeys) {
+                        if (key == "dbhit") {
+                            int value = int.Parse(qscoll[key]);
+                            foreach (var kvp in salesHistorySizes) {
+                                while (kvp.Value.TryPeek(out var result)) {
+                                    if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
+                                        break;
+                                    }
+                                    if (!kvp.Value.TryDequeue(out result)) {
+                                        break;
+                                    }
                                 }
-                                if (!kvp.Value.TryDequeue(out result)) {
-                                    break;
+                                if (!kvp.Value.IsEmpty) {
+                                    extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= value).Count() / (double)kvp.Value.Count;
                                 }
-                            }
-                            if (!kvp.Value.IsEmpty) {
-                                extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= Consts.MINSIZE).Count() / (double)kvp.Value.Count;
                             }
                         }
                     }

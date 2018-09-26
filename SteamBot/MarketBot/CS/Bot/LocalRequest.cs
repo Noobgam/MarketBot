@@ -36,6 +36,10 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
         }
 
+        public static void PutL1Optimized(string botname, int cnt) {
+            RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
+        }
+
         public static void Ping(string botname) {
             RawGet(Consts.Endpoints.PingPong, botname);
         }
