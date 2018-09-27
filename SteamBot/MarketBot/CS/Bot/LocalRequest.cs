@@ -5,11 +5,11 @@ using System.Net;
 
 namespace CSGOTM {
     public static class LocalRequest {
-        public static JToken RawGet(string endpoint, WebHeaderCollection headers) {
+        private static JToken RawGet(string endpoint, WebHeaderCollection headers) {
             return JToken.Parse(Utility.Request.Get(Consts.Endpoints.localhost + endpoint, headers));
         }
 
-        private static JToken RawGet(string endpoint, string botname) {
+        public static JToken RawGet(string endpoint, string botname) {
             WebHeaderCollection headers = new WebHeaderCollection {
                 ["botname"] = botname
             };

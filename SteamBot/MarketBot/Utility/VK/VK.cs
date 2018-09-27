@@ -36,7 +36,7 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static readonly Dictionary<long, AlertLevel> alerter = new Dictionary<long, AlertLevel>() {
             { 426787197L, AlertLevel.Critical },
-            //{ 30415979L,  AlertLevel.Critical }
+            { 30415979L,  AlertLevel.Garbage }
         }; 
 
         public static bool Alert(string message, AlertLevel level = AlertLevel.Critical) {
@@ -50,6 +50,7 @@ namespace SteamBot.MarketBot.Utility.VK {
         }
 
         public enum AlertLevel { 
+            Garbage = 0,
             Critical = 1,
         };
 
@@ -59,7 +60,7 @@ namespace SteamBot.MarketBot.Utility.VK {
                 api.Authorize(new ApiAuthParams {
                     ApplicationId = 6686807,
                     Login = "Novice1998",
-                    Password = "Novice1998",
+                    Password = "7PixelWideNoobgam",
                     Settings = Settings.Messages
                 });
                 longPollServerInfo = api.Messages.GetLongPollServer(true);

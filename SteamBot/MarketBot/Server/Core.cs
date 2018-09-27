@@ -34,6 +34,7 @@ namespace MarketBot.Server {
             JObject temp = null;
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
+            Task.Run((Action)DBHitProvider);
 #if DEBUG
             try {
                 temp = LocalRequest.GetBestToken("grim2");
@@ -42,6 +43,23 @@ namespace MarketBot.Server {
                 Console.Error.WriteLine("Could not get a response from local server");
             }
 #endif
+        }
+
+        private void DBHitProvider() {
+            while (true) {
+                Thread.Sleep(1000);
+                try {
+                    var temp = LocalRequest.RawGet(Consts.Endpoints.GetBestToken + "?dbhit=70&extradb=1", "ffedor98");
+                    double dbhit = (double)temp["extrainfo"]["ffedor98"]["dbhit"];
+                    int dbcnt = (int)temp["extrainfo"]["ffedor98"]["dbcnt"];
+                    if (dbcnt < 15000)
+                        continue;
+                    VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Garbage);
+                } catch {
+                    Console.Error.WriteLine("Could not get a response from local server");
+                }
+                Thread.Sleep(60000);
+            }
         }
 
         private void BackgroundCheck() {
@@ -91,6 +109,7 @@ namespace MarketBot.Server {
                         };
                     }
                     NameValueCollection qscoll = HttpUtility.ParseQueryString(context.Request.Url.Query);
+                    bool extradb = qscoll.AllKeys.Contains("extradb");
                     foreach (var key in qscoll.AllKeys) {
                         if (key == "dbhit") {
                             int value = int.Parse(qscoll[key]);
@@ -105,6 +124,9 @@ namespace MarketBot.Server {
                                 }
                                 if (!kvp.Value.IsEmpty) {
                                     extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= value).Count() / (double)kvp.Value.Count;
+                                    if (extradb) {
+                                        extrainfo[kvp.Key]["dbcnt"] = kvp.Value.Count;
+                                    }
                                 }
                             }
                         }
