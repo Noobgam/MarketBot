@@ -692,6 +692,7 @@ namespace CSGOTM {
 
 
         public bool Buy(NewItem item) {
+            return false;
 #if CAREFUL
             totalwasted += (int)item.ui_price;
             Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
