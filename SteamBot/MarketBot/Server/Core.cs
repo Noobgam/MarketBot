@@ -47,7 +47,7 @@ namespace MarketBot.Server {
 
         private void DBHitProvider() {
             while (true) {
-                Thread.Sleep(1000);
+                Thread.Sleep(2000);
                 try {
                     var temp = LocalRequest.RawGet(Consts.Endpoints.GetBestToken + "?dbhit=70&extradb=1", "ffedor98");
                     double dbhit = (double)temp["extrainfo"]["ffedor98"]["dbhit"];
@@ -57,8 +57,9 @@ namespace MarketBot.Server {
                     VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Garbage);
                 } catch {
                     Console.Error.WriteLine("Could not get a response from local server");
+                    continue;
                 }
-                Thread.Sleep(60000);
+                Thread.Sleep(180000);
             }
         }
 
