@@ -36,7 +36,7 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static readonly Dictionary<long, AlertLevel> alerter = new Dictionary<long, AlertLevel>() {
             { 426787197L, AlertLevel.Critical },
-            { 30415979L,  AlertLevel.Garbage }
+            { 30415979L,  AlertLevel.Critical }
         }; 
 
         public static bool Alert(string message, AlertLevel level = AlertLevel.Critical) {
