@@ -51,6 +51,9 @@ namespace CSGOTM {
             while (!WaitingForRestart) {
                 GenericInventory inv = new GenericInventory(bot.SteamWeb);
                 inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID);
+                int counter = inv.descriptions.Where(x => x.Value.tradable).Count();
+                logic.cachedInventory = inv;
+                logic.cachedTradableCount = counter;
                 LocalRequest.PutInventory(config.Username, inv);
                 Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
             }

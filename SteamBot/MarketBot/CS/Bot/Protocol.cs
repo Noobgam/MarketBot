@@ -940,6 +940,10 @@ namespace CSGOTM {
             return temp2["Orders"].ToObject<List<Order>>();
         }
 
+        public string RemoveAll() {
+            return ExecuteApiRequest("/api/RemoveAll/?key=" + Api);
+        }
+
         //TODO(noobgam): reuse OrdersCall
         public List<Order> GetOrders() {
             int page = 1;

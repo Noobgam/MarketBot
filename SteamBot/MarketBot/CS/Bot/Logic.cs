@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Collections.Concurrent;
 using SteamBot.MarketBot.CS;
+using SteamTrade;
 
 namespace CSGOTM {
     public class Logic {
@@ -24,7 +25,10 @@ namespace CSGOTM {
         private static double UNSTICKERED_ORDER = 0.78;
         NewBuyFormula newBuyFormula = null;
         SellMultiplier sellMultiplier = null;
-        TMBot parent;
+        TMBot parent;         
+        public GenericInventory cachedInventory = null;
+        public int cachedTradableCount = 0;
+        private int stopsell = 1000;
 
         public Logic(TMBot bot) {
             this.botName = bot.config.Username;
@@ -75,6 +79,14 @@ namespace CSGOTM {
                     if (!data.TryGetValue(botName, out JToken token)) {
                         Log.Error("Gist config contains no bot definition.");
                     } else {
+                        if (token["stopsell"].Type != JTokenType.Integer)
+                            Log.Error("Have no idea when to stop selling");
+                        else {
+                            if (stopsell != (int)token["stopsell"]) {
+                                stopsell = (int)token["stopsell"];
+                            }
+                        }
+                                                        
                         if (token["sell_only"].Type != JTokenType.Boolean)
                             Log.Error($"Sell only is not a boolean for {botName}");
                         else {
@@ -437,6 +449,11 @@ namespace CSGOTM {
                         Protocol.MassSetPriceById(items);
                     }
                 } else if (toBeSold.TryDequeue(out Inventory.SteamItem item)) {
+                    if (cachedInventory != null && cachedTradableCount < stopsell) {
+                        while (toBeSold.TryDequeue(out item)) ; //clear whole queue
+                        Protocol.RemoveAll();
+                        continue;
+                    }
                     int price = GetMySellPrice(item);
                     if (price != -1) {
                         try {
