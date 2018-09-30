@@ -1,10 +1,14 @@
 ﻿using Newtonsoft.Json.Linq;
 using SteamTrade;
+using System;
 using System.Collections.Specialized;
 using System.Net;
 
 namespace CSGOTM {
     public static class LocalRequest {
+        private static void VoidRawGet(string endpoint, WebHeaderCollection headers) {
+            Utility.Request.Get(Consts.Endpoints.localhost + endpoint, headers);
+        }
         private static JToken RawGet(string endpoint, WebHeaderCollection headers) {
             return JToken.Parse(Utility.Request.Get(Consts.Endpoints.localhost + endpoint, headers));
         }
@@ -21,7 +25,7 @@ namespace CSGOTM {
                 ["botname"] = botname,
                 ["data"] = data
             };
-            RawGet(endpoint, headers);
+            VoidRawGet(endpoint, headers);
         }
 
         public static JObject GetBestToken(string botname) {
@@ -33,7 +37,11 @@ namespace CSGOTM {
         }
 
         public static void PutSalesHistorySize(string botname, int cnt) {
+#if DEBUG
             RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
+#else
+            Console.WriteLine("Don't put sales in release mode.");            
+#endif
         }
 
         public static void PutL1Optimized(string botname, int cnt) {

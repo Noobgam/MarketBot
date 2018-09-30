@@ -499,6 +499,7 @@ namespace CSGOTM {
                 dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
                 if (File.Exists(DATABASETEMPPATH))
                     File.Delete(DATABASETEMPPATH);
+                Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
                 _DatabaseLock.ExitWriteLock();
             } catch (Exception ex) {
                 Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
@@ -508,9 +509,8 @@ namespace CSGOTM {
                     File.Move(DATABASETEMPPATH, DATABASEPATH);
                 _DatabaseLock.ExitWriteLock();
                 LoadDataBase();
+                return;
             }
-            Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
-            _DatabaseLock.ExitWriteLock();
         }
 
         public void SaveDataBase() {
@@ -585,15 +585,15 @@ namespace CSGOTM {
                     for (id = 1; id < lines.Length - 1; ++id) {
                         string[] itemInString = lines[id].Split(';');
                         NewItem newItem = new NewItem(itemInString);
-                        if (newItem.i_market_name == "") {
-                            Log.Info("Item has no name");
-                        }
+                        //if (newItem.i_market_name == "") {
+                        //    Log.Info("Item has no name");
+                        //}
                         if (WantToBuy(newItem)) {
                             Protocol.Buy(newItem);
                         }
                     }
                 } catch (Exception ex) {
-                    Console.WriteLine(ex.Message);
+                    Log.Error(ex.Message);
                 }
                 return true;
             } catch (Exception e) {
