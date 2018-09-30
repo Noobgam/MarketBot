@@ -487,6 +487,9 @@ namespace CSGOTM {
                             Thread.Sleep(5000); //sleep tight, steam probably went 500
                         }
                     }
+                    else {
+                        sent = 1; //?
+                    }
                 }
             }
             if (sent > 0)
