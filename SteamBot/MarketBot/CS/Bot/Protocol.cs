@@ -653,7 +653,6 @@ namespace CSGOTM {
             if (Auth())
                 Task.Run((Action)SocketPinger);
             //start = DateTime.Now;
-            //andrew is gay
         }
 
         void Error(object sender, EventArgs e) {
