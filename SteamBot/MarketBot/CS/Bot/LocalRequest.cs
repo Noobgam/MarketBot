@@ -40,7 +40,7 @@ namespace CSGOTM {
 #if DEBUG
             RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
 #else
-            Console.WriteLine("Don't put sales in release mode.");            
+            //Console.WriteLine("Don't put sales in release mode.");            
 #endif
         }
 
