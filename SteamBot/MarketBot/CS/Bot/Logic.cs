@@ -491,8 +491,10 @@ namespace CSGOTM {
 
         public void LoadDataBase() {
             _DatabaseLock.EnterWriteLock();
-            if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH))
+            if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH)) {
+                _DatabaseLock.ExitWriteLock();
                 return;
+            }
             try {
                 dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
                 if (File.Exists(DATABASETEMPPATH))
@@ -508,6 +510,7 @@ namespace CSGOTM {
                 LoadDataBase();
             }
             Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
+            _DatabaseLock.ExitWriteLock();
         }
 
         public void SaveDataBase() {
@@ -563,7 +566,11 @@ namespace CSGOTM {
 
                             if (!currentItems.ContainsKey(name))
                                 currentItems.Add(name, new List<int>());
-                            currentItems[name].Add(int.Parse(item[NewItem.mapping["c_price"]]));
+                            if (int.TryParse(item[NewItem.mapping["c_price"]], out int val)) {
+                                currentItems[name].Add(val);
+                            } else {
+                                Log.Warn($"{item[NewItem.mapping["c_price"]]} doesnt seem like a valid price");
+                            }
                         }
                     }
                     lock (CurrentItemsLock) {
