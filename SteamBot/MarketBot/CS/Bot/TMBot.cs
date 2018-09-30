@@ -49,6 +49,7 @@ namespace CSGOTM {
 
         private void InventoryFetcher() {
             while (!WaitingForRestart) {
+              
                 GenericInventory inv = new GenericInventory(bot.SteamWeb);
                 inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID);
                 int counter = inv.descriptions.Where(x => x.Value.tradable).Count();

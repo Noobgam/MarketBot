@@ -56,7 +56,7 @@ namespace MarketBot.Server {
                         continue;
                     VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Garbage);
                 } catch {
-                    Console.Error.WriteLine("Could not get a response from local server");
+                    //Console.Error.WriteLine("Could not get a response from local server");
                     continue;
                 }
                 Thread.Sleep(180000);
