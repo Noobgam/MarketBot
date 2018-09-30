@@ -424,7 +424,7 @@ namespace CSGOTM {
             foreach (TMTrade trade in trades.OrderBy(trade => trade.offer_live_time)) {
                 if (sentTrades.TryGetValue(trade.ui_bid, out DateTime lastTradeTime)) {
                     DateTime tmp = DateTime.Now;
-                    if (tmp.Subtract(lastTradeTime).Seconds < 40) //no reason to, chances are it's either fine anyway or is a scam.
+                    if (tmp.Subtract(lastTradeTime).Seconds < 50) //no reason to, chances are it's either fine anyway or is a scam.
                         continue;
                 }
                 Debug.Assert(trade.ui_status == "2");
@@ -477,7 +477,7 @@ namespace CSGOTM {
                                     list.Add(new Pair<string, string>(requestId, newOfferId));
                                     ++sent;
                                     sentTrades[trade.ui_bid] = DateTime.Now;
-                                    Thread.Sleep(1000);
+                                    Thread.Sleep(2000);
                                 } else {
                                     Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
                                 }
