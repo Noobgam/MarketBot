@@ -99,6 +99,7 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static void Listener() {
             while (true) {
+                Thread.Sleep(250);
                 if (longPollServerInfo != null) {
                     try {
                         var history = api.Messages.GetLongPollHistory(
