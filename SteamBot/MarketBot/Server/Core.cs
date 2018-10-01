@@ -64,7 +64,7 @@ namespace MarketBot.Server {
         }
 
         private void BackgroundCheck() {
-            Tasking.WaitForFalseOrTimeout(() => !disposed, 30000).Wait(); //30 sec should be enough to init all bots
+            Thread.Sleep(15000);
             while (!disposed) {
                 foreach (BotConfig bot in coreConfig.botList) {
                     if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
