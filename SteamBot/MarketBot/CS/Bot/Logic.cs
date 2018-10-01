@@ -278,10 +278,13 @@ namespace CSGOTM {
         void AddNewItems() {
             while (parent.IsRunning()) {
                 Thread.Sleep(3000); //dont want to spin nonstop
+                while (!toBeSold.IsEmpty) {
+                    Thread.Sleep(1000);
+                }
                 SpinWait.SpinUntil(() => (doNotSell || toBeSold.IsEmpty));
                 if (doNotSell) {
-                    doNotSell = false;
-                    Thread.Sleep(1000 * 60 * 2); //can't lower it due to some weird things in protocol, requires testing
+                    //doNotSell = false;
+                    //Thread.Sleep(1000 * 60 * 2); //can't lower it due to some weird things in protocol, requires testing
                 } else {
                     try {
                         Inventory inventory = Protocol.GetSteamInventory();

@@ -370,9 +370,9 @@ namespace CSGOTM {
                     case "additem_go":
                         break;
                     case "itemstatus_go":
-                        JObject json = JObject.Parse(data);
-                        if ((int)json["status"] == 5)
-                            Logic.doNotSell = true;
+                        //JObject json = JObject.Parse(data);
+                        //if ((int)json["status"] == 5)
+                        //    Logic.doNotSell = true;
                         break;
                     default:
                         //Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
