@@ -26,10 +26,12 @@ namespace CSGOTM {
             #region GET
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";
+            public const string Status = "/status/";
             #endregion
 
             #region PUT
             public const string PutCurrentInventory = "/putInventory/";
+            public const string PutMoney = "/putMoney/";
             public const string SalesHistorySize = "/saleshistorysize/";
             #endregion
         }

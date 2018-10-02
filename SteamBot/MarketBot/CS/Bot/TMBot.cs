@@ -56,6 +56,7 @@ namespace CSGOTM {
                 logic.cachedInventory = inv;
                 logic.cachedTradableCount = counter;
                 LocalRequest.PutInventory(config.Username, inv);
+                LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
             }
         }

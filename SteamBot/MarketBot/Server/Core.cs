@@ -25,6 +25,7 @@ namespace MarketBot.Server {
         public Core() {
             server = new HttpListener();
             CurSizes = new Dictionary<string, int>();
+            CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
             VK.Init();
@@ -34,7 +35,7 @@ namespace MarketBot.Server {
             JObject temp = null;
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
-            Task.Run((Action)DBHitProvider);
+            //Task.Run((Action)DBHitProvider);
 #if DEBUG
             try {
                 temp = LocalRequest.GetBestToken("grim2");
@@ -46,6 +47,7 @@ namespace MarketBot.Server {
         }
 
         private void DBHitProvider() {
+            //Doesn't work now.
             while (true) {
                 Thread.Sleep(2000);
                 try {
@@ -87,6 +89,7 @@ namespace MarketBot.Server {
         }
 
         private Dictionary<string, int> CurSizes;
+        private Dictionary<string, int> CurMoney;
         private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
 
 
@@ -167,6 +170,33 @@ namespace MarketBot.Server {
                         salesHistorySizes[usernames[0]] = new ConcurrentQueue<Pair<DateTime, int>>();
                     }
                     salesHistorySizes[usernames[0]].Enqueue(new Pair<DateTime, int>(DateTime.Now, int.Parse(data[0])));
+                } else if (Endpoint == Consts.Endpoints.PutMoney) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    CurMoney[usernames[0]] = int.Parse(data[0]);
+                } else if (Endpoint == Consts.Endpoints.Status) {
+
+                    JToken extrainfo = new JObject();
+                    foreach (var kvp in CurSizes) {
+                        if (extrainfo[kvp.Key] == null)
+                            extrainfo[kvp.Key] = new JObject();
+                        extrainfo[kvp.Key]["inventorysize"] = kvp.Value;
+                    }
+                    foreach (var kvp in CurMoney) {
+                        if (extrainfo[kvp.Key] == null)
+                            extrainfo[kvp.Key] = new JObject();
+                        extrainfo[kvp.Key]["curmoney"] = (double)kvp.Value / 100;
+                    }
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["extrainfo"] = extrainfo
+                    };
                 }
             } catch (Exception ex) {
                 resp = new JObject {

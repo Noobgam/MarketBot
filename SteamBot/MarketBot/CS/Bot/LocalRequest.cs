@@ -36,6 +36,10 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.PutCurrentInventory, botname, inv.items.Count.ToString());
         }
 
+        public static void PutMoney(string botname, int money) {
+            RawPut(Consts.Endpoints.PutMoney, botname, money.ToString());
+        }
+
         public static void PutSalesHistorySize(string botname, int cnt) {
 #if DEBUG
             RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
