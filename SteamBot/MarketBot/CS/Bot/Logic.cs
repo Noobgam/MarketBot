@@ -314,7 +314,7 @@ namespace CSGOTM {
                         price = prices[2] - 30;
                     }
                     _DatabaseLock.EnterReadLock();
-                    if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && price > 2 * saleHistory.median) {
+                    if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.median || price == -1)) {
                         price = 2 * saleHistory.median;
                     }
                     _DatabaseLock.ExitReadLock();
