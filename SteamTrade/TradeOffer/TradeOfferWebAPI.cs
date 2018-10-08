@@ -22,7 +22,7 @@ namespace SteamTrade.TradeOffer
             }
         }
 
-        private const string BaseUrl = "http://api.steampowered.com/IEconService/{0}/{1}/{2}";
+        private const string BaseUrl = "https://api.steampowered.com/IEconService/{0}/{1}/{2}";
 
         public OfferResponse GetTradeOffer(string tradeofferid)
         {
