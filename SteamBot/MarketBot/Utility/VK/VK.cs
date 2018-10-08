@@ -104,7 +104,7 @@ namespace SteamBot.MarketBot.Utility.VK {
                     try {
                         var history = api.Messages.GetLongPollHistory(
                             new VkNet.Model.RequestParams.MessagesGetLongPollHistoryParams {
-                                Ts = longPollServerInfo.Ts,
+                                Ts = ulong.Parse(longPollServerInfo.Ts),
                                 Pts = longPollServerInfo.Pts,
                                 
                             });
