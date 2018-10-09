@@ -75,7 +75,7 @@ namespace MarketBot.Server {
                             VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
                         }
                     } else {
-                        VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
+                        //VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                     }
                 }
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
