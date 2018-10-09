@@ -28,7 +28,7 @@ namespace CSGOTM {
         TMBot parent;         
         public GenericInventory cachedInventory = null;
         public int cachedTradableCount = 0;
-        private int stopsell = 1000;
+        private int stopsell = -1;
 
         public Logic(TMBot bot) {
             this.botName = bot.config.Username;
