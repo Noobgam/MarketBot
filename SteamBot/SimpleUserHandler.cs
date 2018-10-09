@@ -87,6 +87,18 @@ namespace SteamBot
                 case TradeOfferState.TradeOfferStateActive:
                     var their = offer.Items.GetTheirItems();
                     var my = offer.Items.GetMyItems();
+                    if (my.Count == 0) {
+                        if (offer.Accept().Accepted) {
+                            string st = "Offer completed.";
+                            if (their.Count != 0)
+                                st += " Received: " + their.Count + " items.";
+                            Log.Warn(st);
+                            return;
+                        } else {
+                            Log.Info("Could not accept offer");
+                        }
+                        break;
+                    }
                     long aid = -1, cid = -1;
                     bool unstable = false;
                     foreach (var item in their)
