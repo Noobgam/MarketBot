@@ -27,6 +27,7 @@ namespace Utility {
                     JObject temp = JObject.Parse(Request.Get("http://apilayer.net/api/live?access_key=618104c6516893d35cb5cc33e92b345c&currencies=RUB&source=USD&format=1"));
                     if ((bool)temp["success"]) {
                         CachedRatio = (double)temp["quotes"]["USDRUB"];
+                        LastCache = DateTime.Now;
                     }
                 } catch (Exception e) { 
 
