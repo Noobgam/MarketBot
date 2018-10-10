@@ -4,6 +4,7 @@ using SteamKit2;
 using System;
 using System.Linq;
 using System.Threading.Tasks;
+using System.IO;
 
 namespace SteamTrade.TradeOffer
 {

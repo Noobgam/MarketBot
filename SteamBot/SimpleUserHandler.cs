@@ -89,14 +89,15 @@ namespace SteamBot
                     var their = offer.Items.GetTheirItems();
                     var my = offer.Items.GetMyItems();
                     if (my.Count == 0) {
-                        if (offer.Accept().Accepted) {
+                        var tradeAccept = offer.Accept();
+                        if (tradeAccept.Accepted) {
                             string st = "Offer completed.";
                             if (their.Count != 0)
                                 st += " Received: " + their.Count + " items.";
                             Log.Warn(st);
                             return;
                         } else {
-                            Log.Info("Could not accept offer");
+                            Log.Error($"Could not accept offer: {tradeAccept.TradeError}");
                         }
                         break;
                     }
@@ -170,27 +171,25 @@ namespace SteamBot
                                 offer.Decline();
                                 Log.Error("Offer failed. Invalid trade request. (not issued by me, has my items there)");
                                 return;
-                            }
-                            else if (offer.Accept().Accepted)
-                            {
-                                string st = "Offer completed.";
-                                if (their.Count != 0)
-                                    st += " Received: " + their.Count + " items.";
-                                if (my.Count != 0)
-                                    st += " Lost:     " + my.Count + " items.";
-                                Log.Warn(st);
-                                if (my.Count != 0)
-                                {
-                                    //Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
-                                    //Task.Delay(1000).
-                                    //    ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                            } else { 
+                                var tradeAccept = offer.Accept();
+                                if (tradeAccept.Accepted) {
+                                    string st = "Offer completed.";
+                                    if (their.Count != 0)
+                                        st += " Received: " + their.Count + " items.";
+                                    if (my.Count != 0)
+                                        st += " Lost:     " + my.Count + " items.";
+                                    Log.Warn(st);
+                                    if (my.Count != 0) {
+                                        //Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
+                                        //Task.Delay(1000).
+                                        //    ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
+                                    }
+                                    return;
+                                } else {
+                                    Log.Error($"Could not accept offer: {tradeAccept.TradeError}");
+                                    return;
                                 }
-                                return;
-                            }
-                            else
-                            {
-                                Log.Error($"Offer failed. Unknown error. Offer state: {offer.OfferState}");
-                                return;
                             }
                         case "unstable":
                             break;
