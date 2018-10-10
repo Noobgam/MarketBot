@@ -68,7 +68,7 @@ namespace SteamTrade.TradeOffer
             data.Add("tradeofferid", tradeOfferId);
 
             string url = string.Format("https://steamcommunity.com/tradeoffer/{0}/decline", tradeOfferId);
-            //should be http://steamcommunity.com/{0}/{1}/tradeoffers - id/profile persona/id64 ideally
+            //should be https://steamcommunity.com/{0}/{1}/tradeoffers - id/profile persona/id64 ideally
             string referer = string.Format("https://steamcommunity.com/tradeoffer/{0}/", tradeOfferId);
 
             var resp = steamWeb.Fetch(url, "POST", data, false, referer);
@@ -106,7 +106,7 @@ namespace SteamTrade.TradeOffer
             data.Add("tradeofferid", tradeOfferId);
             data.Add("serverid", "1");
             string url = string.Format("https://steamcommunity.com/tradeoffer/{0}/cancel", tradeOfferId);
-            //should be http://steamcommunity.com/{0}/{1}/tradeoffers/sent/ - id/profile persona/id64 ideally
+            //should be https://steamcommunity.com/{0}/{1}/tradeoffers/sent/ - id/profile persona/id64 ideally
             string referer = string.Format("https://steamcommunity.com/tradeoffer/{0}/", tradeOfferId);
 
             var resp = steamWeb.Fetch(url, "POST", data, false, referer);

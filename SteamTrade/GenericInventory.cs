@@ -152,7 +152,7 @@ namespace SteamTrade
                     {
                         var data = String.IsNullOrEmpty(moreStart) ? null : new NameValueCollection {{"start", moreStart}};
                         string response = SteamWeb.Fetch(
-                            String.Format("http://steamcommunity.com/profiles/{0}/inventory/json/{1}/{2}/", steamid.ConvertToUInt64(), appid, contextId),
+                            String.Format("https://steamcommunity.com/profiles/{0}/inventory/json/{1}/{2}/", steamid.ConvertToUInt64(), appid, contextId),
                             "GET", data);
                         invResponse = JsonConvert.DeserializeObject(response);
 
