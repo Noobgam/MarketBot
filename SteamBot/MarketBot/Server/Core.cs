@@ -183,6 +183,7 @@ namespace MarketBot.Server {
                 } else if (Endpoint == Consts.Endpoints.Status) {
 
                     JToken extrainfo = new JObject();
+                    double moneySum = 0;
                     foreach (var kvp in CurSizes) {
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
@@ -191,11 +192,17 @@ namespace MarketBot.Server {
                     foreach (var kvp in CurMoney) {
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
-                        extrainfo[kvp.Key]["curmoney"] = (double)kvp.Value / 100;
+                        double myMoney = (double)kvp.Value / 100;
+                        extrainfo[kvp.Key]["curmoney"] = myMoney;
+                        moneySum += myMoney;
                     }
                     resp = new JObject {
                         ["success"] = true,
-                        ["extrainfo"] = extrainfo
+                        ["extrainfo"] = extrainfo,
+                        ["moneysum"] = new JObject() {
+                            ["RUB"] = moneySum,
+                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C")
+                        }
                     };
                 }
             } catch (Exception ex) {
