@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using SteamKit2;
 using System;
 using System.Collections.Specialized;
@@ -56,7 +57,15 @@ namespace SteamTrade.TradeOffer
                 }
             }
             //if it didn't work as expected, check the state, maybe it was accepted after all
-            var state = webApi.GetOfferState(tradeOfferId);            
+
+            var tradeOffer = webApi.GetTradeOffer(tradeOfferId);
+            var state = TradeOfferState.TradeOfferStateUnknown;
+            if (tradeOffer != null && tradeOffer.Offer != null) {
+                state = tradeOffer.Offer.TradeOfferState;
+            }
+            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+            Console.WriteLine(JObject.FromObject(tradeOffer).ToString(Formatting.Indented));
+            Console.WriteLine("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
             return new TradeOfferAcceptResponse { Accepted = state == TradeOfferState.TradeOfferStateAccepted };            
         }
 
