@@ -123,11 +123,12 @@ namespace CSGOTM {
                             }
                         }
                         if (token["experiments"] != null) {
-                            JToken new_buy_formula = token["experiments"]["new_buy_formula"];
-                            if (new_buy_formula != null) {
+                            if (token["experiments"]["new_buy_formula"] is JToken new_buy_formula && new_buy_formula != null) {
                                 try {
                                     DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-                                    DateTime start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
+                                    DateTime start = DateTime.MinValue;
+                                    if (new_buy_formula["start"] != null)
+                                        start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
                                     DateTime end = dtDateTime.AddSeconds((double)new_buy_formula["end"]).ToLocalTime();
                                     if (DateTime.Now < end) {
                                         double want_to_buy = (double)new_buy_formula["want_to_buy"];
@@ -142,12 +143,13 @@ namespace CSGOTM {
                                     Log.Error("Incorrect experiment");
                                 }
                             }
-                            JToken sell_multiplier = token["experiments"]["sell_multiplier"];
-                            if (sell_multiplier != null) {
+                            if (token["experiments"]["sell_multiplier"] is JToken sell_multiplier && sell_multiplier != null) {
                                 try {
                                     DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-                                    DateTime start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
-                                    DateTime end = dtDateTime.AddSeconds((double)new_buy_formula["end"]).ToLocalTime();
+                                    DateTime start = DateTime.MinValue;
+                                    if (sell_multiplier["start"] != null)
+                                        start = dtDateTime.AddSeconds((double)sell_multiplier["start"]).ToLocalTime();
+                                    DateTime end = dtDateTime.AddSeconds((double)sell_multiplier["end"]).ToLocalTime();
                                     if (DateTime.Now < end) {
                                         double sellmultiplier = (double)sell_multiplier["multiplier"];
                                         SellMultiplier temp = new SellMultiplier(start, end, sellmultiplier);
