@@ -152,7 +152,7 @@ namespace CSGOTM {
                                         double sellmultiplier = (double)sell_multiplier["multiplier"];
                                         SellMultiplier temp = new SellMultiplier(start, end, sellmultiplier);
                                         if (sellMultiplier != temp) {
-                                            temp = sellMultiplier;
+                                            sellMultiplier = temp;
                                             Log.Info("New sellmultiplier applied:");
                                             Log.Info(sell_multiplier.ToString(Formatting.None));
                                         }
