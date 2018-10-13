@@ -58,6 +58,11 @@ namespace CSGOTM {
             ItemRequest = UpdateInventory,
         }
 
+        public enum ApiLogLevel {
+            DoNotLog = 0,
+            LogAll = 1,
+        }
+
         readonly Dictionary<ApiMethod, double> rpsLimit = new Dictionary<ApiMethod, double> {
             { ApiMethod.UnstickeredMassInfo, 1.5 },
             { ApiMethod.UnstickeredMassSetPriceById, 1.5 },
@@ -86,7 +91,10 @@ namespace CSGOTM {
             EMA = EMA * (1 - ALP) + x * ALP;
         }
 
-        private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall) {
+        private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
+            if (logLevel == ApiLogLevel.LogAll) {
+                Log.Info("Executing " + url);
+            }
             string response = null;
             Stopwatch temp = new Stopwatch();
             try {
@@ -138,7 +146,10 @@ namespace CSGOTM {
             }
         }
 
-        private string ExecuteApiPostRequest(string url, string data, ApiMethod method = ApiMethod.GenericCall) {
+        private string ExecuteApiPostRequest(string url, string data, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
+            if (logLevel == ApiLogLevel.LogAll) {
+                Log.Info("Executing " + url);
+            }
             Stopwatch temp = new Stopwatch();
             string response = null;
             try {
@@ -702,7 +713,7 @@ namespace CSGOTM {
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
-            string a = ExecuteApiRequest(url, ApiMethod.Buy);
+            string a = ExecuteApiRequest(url, ApiMethod.Buy, ApiLogLevel.LogAll);
             if (a == null)
                 return false;
             JObject parsed = JObject.Parse(a);
