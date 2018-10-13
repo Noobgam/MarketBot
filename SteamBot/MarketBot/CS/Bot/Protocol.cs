@@ -229,6 +229,7 @@ namespace CSGOTM {
             money = GetMoney();
             Task.Run((Action)PingPong);
             Task.Run((Action)ReOpener);
+            Task.Run((Action)RefreshToken);
             Task.Run((Action)HandleTrades);
             Task.Run(() => {
                 OrdersCall(order => {
