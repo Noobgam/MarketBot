@@ -217,9 +217,12 @@ namespace SteamBot
                 case TradeOfferState.TradeOfferStateInEscrow:
                     return;
                 case TradeOfferState.TradeOfferStateCountered:
-                    Log.Info($"Trade offer {offer.TradeOfferId} was countered");
                     return;
                 case TradeOfferState.TradeOfferStateCanceled:
+                    return;
+                case TradeOfferState.TradeOfferStateCanceledBySecondFactor:
+                    return;
+                case TradeOfferState.TradeOfferStateInvalidItems:
                     return;
                 case TradeOfferState.TradeOfferStateDeclined:
                     return;
