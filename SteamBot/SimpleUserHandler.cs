@@ -90,18 +90,29 @@ namespace SteamBot
                     var their = offer.Items.GetTheirItems();
                     var my = offer.Items.GetMyItems();
                     if (my.Count == 0) {
-                        for (int retryCount = 0; retryCount < 2; ++retryCount) {
-                            var tradeAccept = offer.Accept();
-                            if (tradeAccept.Accepted) {
-                                string st = "Offer completed.";
-                                if (their.Count != 0)
-                                    st += " Received: " + their.Count + " items.";
-                                Log.Warn(st);
-                                return;
-                            } else {
-                                Log.Error($"Could not accept offer on try {retryCount + 1}: {tradeAccept.TradeError}.");
-                                Thread.Sleep(333);
-                            }
+                        var tradeAccept = offer.Accept();
+                        if (tradeAccept.Accepted) {
+                            string st = "Offer completed.";
+                            if (their.Count != 0)
+                                st += " Received: " + their.Count + " items.";
+                            Log.Warn(st);
+                            return;
+                        } else {
+                            Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
+                            Task.Delay(5000).ContinueWith(
+                                tsk => {
+                                    tradeAccept = offer.Accept();
+                                    if (tradeAccept.Accepted) {
+                                        string st = "Offer completed on retry.";
+                                        if (their.Count != 0)
+                                            st += " Received: " + their.Count + " items.";
+                                        Log.Warn(st);
+                                        return;
+                                    } else {
+                                        Log.Error($"Could not accept offer on retry {tradeAccept.TradeError}.");
+                                    }
+                                }
+                                );
                         }
                         break;
                     }
