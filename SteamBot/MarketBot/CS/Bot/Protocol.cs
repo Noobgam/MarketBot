@@ -104,7 +104,7 @@ namespace CSGOTM {
                 response = Utility.Request.Get(Consts.MARKETENDPOINT + url);
                 temp.Stop();
                 ShiftEma(0);
-                //File.AppendAllText($"get_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
+                File.AppendAllText($"get_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to {Consts.MARKETENDPOINT}{url} failed");
                 if (ex is WebException webex) {
@@ -159,7 +159,7 @@ namespace CSGOTM {
                 response = Utility.Request.Post(Consts.MARKETENDPOINT + url, data);
                 temp.Stop();
                 ShiftEma(0);
-                //File.AppendAllText($"post_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
+                File.AppendAllText($"post_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
                 if (ex is WebException webex) {
