@@ -650,7 +650,7 @@ namespace SteamBot
         /// Sets cookie flag if they are invalid.
         /// </summary>
         /// <returns>true if cookies are valid; otherwise false</returns>
-        bool CheckCookies()
+        public bool CheckCookies()
         {
             // We still haven't re-authenticated
             if (cookiesAreInvalid)
