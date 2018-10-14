@@ -99,7 +99,11 @@ namespace MarketBot.Server {
             try {
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
-                    KeyValuePair<string, int> kv = CurSizes.OrderBy(
+                    var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD);
+                    if (!Filtered.Any()) {
+                        throw new Exception("All bots are overflowing!");
+                    }
+                    KeyValuePair<string, int> kv = Filtered.OrderBy(
                         t => t.Value / coreConfig.botList.Where(x => x.Name == t.Key).First().Weight
                         ).FirstOrDefault();
                     if (kv.Key == null) {
@@ -181,7 +185,6 @@ namespace MarketBot.Server {
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.Status) {
-
                     JToken extrainfo = new JObject();
                     double moneySum = 0;
                     foreach (var kvp in CurSizes) {
