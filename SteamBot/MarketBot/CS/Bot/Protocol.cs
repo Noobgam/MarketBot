@@ -734,7 +734,7 @@ namespace CSGOTM {
             } else if ((string)parsed["result"] == "ok") {
                 return true;
             } else {
-                Log.ApiError("Could not buy an item." + parsed.ToString(Formatting.None));
+                Log.ApiError($"Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));
                 return false;
             }
 #endif
