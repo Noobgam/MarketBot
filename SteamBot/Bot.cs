@@ -1340,8 +1340,11 @@ namespace SteamBot
             #endregion
 
             #region Notifications
-            steamCallbackManager.Subscribe<SteamBot.SteamNotifications.CommentNotificationCallback>(callback =>
+            steamCallbackManager.Subscribe<SteamBot.SteamNotifications.NotificationCallback>(callback =>
             {
+                if (callback.Notifications.Count > 0) {
+                    Log.Info("New trade appeared");
+                }
                 //various types of comment notifications on profile/activity feed etc
                 //Log.Info("received CommentNotificationCallback");
                 //Log.Info("New Commments " + callback.CommentNotifications.CountNewComments);

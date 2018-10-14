@@ -99,9 +99,6 @@ namespace SteamBot
                             return;
                         } else {
                             Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
-                            if (Bot.CheckCookies()) {
-                                Log.Warn("Cookies are fine");
-                            }
                             Task.Delay(5000).ContinueWith(
                                 tsk => {
                                     tradeAccept = offer.Accept();
