@@ -35,8 +35,8 @@ namespace SteamTrade.TradeOffer
             data.Add("serverid", "1");
             data.Add("tradeofferid", tradeOfferId);
 
-            string url = string.Format("http://steamcommunity.com/tradeoffer/{0}/accept", tradeOfferId);
-            string referer = string.Format("http://steamcommunity.com/tradeoffer/{0}/", tradeOfferId);
+            string url = string.Format("https://steamcommunity.com/tradeoffer/{0}/accept", tradeOfferId);
+            string referer = string.Format("https://steamcommunity.com/tradeoffer/{0}/", tradeOfferId);
             
             string resp = steamWeb.Fetch(url, "POST", data, false, referer, true);
 
