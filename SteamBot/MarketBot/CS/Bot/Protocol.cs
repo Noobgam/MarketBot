@@ -90,7 +90,7 @@ namespace CSGOTM {
         void ShiftEma(double x) {
             EMA = EMA * (1 - ALP) + x * ALP;
         }
-
+        
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
             if (logLevel == ApiLogLevel.LogAll) {
                 Log.Info("Executing " + url);

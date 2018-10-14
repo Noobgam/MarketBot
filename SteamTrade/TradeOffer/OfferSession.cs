@@ -63,9 +63,11 @@ namespace SteamTrade.TradeOffer
             if (tradeOffer != null && tradeOffer.Offer != null) {
                 state = tradeOffer.Offer.TradeOfferState;
             }
-            File.AppendAllText("failedtrades", "+++++++++++++++++++++++++++++\n");
-            File.AppendAllText("failedtrades", JObject.FromObject(tradeOffer).ToString(Formatting.Indented));
-            File.AppendAllText("failedtrades", "\n----------------------------\n");
+            if (state == TradeOfferState.TradeOfferStateActive) {
+                File.AppendAllText("failedtrades", "+++++++++++++++++++++++++++++\n");
+                File.AppendAllText("failedtrades", JObject.FromObject(tradeOffer).ToString(Formatting.Indented));
+                File.AppendAllText("failedtrades", "\n----------------------------\n");
+            }
             return new TradeOfferAcceptResponse { Accepted = state == TradeOfferState.TradeOfferStateAccepted };            
         }
 
