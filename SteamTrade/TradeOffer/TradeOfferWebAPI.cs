@@ -24,9 +24,9 @@ namespace SteamTrade.TradeOffer
 
         private const string BaseUrl = "https://api.steampowered.com/IEconService/{0}/{1}/{2}";
 
-        public OfferResponse GetTradeOffer(string tradeofferid)
+        public OfferResponse GetTradeOffer(string tradeofferid, bool getDescriptions = false)
         {
-            string options = string.Format("?key={0}&tradeofferid={1}&language={2}&get_descriptions=1", apiKey, tradeofferid, "en_us");
+            string options = string.Format("?key={0}&tradeofferid={1}&language={2}&get_descriptions={3}", apiKey, tradeofferid, "en_us", getDescriptions);
             string url = String.Format(BaseUrl, "GetTradeOffer", "v1", options);
             try
             {
