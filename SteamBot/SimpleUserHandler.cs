@@ -187,6 +187,10 @@ namespace SteamBot
                                 Log.Error("Offer failed. Invalid trade request. (not issued by me, has my items there)");
                                 return;
                             } else { 
+                                if (offer.IsOurOffer) {
+                                    Log.Info("Doing nothing, this is my offer.");
+                                    break;
+                                }                                
                                 var tradeAccept = offer.Accept();
                                 if (tradeAccept.Accepted) {
                                     string st = "Offer completed.";
