@@ -59,6 +59,7 @@ namespace CSGOTM {
             LoadNonStickeredBase();
             FulfillBlackList();
             LoadDataBase();
+            RefreshConfig();
             Task.Run((Action)ParsingCycle);
             Task.Run((Action)SaveDataBaseCycle);
             Task.Run((Action)SellFromQueue);
@@ -68,108 +69,113 @@ namespace CSGOTM {
             if (!sellOnly) {
                 Task.Run((Action)SetOrderForUnstickered);
             }
-            Task.Run((Action)RefreshConfig);
+            Task.Run((Action)RefreshConfigThread);
         }
 
         void RefreshConfig() {
-            while (parent.IsRunning()) {
-                try {
-                    JObject data = JObject.Parse(Utility.Request.Get(
-                        "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw"));
-                    if (!data.TryGetValue(botName, out JToken token)) {
-                        Log.Error("Gist config contains no bot definition.");
-                    } else {
-                        if (token["stopsell"].Type != JTokenType.Integer)
-                            Log.Error("Have no idea when to stop selling");
-                        else {
-                            if (stopsell != (int)token["stopsell"]) {
-                                stopsell = (int)token["stopsell"];
-                            }
-                        }
-                                                        
-                        if (token["sell_only"].Type != JTokenType.Boolean)
-                            Log.Error($"Sell only is not a boolean for {botName}");
-                        else {
-                            if (sellOnly != (bool)token["sell_only"]) {
-                                Log.Info("Sellonly was changed from {0} to {1}", sellOnly, (bool)token["sell_only"]);
-                                sellOnly = (bool)token["sell_only"];
-                            }
-                        }
 
-                        if (token["want_to_buy"].Type != JTokenType.Float)
-                            Log.Error($"Want to buy is not a float for {botName}");
-                        else {
-                            if (WANT_TO_BUY != (double)token["want_to_buy"]) {
-                                Log.Info("Want to buy was changed from {0} to {1}", WANT_TO_BUY, (double)token["want_to_buy"]);
-                                WANT_TO_BUY = (double)token["want_to_buy"];
-                            }
-                        }
+            JObject data = JObject.Parse(Utility.Request.Get(
+                "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw"));
+            if (!data.TryGetValue(botName, out JToken token)) {
+                Log.Error("Gist config contains no bot definition.");
+            } else {
+                if (token["stopsell"].Type != JTokenType.Integer)
+                    Log.Error("Have no idea when to stop selling");
+                else {
+                    if (stopsell != (int)token["stopsell"]) {
+                        stopsell = (int)token["stopsell"];
+                    }
+                }
 
-                        if (token["max_from_median"].Type != JTokenType.Float)
-                            Log.Error($"Max from median is not a float for {botName}");
-                        else {
-                            if (MAXFROMMEDIAN != (double)token["max_from_median"]) {
-                                Log.Info("Max from median was changed from {0} to {1}", WANT_TO_BUY, (double)token["max_from_median"]);
-                                MAXFROMMEDIAN = (double)token["max_from_median"];
-                            }
-                        }
+                if (token["sell_only"].Type != JTokenType.Boolean)
+                    Log.Error($"Sell only is not a boolean for {botName}");
+                else {
+                    if (sellOnly != (bool)token["sell_only"]) {
+                        Log.Info("Sellonly was changed from {0} to {1}", sellOnly, (bool)token["sell_only"]);
+                        sellOnly = (bool)token["sell_only"];
+                    }
+                }
 
-                        if (token["unstickered_order"].Type != JTokenType.Float)
-                            Log.Error($"Unstickered order is not a float for {botName}");
-                        else {
-                            if (UNSTICKERED_ORDER != (double)token["unstickered_order"]) {
-                                Log.Info("Unsctickered order was changed from {0} to {1}", UNSTICKERED_ORDER, (double)token["unstickered_order"]);
-                                UNSTICKERED_ORDER = (double)token["unstickered_order"];
-                            }
-                        }
-                        if (token["experiments"] != null) {
-                            if (token["experiments"]["new_buy_formula"] is JToken new_buy_formula && new_buy_formula != null) {
-                                try {
-                                    DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-                                    DateTime start = DateTime.MinValue;
-                                    if (new_buy_formula["start"] != null)
-                                        start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
-                                    DateTime end = dtDateTime.AddSeconds((double)new_buy_formula["end"]).ToLocalTime();
-                                    if (DateTime.Now < end) {
-                                        double want_to_buy = (double)new_buy_formula["want_to_buy"];
-                                        NewBuyFormula temp = new NewBuyFormula(start, end, want_to_buy);
-                                        if (newBuyFormula != temp) {
-                                            newBuyFormula = temp;
-                                            Log.Info("New newBuyFormula applied:");
-                                            Log.Info(new_buy_formula.ToString(Formatting.None));
-                                        }
-                                    }
-                                } catch {
-                                    Log.Error("Incorrect experiment");
+                if (token["want_to_buy"].Type != JTokenType.Float)
+                    Log.Error($"Want to buy is not a float for {botName}");
+                else {
+                    if (WANT_TO_BUY != (double)token["want_to_buy"]) {
+                        Log.Info("Want to buy was changed from {0} to {1}", WANT_TO_BUY, (double)token["want_to_buy"]);
+                        WANT_TO_BUY = (double)token["want_to_buy"];
+                    }
+                }
+
+                if (token["max_from_median"].Type != JTokenType.Float)
+                    Log.Error($"Max from median is not a float for {botName}");
+                else {
+                    if (MAXFROMMEDIAN != (double)token["max_from_median"]) {
+                        Log.Info("Max from median was changed from {0} to {1}", WANT_TO_BUY, (double)token["max_from_median"]);
+                        MAXFROMMEDIAN = (double)token["max_from_median"];
+                    }
+                }
+
+                if (token["unstickered_order"].Type != JTokenType.Float)
+                    Log.Error($"Unstickered order is not a float for {botName}");
+                else {
+                    if (UNSTICKERED_ORDER != (double)token["unstickered_order"]) {
+                        Log.Info("Unsctickered order was changed from {0} to {1}", UNSTICKERED_ORDER, (double)token["unstickered_order"]);
+                        UNSTICKERED_ORDER = (double)token["unstickered_order"];
+                    }
+                }
+                if (token["experiments"] != null) {
+                    if (token["experiments"]["new_buy_formula"] is JToken new_buy_formula && new_buy_formula != null) {
+                        try {
+                            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+                            DateTime start = DateTime.MinValue;
+                            if (new_buy_formula["start"] != null)
+                                start = dtDateTime.AddSeconds((double)new_buy_formula["start"]).ToLocalTime();
+                            DateTime end = dtDateTime.AddSeconds((double)new_buy_formula["end"]).ToLocalTime();
+                            if (DateTime.Now < end) {
+                                double want_to_buy = (double)new_buy_formula["want_to_buy"];
+                                NewBuyFormula temp = new NewBuyFormula(start, end, want_to_buy);
+                                if (newBuyFormula != temp) {
+                                    newBuyFormula = temp;
+                                    Log.Info("New newBuyFormula applied:");
+                                    Log.Info(new_buy_formula.ToString(Formatting.None));
                                 }
                             }
-                            if (token["experiments"]["sell_multiplier"] is JToken sell_multiplier && sell_multiplier != null) {
-                                try {
-                                    DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
-                                    DateTime start = DateTime.MinValue;
-                                    if (sell_multiplier["start"] != null)
-                                        start = dtDateTime.AddSeconds((double)sell_multiplier["start"]).ToLocalTime();
-                                    DateTime end = dtDateTime.AddSeconds((double)sell_multiplier["end"]).ToLocalTime();
-                                    if (DateTime.Now < end) {
-                                        double sellmultiplier = (double)sell_multiplier["multiplier"];
-                                        SellMultiplier temp = new SellMultiplier(start, end, sellmultiplier);
-                                        if (sellMultiplier != temp) {
-                                            sellMultiplier = temp;
-                                            Log.Info("New sellmultiplier applied:");
-                                            Log.Info(sell_multiplier.ToString(Formatting.None));
-                                        }
-                                    }
-                                } catch {
-                                    Log.Error("Incorrect experiment");
-                                }
-                            }
+                        } catch {
+                            Log.Error("Incorrect experiment");
                         }
                     }
+                    if (token["experiments"]["sell_multiplier"] is JToken sell_multiplier && sell_multiplier != null) {
+                        try {
+                            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
+                            DateTime start = DateTime.MinValue;
+                            if (sell_multiplier["start"] != null)
+                                start = dtDateTime.AddSeconds((double)sell_multiplier["start"]).ToLocalTime();
+                            DateTime end = dtDateTime.AddSeconds((double)sell_multiplier["end"]).ToLocalTime();
+                            if (DateTime.Now < end) {
+                                double sellmultiplier = (double)sell_multiplier["multiplier"];
+                                SellMultiplier temp = new SellMultiplier(start, end, sellmultiplier);
+                                if (sellMultiplier != temp) {
+                                    sellMultiplier = temp;
+                                    Log.Info("New sellmultiplier applied:");
+                                    Log.Info(sell_multiplier.ToString(Formatting.None));
+                                }
+                            }
+                        } catch {
+                            Log.Error("Incorrect experiment");
+                        }
+                    }
+                }
+            }
+        }
+
+        void RefreshConfigThread() {
+            while (parent.IsRunning()) {
+                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
+                try {
+                    RefreshConfig();
 
                 } catch (Exception ex) {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
             }
         }
 
