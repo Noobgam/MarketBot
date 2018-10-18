@@ -415,20 +415,20 @@ namespace CSGOTM {
                                 myOffer[$"{cid}_{iid}"] = (int)token["sell_offers"]["my_offers"].Min();
                             } catch {
                                 myOffer[$"{cid}_{iid}"] = arr[0].Item1 + 1;
-                            };
+                            }
                         }
                         foreach (TMTrade trade in unstickeredChunk) {
                             try {
                                 //think it cant be empty because we have at least one order placed.
                                 if (marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 <= myOffer[$"{trade.i_classid}_{trade.i_instanceid}"]) {
                                     int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][0].Item1 - 1;
-                                    int careful = (int)info["results"].Where(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid).First()["history"]["average"];
+                                    int careful = (int)info["results"].First(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid)["history"]["average"];
                                     if (coolPrice < careful * 0.9)
                                         coolPrice = 0;
                                     items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
                                 } else {
                                     int coolPrice = marketOffers[$"{trade.i_classid}_{trade.i_instanceid}"][1].Item1 - 1;
-                                    int careful = (int)info["results"].Where(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid).First()["history"]["average"];
+                                    int careful = (int)info["results"].First(x => (string)x["classid"] == trade.i_classid && (string)x["instanceid"] == trade.i_instanceid)["history"]["average"];
                                     if (coolPrice < careful * 0.9)
                                         coolPrice = 0;
                                     items.Add(new Tuple<string, int>(trade.ui_id, coolPrice));
@@ -461,7 +461,7 @@ namespace CSGOTM {
                     }
                 } else if (toBeSold.TryDequeue(out Inventory.SteamItem item)) {
                     if (cachedInventory != null && cachedTradableCount < stopsell) {
-                        while (toBeSold.TryDequeue(out item)) ; //clear whole queue
+                        while (toBeSold.TryDequeue(out item)); //clear whole queue
                         Protocol.RemoveAll();
                         continue;
                     }
@@ -520,7 +520,6 @@ namespace CSGOTM {
                     File.Move(DATABASETEMPPATH, DATABASEPATH);
                 _DatabaseLock.ExitWriteLock();
                 LoadDataBase();
-                return;
             }
         }
 
@@ -557,7 +556,7 @@ namespace CSGOTM {
                     if (NewItem.mapping.Count == 0)
                         foreach (var str in indexes)
                             NewItem.mapping[str] = id++;
-                    Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
+                    Dictionary<string, List<int>> currentItemsCache = new Dictionary<string, List<int>>();
 
                     for (id = 1; id < lines.Length - 1; ++id) {
                         string[] item = lines[id].Split(';');
@@ -575,17 +574,17 @@ namespace CSGOTM {
                                 continue;
                             }
 
-                            if (!currentItems.ContainsKey(name))
-                                currentItems.Add(name, new List<int>());
+                            if (!currentItemsCache.ContainsKey(name))
+                                currentItemsCache.Add(name, new List<int>());
                             if (int.TryParse(item[NewItem.mapping["c_price"]], out int val)) {
-                                currentItems[name].Add(val);
+                                currentItemsCache[name].Add(val);
                             } else {
                                 Log.Warn($"{item[NewItem.mapping["c_price"]]} doesnt seem like a valid price");
                             }
                         }
                     }
                     lock (CurrentItemsLock) {
-                        this.currentItems = currentItems;
+                        this.currentItems = currentItemsCache;
                         SaveNonStickeredBase();
                         SortCurrentItems();
                     }

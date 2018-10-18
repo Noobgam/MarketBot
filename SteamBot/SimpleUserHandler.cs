@@ -199,11 +199,6 @@ namespace SteamBot
                                     if (my.Count != 0)
                                         st += " Lost:     " + my.Count + " items.";
                                     Log.Warn(st);
-                                    if (my.Count != 0) {
-                                        //Log.Info("Sending confirmation in 1 second [Deprecated, trying to log this]");
-                                        //Task.Delay(1000).
-                                        //    ContinueWith(tsk => Bot.AcceptAllMobileTradeConfirmations());
-                                    }
                                     return;
                                 } else {
                                     Log.Error($"Could not accept offer: {tradeAccept.TradeError}");

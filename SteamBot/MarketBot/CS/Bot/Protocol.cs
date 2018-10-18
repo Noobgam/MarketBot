@@ -37,8 +37,6 @@ namespace CSGOTM {
         private TMBot parent;
         private string CurrentToken = "";
 
-
-        //TODO(noobgam): make it great again, probably some of them can be united.
         public enum ApiMethod {
             GetTradeList,
             GetBestOrder,
@@ -419,7 +417,7 @@ namespace CSGOTM {
                 JObject json = JObject.Parse(resp);
                 if (json["success"] == null)
                     continue;
-                if ((bool)json["manual"] == true) {
+                if ((bool)json["manual"]) {
                     Log.Info(json.ToString(Formatting.None));
                 } else if ((bool)json["success"]) {
                     continue;
@@ -464,7 +462,7 @@ namespace CSGOTM {
                         Log.Info(json.ToString(Formatting.None));
                         var offer = Bot.NewTradeOffer(new SteamID(id));
                         try {
-                            foreach (JObject item in json["request"]["items"]) {
+                            foreach (JToken item in json["request"]["items"]) {
                                 offer.Items.AddMyItem(
                                     (int)item["appid"],
                                     (long)item["contextid"],
@@ -491,7 +489,7 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(2000);
                                 } else {
-                                    Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!"); //TODO(noobgam): don't accept confirmations if no offers were sent
+                                    Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!");
                                 }
                             }
                         } catch (Exception ex) {
