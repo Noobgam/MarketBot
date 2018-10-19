@@ -99,20 +99,13 @@ namespace SteamBot
                             return;
                         } else {
                             Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
-                            Task.Delay(5000).ContinueWith(
-                                tsk => {
-                                    tradeAccept = offer.Accept();
-                                    if (tradeAccept.Accepted) {
-                                        string st = "Offer completed on retry.";
-                                        if (their.Count != 0)
-                                            st += " Received: " + their.Count + " items.";
-                                        Log.Warn(st);
-                                        return;
-                                    } else {
-                                        Log.Error($"Could not accept offer on retry {tradeAccept.TradeError}.");
-                                    }
-                                }
-                                );
+                            var declined = offer.Decline();
+                            if (declined) {
+                                Log.Warn("Offer cancelled.");
+                                return;
+                            } else {
+                                Log.Error("Could not decline offer");
+                            }
                         }
                         break;
                     }
