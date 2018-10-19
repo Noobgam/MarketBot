@@ -28,12 +28,14 @@ namespace SteamTrade.TradeOffer
             JsonSerializerSettings.Formatting = Formatting.None;
         }
 
-        public TradeOfferAcceptResponse Accept(string tradeOfferId)
+        public TradeOfferAcceptResponse Accept(string tradeOfferId, string partnerId = "")
         {            
             var data = new NameValueCollection();
             data.Add("sessionid", steamWeb.SessionId);
             data.Add("serverid", "1");
             data.Add("tradeofferid", tradeOfferId);
+            if (partnerId != "")
+                data.Add("partner", partnerId);
 
             string url = string.Format("https://steamcommunity.com/tradeoffer/{0}/accept", tradeOfferId);
             string referer = string.Format("https://steamcommunity.com/tradeoffer/{0}/", tradeOfferId);

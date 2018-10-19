@@ -165,6 +165,8 @@ namespace SteamTrade.TradeOffer
             }
             if (!IsOurOffer && OfferState == TradeOfferState.TradeOfferStateActive)
             {
+                if (PartnerSteamId != null)
+                    return Session.Accept(TradeOfferId, PartnerSteamId.ConvertToUInt64().ToString());
                 return Session.Accept(TradeOfferId);
             }
             //todo: log wrong state

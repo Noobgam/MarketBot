@@ -207,8 +207,8 @@ namespace SteamBot
             logFile = config.LogFile;
             Log = new Log(logFile, DisplayName, consoleLogLevel, fileLogLevel);
             bool tryWith2FA = true; //2FA by default to avoid error when logging in
-            if (tryWith2FA)
-            {
+            if (tryWith2FA) {
+                SteamAuth.TimeAligner.AlignTime();
                 var mobileAuthCode = GetMobileAuthCode();
                 if (string.IsNullOrEmpty(mobileAuthCode))
                 {
