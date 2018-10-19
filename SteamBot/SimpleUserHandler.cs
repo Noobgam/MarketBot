@@ -99,12 +99,14 @@ namespace SteamBot
                             return;
                         } else {
                             Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
-                            var declined = offer.Decline();
-                            if (declined) {
-                                Log.Warn("Offer cancelled.");
-                                return;
-                            } else {
-                                Log.Error("Could not decline offer");
+                            if (tradeAccept.TradeError.Length == 0) {
+                                var declined = offer.Decline();
+                                if (declined) {
+                                    Log.Warn("Offer cancelled.");
+                                    return;
+                                } else {
+                                    Log.Error("Could not decline offer");
+                                }
                             }
                         }
                         break;
