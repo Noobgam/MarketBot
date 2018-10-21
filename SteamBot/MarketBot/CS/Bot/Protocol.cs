@@ -717,7 +717,7 @@ namespace CSGOTM {
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
             if (StopBuy) {
-                Log.Error($"Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));
+                Log.Error($"Skipping purchase request, all bots are overflowing.");
                 return false;
             }
             if (CurrentToken != "")
