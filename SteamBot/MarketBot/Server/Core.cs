@@ -104,7 +104,7 @@ namespace MarketBot.Server {
                         throw new Exception("All bots are overflowing!");
                     }
                     KeyValuePair<string, int> kv = Filtered.OrderBy(
-                        t => t.Value / coreConfig.botList.Where(x => x.Name == t.Key).First().Weight
+                        t => t.Value / coreConfig.botList.First(x => x.Name == t.Key).Weight
                         ).FirstOrDefault();
                     if (kv.Key == null) {
                         throw new Exception("Don't know about bot inventory sizes");

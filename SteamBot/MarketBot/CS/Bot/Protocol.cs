@@ -36,6 +36,7 @@ namespace CSGOTM {
         private SemaphoreSlim ApiSemaphore = new SemaphoreSlim(10);
         private TMBot parent;
         private string CurrentToken = "";
+        private bool StopBuy = false;
 
         public enum ApiMethod {
             GetTradeList,
@@ -575,8 +576,13 @@ namespace CSGOTM {
                 JObject temp;
                 try {
                     temp = LocalRequest.GetBestToken(parent.config.Username);
-                    if ((bool)temp["success"])
+                    if ((bool)temp["success"]) {
                         CurrentToken = (string)temp["token"];
+                        StopBuy = false;
+                    }  else {
+                        if ((string)temp["error"] == "All bots are overflowing!")
+                            StopBuy = true;
+                    }
                 } catch {
                     Log.Error("Could not get a response from local server");
                 }
@@ -710,6 +716,10 @@ namespace CSGOTM {
             return true;
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
+            if (StopBuy) {
+                Log.Error($"Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));
+                return false;
+            }
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
             string a = ExecuteApiRequest(url, ApiMethod.Buy, ApiLogLevel.LogAll);
