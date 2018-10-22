@@ -54,6 +54,7 @@ namespace CSGOTM {
 
         public static void Ping(string botname) {
             RawGet(Consts.Endpoints.PingPong, botname);
+            Console.WriteLine(botname + " pong");
         }
     }
 }

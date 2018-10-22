@@ -68,7 +68,7 @@ namespace CSGOTM {
                 if (prior >= (int)RestartPriority.Alarm) {
                     if (prior >= (int)RestartPriority.Restart) {
                         WaitingForRestart = true;
-                        Alert("бот перезапускается, отправь что-нибудь в ответ на это сообщение, показывая, что ты его получил и прочитал.");
+                        Alert("бот перезапускается.");
                         Task.Delay(5000)
                             .ContinueWith(task => bot.ScheduleRestart());
                         break;
