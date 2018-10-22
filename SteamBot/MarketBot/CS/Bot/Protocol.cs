@@ -226,7 +226,8 @@ namespace CSGOTM {
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             money = GetMoney();
-            Task.Run((Action)PingPong);
+            Task.Run((Action)PingPongMarket);
+            Task.Run((Action)PingPongLocal);
             Task.Run((Action)ReOpener);
             Task.Run((Action)RefreshToken);
             Task.Run((Action)HandleTrades);
@@ -767,10 +768,16 @@ namespace CSGOTM {
 #endif
         }
 
-        public void PingPong() {
+        public void PingPongMarket() {
             while (parent.IsRunning()) {
                 string uri = $"/api/PingPong/direct/?key={Api}";
-                string resp = ExecuteApiRequest(uri);
+                ExecuteApiRequest(uri);
+                Thread.Sleep(30000);
+            }
+        }
+
+        public void PingPongLocal() {
+            while (parent.IsRunning()) {
                 LocalRequest.Ping(parent.config.Username);
                 Thread.Sleep(30000);
             }
