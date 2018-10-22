@@ -76,7 +76,7 @@ namespace CSGOTM {
 
                 }
                 prior = (int)(prior * 0.9);
-                Thread.Sleep(100);
+                Thread.Sleep(1000);
             }
         }
 

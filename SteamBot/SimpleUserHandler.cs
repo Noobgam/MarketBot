@@ -100,13 +100,8 @@ namespace SteamBot
                         } else {
                             Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
                             if (tradeAccept.TradeError.Length == 0) {
-                                var declined = offer.Decline();
-                                if (declined) {
-                                    Log.Warn("Offer cancelled.");
-                                    return;
-                                } else {
-                                    Log.Error("Could not decline offer");
-                                }
+                                Log.ApiError("Unknown reason. Restarting bot");
+                                Bot.MarketBot.FlagError(CSGOTM.TMBot.RestartPriority.CriticalError);
                             }
                         }
                         break;
