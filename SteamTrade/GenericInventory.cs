@@ -205,8 +205,10 @@ namespace SteamTrade
                                             type = class_instance.type,
                                             marketable = (bool)class_instance.marketable,
                                             tradable = (bool)class_instance.tradable,
-                                            classid = long.Parse((string)class_instance.classid),
-                                            url = (class_instance.actions != null && class_instance.actions.First["link"] != null ? class_instance.actions.First["link"] : ""),
+                                            classid = String.IsNullOrEmpty((string)class_instance.classid) ? -1 : long.Parse((string)class_instance.classid),
+                                            url = (class_instance.actions != null && class_instance.actions.First["link"] != null
+                                                ? class_instance.actions.First["link"]
+                                                : ""),
                                             app_data = tmpAppData,
                                             market_fee_app_id = (class_instance.market_fee_app != null ? class_instance.market_fee_app : 0),
                                         }
@@ -225,7 +227,7 @@ namespace SteamTrade
                         {
                             moreStart = null;
                         }
-                    } while (!String.IsNullOrEmpty(moreStart) && moreStart.ToLower() != "false");
+                    } while (!String.IsNullOrEmpty(moreStart) && moreStart.ToLower() != "false" && moreStart != "0");
                 }//end for (contextId)
             }//end try
             catch (Exception e)
