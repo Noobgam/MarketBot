@@ -279,13 +279,17 @@ namespace SteamBot
         /// <returns><c>true</c>. See remarks</returns>
         public bool StartBot()
         {
-            IsRunning = true;
-            Log.Info("Connecting...");
-            if (!botThread.IsBusy)
-                botThread.RunWorkerAsync();
-            SteamClient.Connect();
-            Log.Success("Done Loading Bot!");
-            return true; // never get here
+            if (!IsRunning) {
+                IsRunning = true;
+                Log.Info("Connecting...");
+                if (!botThread.IsBusy)
+                    botThread.RunWorkerAsync();
+                SteamClient.Connect();
+                Log.Success("Done Loading Bot!");
+                return true; // never get here
+            } else {
+                return false;
+            }
         }
 
         /// <summary>
@@ -294,14 +298,16 @@ namespace SteamBot
         /// </summary>
         public void StopBot()
         {
-            IsRunning = false;
-            Log.Debug("Trying to shut down bot thread.");
-            SteamClient.Disconnect();
-            MarketBot.Stop();
-            botThread.CancelAsync();
-            while (botThread.IsBusy)
-                Thread.Yield();
-            userHandlers.Clear();
+            if (IsRunning) {
+                IsRunning = false;
+                Log.Debug("Trying to shut down bot thread.");
+                SteamClient.Disconnect();
+                MarketBot.Stop();
+                botThread.CancelAsync();
+                while (botThread.IsBusy)
+                    Thread.Yield();
+                userHandlers.Clear();
+            }
         }
 
         /// <summary>
