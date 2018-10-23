@@ -59,7 +59,10 @@ namespace CSGOTM {
                     LocalRequest.PutInventory(config.Username, inv);
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
-                Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
+                if (counter != 0)
+                    Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
+                else
+                    Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL / 10).Wait(); //1 minute because I need to reupload inventory on failure.
             }
         }
 

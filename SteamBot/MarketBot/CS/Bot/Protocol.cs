@@ -225,7 +225,7 @@ namespace CSGOTM {
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
-            money = GetMoney();
+            GetMoney();
             Task.Run((Action)PingPongMarket);
             Task.Run((Action)PingPongLocal);
             Task.Run((Action)ReOpener);
@@ -953,9 +953,10 @@ namespace CSGOTM {
         public int GetMoney() {
             string resp = ExecuteApiRequest("/api/GetMoney/?key=" + Api, ApiMethod.GetMoney);
             if (resp == null)
-                return 0;
+                return money;
             JObject temp2 = JObject.Parse(resp);
-            return (int)temp2["money"];
+            money = (int)temp2["money"];
+            return money;
         }
 
         public List<Order> GetOrderPage(int pageNumber) {
