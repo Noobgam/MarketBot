@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading;
@@ -169,20 +170,39 @@ namespace CSGOTM {
 }
 
 public static class BinarySerialization {
+    static ConcurrentDictionary<string, ReaderWriterLockSlim> fileLock = new ConcurrentDictionary<string, ReaderWriterLockSlim>();
     public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false) {
-        using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
-            var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            binaryFormatter.Serialize(stream, objectToWrite);
+        fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
+        if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
+            rwlock.EnterWriteLock();
+            try {
+                using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
+                    var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                    binaryFormatter.Serialize(stream, objectToWrite);
+                }
+            } finally {
+                rwlock.ExitWriteLock();
+            }
         }
     }
 
     public static T ReadFromBinaryFile<T>(string filePath) {
-        using (Stream stream = File.Open(filePath, FileMode.Open)) {
-            var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-            return (T)binaryFormatter.Deserialize(stream);
+        fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
+        if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
+            rwlock.EnterReadLock();
+            try {
+                using (Stream stream = File.Open(filePath, FileMode.Open)) {
+                    var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
+                    return (T)binaryFormatter.Deserialize(stream);
+                }
+            } finally {
+                rwlock.ExitReadLock();
+            }
         }
+        return default(T);
     }
 }
+                    
 
 public static class JsonSerialization {
     public static void WriteToJsonFile<T>(string filePath, T objectToWrite, bool append = false) where T : new() {
