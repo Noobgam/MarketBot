@@ -17,7 +17,7 @@ namespace CSGOTM {
     public class Logic {
         public MarketLogger Log;
         private readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
-        private readonly object CurrentItemsLock = new object();
+        private readonly ReaderWriterLockSlim CurrentItemsLock = new ReaderWriterLockSlim();
         private readonly object RefreshItemsLock = new object();
         private readonly object UnstickeredRefreshItemsLock = new object();
         private static double MAXFROMMEDIAN = 0.78;
@@ -307,31 +307,33 @@ namespace CSGOTM {
         }
 
         int GetMySellPriceByName(string name) {
-            lock (CurrentItemsLock) {
-                if (currentItems.TryGetValue(name, out List<int> prices) && prices.Count > 2) {
-                    int price = -1;
-                    if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 12
-                        && prices.Count > 4
-                        && prices[4] / prices[2] <= 1.3) {
-                        price = prices[4] - 30;
-                    } else if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 15
-                          && prices.Count > 3
-                          && prices[3] / prices[2] <= 1.2) {
-                        price = prices[3] - 30;
-                    } else {
-                        price = prices[2] - 30;
-                    }
-                    _DatabaseLock.EnterReadLock();
-                    if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.median || price == -1)) {
-                        price = 2 * saleHistory.median;
-                    }
-                    _DatabaseLock.ExitReadLock();
-                    return price;
+            CurrentItemsLock.EnterReadLock();
+            if (currentItems.TryGetValue(name, out List<int> prices) && prices.Count > 2) {
+                int price = -1;
+                if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 12
+                    && prices.Count > 4
+                    && prices[4] / prices[2] <= 1.3) {
+                    price = prices[4] - 30;
+                } else if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 15
+                        && prices.Count > 3
+                        && prices[3] / prices[2] <= 1.2) {
+                    price = prices[3] - 30;
+                } else {
+                    price = prices[2] - 30;
                 }
+                _DatabaseLock.EnterReadLock();
+                if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.median || price == -1)) {
+                    price = 2 * saleHistory.median;
+                }
+                _DatabaseLock.ExitReadLock();
+                CurrentItemsLock.ExitReadLock();
+                return price;
             }
+            CurrentItemsLock.ExitReadLock();
             _DatabaseLock.EnterReadLock();
             if (dataBase.TryGetValue(name, out SalesHistory salesHistory)) {
-                    return salesHistory.median;
+                _DatabaseLock.ExitReadLock();
+                return salesHistory.median;
             }
             _DatabaseLock.ExitReadLock();
             return -1;
@@ -583,11 +585,11 @@ namespace CSGOTM {
                             }
                         }
                     }
-                    lock (CurrentItemsLock) {
-                        this.currentItems = currentItemsCache;
-                        SaveNonStickeredBase();
-                        SortCurrentItems();
-                    }
+                    CurrentItemsLock.EnterWriteLock();
+                    this.currentItems = currentItemsCache;
+                    SaveNonStickeredBase();
+                    SortCurrentItems();
+                    CurrentItemsLock.ExitWriteLock();
 
                     // Calling WantToBuy function for all items. 
                     indexes = lines[0].Split(';');
@@ -743,41 +745,41 @@ namespace CSGOTM {
                 return false;
             }
             _DatabaseLock.EnterReadLock();
+            CurrentItemsLock.EnterReadLock();
             try { 
-                lock (CurrentItemsLock) {
-                    if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
-                        LocalRequest.PutSalesHistorySize(parent.config.Username, 0);
-                        return false;
+                if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
+                    LocalRequest.PutSalesHistorySize(parent.config.Username, 0);
+                    return false;
+                }
+                if (newBuyFormula != null && newBuyFormula.IsRunning()) {
+                    if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
+                        && salesHistory.median - item.ui_price > 1000
+                        && salesHistory.cnt >= Consts.MINSIZE) {
+                        return true; //back to good ol' dayz
                     }
-                    if (newBuyFormula != null && newBuyFormula.IsRunning()) {
-                        if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
-                            && salesHistory.median - item.ui_price > 1000
-                            && salesHistory.cnt >= Consts.MINSIZE) {
-                            return true; //back to good ol' dayz
-                        }
-                    }
+                }
 
-                    if (!currentItems.TryGetValue(item.i_market_name, out List<int> prices)) {
-                        return false;
-                    }
-                    //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
+                if (!currentItems.TryGetValue(item.i_market_name, out List<int> prices)) {
+                    return false;
+                }
+                //if (item.ui_price < 40000 && salesHistory.cnt >= MINSIZE && item.ui_price < 0.8 * salesHistory.median && salesHistory.median - item.ui_price > 600 && !blackList.Contains(item.i_market_name))
 
-                    //else
-                    {
-                        LocalRequest.PutSalesHistorySize(parent.config.Username, salesHistory.cnt);
-                        if (prices.Count >= 6
-                            && item.ui_price < WANT_TO_BUY * prices[2]
-                            && salesHistory.cnt >= Consts.MINSIZE
-                            && prices[2] < salesHistory.median * 1.2
-                            && prices[2] - item.ui_price > 1000) {
-                            Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
-                                     (salesHistory.median - item.ui_price));
-                            return true;
-                        }
+                //else
+                {
+                    LocalRequest.PutSalesHistorySize(parent.config.Username, salesHistory.cnt);
+                    if (prices.Count >= 6
+                        && item.ui_price < WANT_TO_BUY * prices[2]
+                        && salesHistory.cnt >= Consts.MINSIZE
+                        && prices[2] < salesHistory.median * 1.2
+                        && prices[2] - item.ui_price > 1000) {
+                        Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
+                                    (salesHistory.median - item.ui_price));
+                        return true;
                     }
                 }
             } finally {
                 _DatabaseLock.ExitReadLock();
+                CurrentItemsLock.ExitReadLock();
             }
 
             return false;
