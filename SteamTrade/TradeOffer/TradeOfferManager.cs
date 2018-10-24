@@ -39,9 +39,11 @@ namespace SteamTrade.TradeOffer
         {
             DateTime startTime = DateTime.Now;
 
-            var offersResponse = (LastTimeCheckedOffers == DateTime.MinValue
-                ? webApi.GetAllTradeOffers()
-                : webApi.GetAllTradeOffers(GetUnixTimeStamp(LastTimeCheckedOffers).ToString()));
+            if (LastTimeCheckedOffers == DateTime.MinValue)
+                LastTimeCheckedOffers = DateTime.Now - TimeSpan.FromHours(1);
+            //we REALLY don't need that many offers processed
+
+            var offersResponse = webApi.GetAllTradeOffers(GetUnixTimeStamp(LastTimeCheckedOffers).ToString());
             AddTradeOffersToQueue(offersResponse);
 
             LastTimeCheckedOffers = startTime - TimeSpan.FromMinutes(5); //Lazy way to make sure we don't miss any trade offers due to slightly differing clocks
