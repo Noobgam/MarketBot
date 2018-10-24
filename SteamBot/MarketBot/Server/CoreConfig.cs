@@ -20,6 +20,9 @@ namespace MarketBot.Server {
         [JsonProperty("weight")]
         public readonly double Weight;
 
+        [JsonProperty("force")]
+        public readonly bool Force;
+
         public override bool Equals(object obj) {
             return obj is BotConfig && Equals((BotConfig)obj);
         }

@@ -99,52 +99,62 @@ namespace MarketBot.Server {
             try {
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
-                    var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD);
-                    if (!Filtered.Any()) {
-                        throw new Exception("All bots are overflowing!");
-                    }
-                    KeyValuePair<string, int> kv = Filtered.OrderBy(
-                        t => t.Value / coreConfig.botList.First(x => x.Name == t.Key).Weight
-                        ).FirstOrDefault();
-                    if (kv.Key == null) {
-                        throw new Exception("Don't know about bot inventory sizes");
-                    }
-
-                    JToken extrainfo = new JObject();
-                    foreach (var kvp in CurSizes) {
-                        extrainfo[kvp.Key] = new JObject {
-                            ["inventorysize"] = kvp.Value
+                    var Forced = coreConfig.botList.Where(x => x.Force);
+                    if (Forced.Any()) {
+                        BotConfig forcedBot = Forced.First();
+                        resp = new JObject {
+                            ["success"] = true,
+                            ["token"] = Consts.TokenCache[forcedBot.Name],
+                            ["botname"] = forcedBot.Name,
                         };
-                    }
-                    NameValueCollection qscoll = HttpUtility.ParseQueryString(context.Request.Url.Query);
-                    bool extradb = qscoll.AllKeys.Contains("extradb");
-                    foreach (var key in qscoll.AllKeys) {
-                        if (key == "dbhit") {
-                            int value = int.Parse(qscoll[key]);
-                            foreach (var kvp in salesHistorySizes) {
-                                while (kvp.Value.TryPeek(out var result)) {
-                                    if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
-                                        break;
+                    } else {
+                        var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD);
+                        if (!Filtered.Any()) {
+                            throw new Exception("All bots are overflowing!");
+                        }
+                        KeyValuePair<string, int> kv = Filtered.OrderBy(
+                            t => t.Value / coreConfig.botList.First(x => x.Name == t.Key).Weight
+                            ).FirstOrDefault();
+                        if (kv.Key == null) {
+                            throw new Exception("Don't know about bot inventory sizes");
+                        }
+
+                        JToken extrainfo = new JObject();
+                        foreach (var kvp in CurSizes) {
+                            extrainfo[kvp.Key] = new JObject {
+                                ["inventorysize"] = kvp.Value
+                            };
+                        }
+                        NameValueCollection qscoll = HttpUtility.ParseQueryString(context.Request.Url.Query);
+                        bool extradb = qscoll.AllKeys.Contains("extradb");
+                        foreach (var key in qscoll.AllKeys) {
+                            if (key == "dbhit") {
+                                int value = int.Parse(qscoll[key]);
+                                foreach (var kvp in salesHistorySizes) {
+                                    while (kvp.Value.TryPeek(out var result)) {
+                                        if (DateTime.Now.Subtract(result.First).TotalHours <= 1) {
+                                            break;
+                                        }
+                                        if (!kvp.Value.TryDequeue(out result)) {
+                                            break;
+                                        }
                                     }
-                                    if (!kvp.Value.TryDequeue(out result)) {
-                                        break;
-                                    }
-                                }
-                                if (!kvp.Value.IsEmpty) {
-                                    extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= value).Count() / (double)kvp.Value.Count;
-                                    if (extradb) {
-                                        extrainfo[kvp.Key]["dbcnt"] = kvp.Value.Count;
+                                    if (!kvp.Value.IsEmpty) {
+                                        extrainfo[kvp.Key]["dbhit"] = kvp.Value.Where(x => x.Second >= value).Count() / (double)kvp.Value.Count;
+                                        if (extradb) {
+                                            extrainfo[kvp.Key]["dbcnt"] = kvp.Value.Count;
+                                        }
                                     }
                                 }
                             }
                         }
+                        resp = new JObject {
+                            ["success"] = true,
+                            ["token"] = Consts.TokenCache[kv.Key],
+                            ["botname"] = kv.Key,
+                            ["extrainfo"] = extrainfo
+                        };
                     }
-                    resp = new JObject {
-                        ["success"] = true,
-                        ["token"] = Consts.TokenCache[kv.Key],
-                        ["botname"] = kv.Key,
-                        ["extrainfo"] = extrainfo
-                    };
                 } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
