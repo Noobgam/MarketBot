@@ -307,6 +307,7 @@ namespace SteamBot
                 IsRunning = false;
                 Log.Debug("Trying to shut down bot thread.");
                 SteamClient.Disconnect();
+                MarketBot.Dispose();
                 MarketBot = null;
                 botThread.CancelAsync();
                 while (botThread.IsBusy)

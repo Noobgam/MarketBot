@@ -10,11 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace CSGOTM {
-    public class TMBot {
-
-        public void Stop() {
-            Log.Dispose();
-        }
+    public class TMBot : IDisposable {
 
         public TMBot(Bot bot, Configuration.BotInfo config) {
             this.bot = bot;
@@ -100,6 +96,10 @@ namespace CSGOTM {
 
         public bool IsRunning() {
             return !WaitingForRestart;
+        }
+
+        public void Dispose() {
+            Log.Dispose();
         }
 
         public int prior = 0;
