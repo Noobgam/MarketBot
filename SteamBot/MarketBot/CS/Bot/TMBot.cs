@@ -48,7 +48,7 @@ namespace CSGOTM {
               
                 GenericInventory inv = new GenericInventory(bot.SteamWeb);
                 inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID);
-                int counter = inv.descriptions.Count(x => x.Value.tradable);
+                int counter = inv.descriptions.Count;
                 if (counter != 0) { //lol...
                     logic.cachedInventory = inv;
                     logic.cachedTradableCount = counter;
