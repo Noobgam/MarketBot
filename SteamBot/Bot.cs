@@ -146,7 +146,8 @@ namespace SteamBot
         /// </summary>
         [Obsolete("Refactored to be Log instead of log")]
         public Log log { get { return Log; } }
-        
+
+        Configuration.BotInfo botConfig;
         public CSGOTM.TMBot MarketBot;
         private bool RestartFlag = false;
 
@@ -162,6 +163,7 @@ namespace SteamBot
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
         {
+            botConfig = config;
             userHandlers = new Dictionary<SteamID, UserHandler>();
             logOnDetails = new SteamUser.LogOnDetails
             {
@@ -282,6 +284,9 @@ namespace SteamBot
             if (!IsRunning) {
                 IsRunning = true;
                 Log.Info("Connecting...");
+                if (MarketBot == null) {
+                    MarketBot = new CSGOTM.TMBot(this, botConfig);
+                }
                 if (!botThread.IsBusy)
                     botThread.RunWorkerAsync();
                 SteamClient.Connect();
@@ -302,7 +307,7 @@ namespace SteamBot
                 IsRunning = false;
                 Log.Debug("Trying to shut down bot thread.");
                 SteamClient.Disconnect();
-                MarketBot.Stop();
+                MarketBot = null;
                 botThread.CancelAsync();
                 while (botThread.IsBusy)
                     Thread.Yield();

@@ -184,6 +184,7 @@ namespace SteamBot
                 else
                 {
                     StopBot(botname);
+                    Thread.Sleep(5000);
                     StartBot(botname);
                 }
             }

@@ -340,6 +340,7 @@ namespace CSGOTM {
                         }
                         break;
                     case "history_go":
+                        Log.ApiError(TMBot.RestartPriority.CriticalError, "Debug");
                         try {
                             char[] trimming = { '[', ']' };
                             data = Encode.DecodeEncodedNonAsciiCharacters(data);
