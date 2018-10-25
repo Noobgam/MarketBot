@@ -25,6 +25,7 @@ namespace CSGOTM {
 
             logic.Protocol = protocol;
             protocol.Logic = logic;
+            WaitingForRestart = false;
 
             Task.Run((Action)Delayer);
         }

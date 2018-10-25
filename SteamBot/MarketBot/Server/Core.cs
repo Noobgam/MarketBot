@@ -36,14 +36,6 @@ namespace MarketBot.Server {
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
             //Task.Run((Action)DBHitProvider);
-#if DEBUG
-            try {
-                temp = LocalRequest.GetBestToken("grim2");
-                Console.WriteLine(temp.ToString());
-            } catch {
-                Console.Error.WriteLine("Could not get a response from local server");
-            }
-#endif
         }
 
         private void DBHitProvider() {
