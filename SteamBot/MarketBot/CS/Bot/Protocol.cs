@@ -575,6 +575,7 @@ namespace CSGOTM {
         private void RefreshToken() {
             while (parent.IsRunning()) {
                 JObject temp;
+                bool flag = false;
                 try {
                     temp = LocalRequest.GetBestToken(parent.config.Username);
                     if ((bool)temp["success"]) {
@@ -583,11 +584,18 @@ namespace CSGOTM {
                     }  else {
                         if ((string)temp["error"] == "All bots are overflowing!")
                             StopBuy = true;
+                        else
+                            flag = true;
                     }
                 } catch {
+                    flag = true;
                     Log.Error("Could not get a response from local server");
                 }
-                Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 30000).Wait();
+                if (!flag)
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 30000).Wait();
+                if (flag)
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 1000).Wait();
+
             }
         }
 
