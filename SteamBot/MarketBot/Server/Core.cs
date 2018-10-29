@@ -214,9 +214,9 @@ namespace MarketBot.Server {
                         moneySum += myMoney;
                     }
                     foreach (var kvp in CurInventory) {
-                        extrainfo[kvp.Key] = new JObject {
-                            ["inventory_usd_cost"] = kvp.Value.ToString("C")
-                        };
+                        if (extrainfo[kvp.Key] == null)
+                            extrainfo[kvp.Key] = new JObject();
+                        extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C");
                     }
                     resp = new JObject {
                         ["success"] = true,
