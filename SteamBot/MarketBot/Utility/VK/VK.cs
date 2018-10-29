@@ -1,9 +1,11 @@
-﻿using System;
+﻿using SteamBot.MarketBot.CS;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Utility;
 using VkNet;
 using VkNet.Enums.Filters;
 using VkNet.Model;
@@ -80,6 +82,15 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static void HandleMessage(Message message) {
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
+            foreach (var attach in message.Attachments) {
+                //attach.Document.Uri
+                if (attach.Type == typeof(VkNet.Model.Attachments.Document) && attach.Instance is VkNet.Model.Attachments.Document doc) {
+                    SteamDataBase.RefreshDatabase(Request.Get(doc.Uri));
+                    Message(message.FromId.Value, $"Спасибо, обновил базу.");
+                    Thread.Sleep(500);
+                    return;
+                }
+            }
             //if (message.FromId == 110139244 || message.FromId == 62228399) {
             //    return; //just ignore these two people.
             //}

@@ -1,4 +1,5 @@
 ﻿using SteamBot;
+using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.Utility.VK;
 using SteamTrade;
 using SuperSocket.ClientEngine;
@@ -54,6 +55,15 @@ namespace CSGOTM {
                     logic.cachedInventory = inv;
                     logic.cachedTradableCount = counter;
                     LocalRequest.PutInventory(config.Username, inv);
+                    int cnt = 0;
+                    double totalprice = 0;
+                    foreach (var item in inv.descriptions) {
+                        if (SteamDataBase.cache.TryGetValue(item.Value.market_hash_name, out double price)) {
+                            ++cnt;
+                            totalprice += price;
+                        }
+                    }
+                    LocalRequest.PutInventoryCost(config.Username, totalprice);
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 if (counter != 0)

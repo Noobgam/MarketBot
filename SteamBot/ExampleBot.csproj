@@ -131,6 +131,7 @@
     <Compile Include="MarketBot\CS\Bot\Logic.cs" />
     <Compile Include="MarketBot\CS\Bot\Protocol.cs" />
     <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
+    <Compile Include="MarketBot\CS\SteamDataBase.cs" />
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\CS\Utility.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
