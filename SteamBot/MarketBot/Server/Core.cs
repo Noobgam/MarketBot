@@ -119,11 +119,6 @@ namespace MarketBot.Server {
                                 ["inventorysize"] = kvp.Value
                             };
                         }
-                        foreach (var kvp in CurInventory) {
-                            extrainfo[kvp.Key] = new JObject {
-                                ["inventory_usd_cost"] = kvp.Value
-                            };
-                        }
                         NameValueCollection qscoll = HttpUtility.ParseQueryString(context.Request.Url.Query);
                         bool extradb = qscoll.AllKeys.Contains("extradb");
                         foreach (var key in qscoll.AllKeys) {
@@ -217,6 +212,11 @@ namespace MarketBot.Server {
                         double myMoney = (double)kvp.Value / 100;
                         extrainfo[kvp.Key]["curmoney"] = myMoney;
                         moneySum += myMoney;
+                    }
+                    foreach (var kvp in CurInventory) {
+                        extrainfo[kvp.Key] = new JObject {
+                            ["inventory_usd_cost"] = kvp.Value.ToString("C")
+                        };
                     }
                     resp = new JObject {
                         ["success"] = true,
