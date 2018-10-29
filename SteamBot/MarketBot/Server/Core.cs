@@ -25,6 +25,7 @@ namespace MarketBot.Server {
         public Core() {
             server = new HttpListener();
             CurSizes = new Dictionary<string, int>();
+            CurInventory = new Dictionary<string, double>();
             CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
@@ -82,6 +83,7 @@ namespace MarketBot.Server {
 
         private Dictionary<string, int> CurSizes;
         private Dictionary<string, int> CurMoney;
+        private Dictionary<string, double> CurInventory;
         private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
 
 
@@ -115,6 +117,11 @@ namespace MarketBot.Server {
                         foreach (var kvp in CurSizes) {
                             extrainfo[kvp.Key] = new JObject {
                                 ["inventorysize"] = kvp.Value
+                            };
+                        }
+                        foreach (var kvp in CurInventory) {
+                            extrainfo[kvp.Key] = new JObject {
+                                ["inventory_usd_cost"] = kvp.Value
                             };
                         }
                         NameValueCollection qscoll = HttpUtility.ParseQueryString(context.Request.Url.Query);
@@ -176,6 +183,16 @@ namespace MarketBot.Server {
                         salesHistorySizes[usernames[0]] = new ConcurrentQueue<Pair<DateTime, int>>();
                     }
                     salesHistorySizes[usernames[0]].Enqueue(new Pair<DateTime, int>(DateTime.Now, int.Parse(data[0])));
+                } else if (Endpoint == Consts.Endpoints.PutInventoryCost) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    CurInventory[usernames[0]] = double.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
