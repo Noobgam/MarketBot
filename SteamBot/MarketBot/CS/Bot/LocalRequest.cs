@@ -44,14 +44,6 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.PutInventoryCost, botname, sumprice.ToString());
         }
 
-        public static void PutSalesHistorySize(string botname, int cnt) {
-#if DEBUG
-            RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
-#else
-            //Console.WriteLine("Don't put sales in release mode.");            
-#endif
-        }
-
         public static void PutL1Optimized(string botname, int cnt) {
             RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
         }

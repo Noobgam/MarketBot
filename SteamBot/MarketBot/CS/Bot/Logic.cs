@@ -12,6 +12,7 @@ using System.Linq;
 using System.Collections.Concurrent;
 using SteamBot.MarketBot.CS;
 using SteamTrade;
+using Utility;
 
 namespace CSGOTM {
     public class Logic {
@@ -60,16 +61,16 @@ namespace CSGOTM {
             FulfillBlackList();
             LoadDataBase();
             RefreshConfig();
-            Task.Run((Action)ParsingCycle);
-            Task.Run((Action)SaveDataBaseCycle);
-            Task.Run((Action)SellFromQueue);
-            Task.Run((Action)AddNewItems);
-            Task.Run((Action)UnstickeredRefresh);
-            Task.Run((Action)SetNewOrder);
+            Tasking.Run((Action)ParsingCycle);
+            Tasking.Run((Action)SaveDataBaseCycle);
+            Tasking.Run((Action)SellFromQueue);
+            Tasking.Run((Action)AddNewItems);
+            Tasking.Run((Action)UnstickeredRefresh);
+            Tasking.Run((Action)SetNewOrder);
             if (!sellOnly) {
-                Task.Run((Action)SetOrderForUnstickered);
+                Tasking.Run((Action)SetOrderForUnstickered);
             }
-            Task.Run((Action)RefreshConfigThread);
+            Tasking.Run((Action)RefreshConfigThread);
         }
 
         void RefreshConfig() {
@@ -181,7 +182,8 @@ namespace CSGOTM {
 
         private void SetOrderForUnstickered() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    continue;
                 if (needOrderUnstickered.Count > 0) {
                     var top = needOrderUnstickered.Peek();
                     var info = Protocol.MassInfo(
@@ -259,7 +261,8 @@ namespace CSGOTM {
 
         void SetNewOrder() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    return;
                 if (needOrder.Count != 0) {
                     NewHistoryItem item = needOrder.Dequeue();
                     bool took = false;
@@ -285,7 +288,8 @@ namespace CSGOTM {
 
         void AddNewItems() {
             while (parent.IsRunning()) {
-                Thread.Sleep(3000); //dont want to spin nonstop
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 3000).Result)
+                    continue;
                 while (!toBeSold.IsEmpty) {
                     Thread.Sleep(1000);
                 }
@@ -379,7 +383,8 @@ namespace CSGOTM {
 
         void UnstickeredRefresh() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    continue;
                 try {
                     Queue<TMTrade> unstickeredTemp;
                     lock (UnstickeredRefreshItemsLock) {
@@ -448,7 +453,8 @@ namespace CSGOTM {
 
         void SellFromQueue() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000); //dont want to spin nonstop
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    continue;
                 while (refreshPrice.IsEmpty && toBeSold.IsEmpty)
                     Thread.Sleep(1000);
                 if (!refreshPrice.IsEmpty) {
@@ -490,14 +496,14 @@ namespace CSGOTM {
                 } else {
                     Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(Consts.PARSEDATABASEINTERVAL);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.PARSEDATABASEINTERVAL).Wait();
             }
         }
 
         void SaveDataBaseCycle() {
             while (parent.IsRunning()) {
                 SaveDataBase();
-                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, 20000).Wait();
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 20000).Wait();
             }
         }
 
@@ -748,7 +754,6 @@ namespace CSGOTM {
             CurrentItemsLock.EnterReadLock();
             try { 
                 if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
-                    LocalRequest.PutSalesHistorySize(parent.config.Username, 0);
                     return false;
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
@@ -766,7 +771,6 @@ namespace CSGOTM {
 
                 //else
                 {
-                    LocalRequest.PutSalesHistorySize(parent.config.Username, salesHistory.cnt);
                     if (prices.Count >= 6
                         && item.ui_price < WANT_TO_BUY * prices[2]
                         && salesHistory.cnt >= Consts.MINSIZE

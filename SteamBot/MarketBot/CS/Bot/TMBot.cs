@@ -9,6 +9,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Utility;
 
 namespace CSGOTM {
     public class TMBot : IDisposable {
@@ -28,7 +29,7 @@ namespace CSGOTM {
             protocol.Logic = logic;
             WaitingForRestart = false;
 
-            Task.Run((Action)Delayer);
+            Tasking.Run(Delayer);
         }
 
         private void Delayer() {
@@ -37,8 +38,8 @@ namespace CSGOTM {
             }
 
             ReadyToRun = true;
-            Task.Run((Action)Restarter);
-            Task.Run((Action)InventoryFetcher);
+            Tasking.Run(Restarter);
+            Tasking.Run(InventoryFetcher);
         }
 
         private bool Alert(string message) {
@@ -67,9 +68,9 @@ namespace CSGOTM {
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 if (counter != 0)
-                    Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
+                    Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL).Wait(); //10 minutes this data is pretty much static
                 else
-                    Utility.Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL / 10).Wait(); //1 minute because I need to reupload inventory on failure.
+                    Tasking.WaitForFalseOrTimeout(IsRunning, timeout: Consts.MINORCYCLETIMEINTERVAL / 10).Wait(); //1 minute because I need to reupload inventory on failure.
             }
         }
 
@@ -77,7 +78,7 @@ namespace CSGOTM {
             while (!WaitingForRestart) {
                 if (prior >= (int)RestartPriority.Alarm) {
                     if (prior >= (int)RestartPriority.Restart) {
-                        WaitingForRestart = true;
+                        ScheduleRestart();
                         Alert("бот перезапускается.");
                         Task.Delay(5000)
                             .ContinueWith(task => bot.ScheduleRestart());
@@ -109,8 +110,13 @@ namespace CSGOTM {
             return !WaitingForRestart;
         }
 
+        public void ScheduleRestart() {
+            WaitingForRestart = true;
+        }
+
         public void Dispose() {
             Log.Dispose();
+            ScheduleRestart();
         }
 
         public int prior = 0;

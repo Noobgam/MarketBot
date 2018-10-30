@@ -169,6 +169,7 @@ namespace SteamBot
             if (index < ConfigObject.Bots.Length)
             {
                 StopBot(index);
+                Thread.Sleep(5000);
                 StartBot(index);
             }
         }

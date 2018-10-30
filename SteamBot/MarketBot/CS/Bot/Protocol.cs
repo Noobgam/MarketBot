@@ -191,7 +191,7 @@ namespace CSGOTM {
             Api = bot.config.Api;
             this.Bot = bot.bot;
             InitializeRPSSemaphores();
-            Task.Run((Action)StartUp);
+            Tasking.Run((Action)StartUp);
         }
 
         //I'm going to use different semaphores to allow some requests to have higher RPS than others, without bothering one another.
@@ -226,12 +226,12 @@ namespace CSGOTM {
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             GetMoney();
-            Task.Run((Action)PingPongMarket);
-            Task.Run((Action)PingPongLocal);
-            Task.Run((Action)ReOpener);
-            Task.Run((Action)RefreshToken);
-            Task.Run((Action)HandleTrades);
-            Task.Run(() => {
+            Tasking.Run((Action)PingPongMarket);
+            Tasking.Run((Action)PingPongLocal);
+            Tasking.Run((Action)ReOpener);
+            Tasking.Run((Action)RefreshToken);
+            Tasking.Run((Action)HandleTrades);
+            Tasking.Run(() => {
                 OrdersCall(order => {
                     lock (ordersLock)
                         orders[$"{order.i_classid}_{order.i_instanceid}"] = int.Parse(order.o_price);
@@ -398,15 +398,19 @@ namespace CSGOTM {
             } finally {
             }
         }
+        
+        bool Alive() {
+            return !died && parent.IsRunning();
+        }
 
         void SocketPinger() {
-            while (!died) {
+            while (Alive()) {
                 try {
                     socket.Send("ping");
                 } catch (Exception ex) {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(30000);
+                Tasking.WaitForFalseOrTimeout(Alive, 30000).Wait();
             }
         }
 
@@ -444,7 +448,8 @@ namespace CSGOTM {
                 if (resp == null)
                     continue;
                 JObject json = JObject.Parse(resp);
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    return;
                 if (json["success"] == null)
                     continue;
                 if ((bool)json["success"] == false) {
@@ -618,7 +623,7 @@ namespace CSGOTM {
                     }
                 }
                 if ((status & ETradesStatus.SellHandled) != 0) {
-                    Thread.Sleep(30000); //sorry this revokes sessions too often, because TM is retarded.
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
                     status ^= ETradesStatus.SellHandled;
                 }
             }
@@ -636,13 +641,13 @@ namespace CSGOTM {
                     if (boughtTrades.Length != 0)
                         RequestPurchasedItems(boughtTrades);
                 }
-                Thread.Sleep(10000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Wait();
             }
         }
 
         void HandleTrades() {
-            Task.Run((Action)HandleSoldTrades);
-            //Task.Run((Action)HandlePurchasedTrades);
+            Tasking.Run((Action)HandleSoldTrades);
+            //Tasking.Run((Action)HandlePurchasedTrades);
             while (parent.IsRunning()) {
                 try {
                     TMTrade[] arr = GetTradeList();
@@ -650,12 +655,12 @@ namespace CSGOTM {
                         CachedTrades = arr;
                         waitHandle.Set();
                     }
-                    Thread.Sleep(10000);
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Wait();
                     UpdateInventory();
                 } catch (Exception ex) {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(10000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Wait();
             }
         }
 
@@ -679,7 +684,7 @@ namespace CSGOTM {
             opening = false;
             Log.Success("Connection opened!");
             if (Auth())
-                Task.Run((Action)SocketPinger);
+                Tasking.Run((Action)SocketPinger);
             //start = DateTime.Now;
         }
 
@@ -699,7 +704,8 @@ namespace CSGOTM {
         void ReOpener() {
             int i = 1;
             while (parent.IsRunning()) {
-                Thread.Sleep(10000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Result)
+                    continue;
                 if (died) {
                     if (!opening) {
                         try {
@@ -780,14 +786,14 @@ namespace CSGOTM {
             while (parent.IsRunning()) {
                 string uri = $"/api/PingPong/direct/?key={Api}";
                 ExecuteApiRequest(uri);
-                Thread.Sleep(30000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
             }
         }
 
         public void PingPongLocal() {
             while (parent.IsRunning()) {
                 LocalRequest.Ping(parent.config.Username);
-                Thread.Sleep(30000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
             }
         }
 
@@ -949,7 +955,7 @@ namespace CSGOTM {
                 }
                 if (DateTime.Now.Subtract(lastRefresh).TotalMilliseconds > Consts.REFRESHINTERVAL) {
                     lastRefresh = DateTime.Now;
-                    Task.Run(() => Logic.RefreshPrices(arr));
+                    Tasking.Run(() => Logic.RefreshPrices(arr));
                 }
                 return arr;
             } catch (Exception ex) {
@@ -987,12 +993,12 @@ namespace CSGOTM {
             int page = 1;
             List<Order> temp = new List<Order>();
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
                 List<Order> temp2 = GetOrderPage(page);
                 if (temp2 == null)
                     return temp;
                 ++page;
                 temp.AddRange(temp2);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Wait();
             }
             return temp;
         }
@@ -1001,7 +1007,6 @@ namespace CSGOTM {
             int page = 1;
             List<Order> temp = new List<Order>();
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
                 List<Order> temp2 = GetOrderPage(page);
                 if (temp2 == null)
                     return;
@@ -1009,6 +1014,7 @@ namespace CSGOTM {
                 foreach (Order order in temp2) {
                     callback(order);
                 }
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Wait();
             }
         }
     }

@@ -158,6 +158,7 @@ namespace SteamBot
 
         public void ScheduleRestart()
         {
+            MarketBot.ScheduleRestart();
             RestartFlag = true;
         }
 
