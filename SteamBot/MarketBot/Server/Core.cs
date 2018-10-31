@@ -213,17 +213,20 @@ namespace MarketBot.Server {
                         extrainfo[kvp.Key]["curmoney"] = myMoney;
                         moneySum += myMoney;
                     }
+                    double usd_inv_sum = 0;
                     foreach (var kvp in CurInventory) {
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
                         extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C");
+                        usd_inv_sum += kvp.Value;
                     }
                     resp = new JObject {
                         ["success"] = true,
                         ["extrainfo"] = extrainfo,
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
-                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C")
+                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C"),
+                            ["INVUSD"] = usd_inv_sum.ToString("C")
                         }
                     };
                 }
