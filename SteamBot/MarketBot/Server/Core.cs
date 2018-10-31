@@ -84,6 +84,7 @@ namespace MarketBot.Server {
         private Dictionary<string, int> CurSizes;
         private Dictionary<string, int> CurMoney;
         private Dictionary<string, double> CurInventory;
+        private Dictionary<string, double> CurTradable;
         private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
 
 
@@ -188,6 +189,16 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurInventory[usernames[0]] = double.Parse(data[0]);
+                } else if (Endpoint == Consts.Endpoints.PutTradableCost) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    CurTradable[usernames[0]] = double.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -220,13 +231,21 @@ namespace MarketBot.Server {
                         extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C");
                         usd_inv_sum += kvp.Value;
                     }
+                    double usd_trade_sum = 0;
+                    foreach (var kvp in CurTradable) {
+                        if (extrainfo[kvp.Key] == null)
+                            extrainfo[kvp.Key] = new JObject();
+                        extrainfo[kvp.Key]["tradable_usd_cost"] = kvp.Value.ToString("C");
+                        usd_trade_sum += kvp.Value;
+                    }
                     resp = new JObject {
                         ["success"] = true,
                         ["extrainfo"] = extrainfo,
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
                             ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C"),
-                            ["INVUSD"] = usd_inv_sum.ToString("C")
+                            ["INVUSD"] = usd_inv_sum.ToString("C"),
+                            ["TRADE"] = usd_trade_sum.ToString("C")
                         }
                     };
                 }

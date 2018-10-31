@@ -44,6 +44,10 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.PutInventoryCost, botname, sumprice.ToString());
         }
 
+        public static void PutTradableCost(string botname, double sumprice) {
+            RawPut(Consts.Endpoints.PutTradableCost, botname, sumprice.ToString());
+        }
+
         public static void PutL1Optimized(string botname, int cnt) {
             RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
         }
