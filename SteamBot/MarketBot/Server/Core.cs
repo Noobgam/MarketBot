@@ -26,6 +26,7 @@ namespace MarketBot.Server {
             server = new HttpListener();
             CurSizes = new Dictionary<string, int>();
             CurInventory = new Dictionary<string, double>();
+            CurTradable = new Dictionary<string, double>();
             CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
