@@ -503,7 +503,7 @@ namespace CSGOTM {
         void SaveDataBaseCycle() {
             while (parent.IsRunning()) {
                 SaveDataBase();
-                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 20000).Wait();
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
             }
         }
 
