@@ -89,20 +89,12 @@ namespace CSGOTM {
         void ShiftEma(double x) {
             EMA = EMA * (1 - ALP) + x * ALP;
         }
-
-        Random rand = new Random();
-        static bool errorOnlyOnce = false;
-        
+                
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
             if (logLevel == ApiLogLevel.LogAll) {
                 Log.Info("Executing " + url);
             }
             string response = null;
-            if (rand.Next(5) == 2 && !errorOnlyOnce) {
-                errorOnlyOnce = true;
-                Log.ApiError(TMBot.RestartPriority.CriticalError, "Test error");
-                return null;
-            }
             Stopwatch temp = new Stopwatch();
             try {
                 ObtainApiSemaphore(method);
