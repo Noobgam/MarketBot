@@ -247,7 +247,7 @@ namespace SteamBot
 
 
             //Starting CS:
-            MarketBot = new CSGOTM.TMBot(this, config);
+            //MarketBot = new CSGOTM.TMBot(this, config);
         }        
 
         ~Bot()
@@ -287,6 +287,8 @@ namespace SteamBot
                 Log.Info("Connecting...");
                 if (MarketBot == null) {
                     MarketBot = new CSGOTM.TMBot(this, botConfig);
+                } else {
+                    MarketBot.Init();
                 }
                 if (!botThread.IsBusy)
                     botThread.RunWorkerAsync();

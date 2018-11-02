@@ -17,10 +17,16 @@ namespace CSGOTM {
         public TMBot(Bot bot, Configuration.BotInfo config) {
             this.bot = bot;
             this.config = new BotConfig(config);
+            Init();
+        }
 
+        public void Init() {
+            if (Log == null) {
+                Log = new MarketLogger(this);
+            }
+            Log.Info("Initializing TMBot " + bot.DisplayName);
             logic = new Logic(this);
             protocol = new Protocol(this);
-            Log = new MarketLogger(this);
 
             logic.Log = Log;
             protocol.Log = Log;
