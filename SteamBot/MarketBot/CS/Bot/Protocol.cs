@@ -20,12 +20,14 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Utility;
+using SteamBot.MarketBot.CS;
 
 namespace CSGOTM {
     public class Protocol {
 #if CAREFUL
         public int totalwasted = 0;
 #endif
+        bool subscribed = false;
         public MarketLogger Log;
         private Queue<TradeOffer> QueuedOffers;
         public Logic Logic;
@@ -238,7 +240,8 @@ namespace CSGOTM {
                 });
             });
             AllocSocket();
-            OpenSocket();
+            OpenSocket();            
+            SubscribeToBalancer();
         }
 
         private void AllocSocket() {
@@ -274,6 +277,24 @@ namespace CSGOTM {
         //DateTime start = DateTime.Now;
         //double counter = 0;
 
+        public void ProcessNewItem(object sender, NewItem newItem) {
+            if (sender == null) {
+                //Log.Info("Item from balancer");
+            } else {
+                Log.Info("Self item");
+            }
+            if (!parent.IsRunning())
+                return;
+            if (newItem.i_market_name == "") {
+                Log.Warn("Socket item has no market name");
+            } else if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
+                if (Buy(newItem))
+                    Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                else
+                    Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+            }
+        }
+
         void Msg(object sender, MessageReceivedEventArgs e) {
             if (!parent.IsRunning()) {
                 if (socket.State == WebSocketState.Open)
@@ -301,49 +322,6 @@ namespace CSGOTM {
                 }
                 //Console.WriteLine(x.type);
                 switch (type) {
-                    case "newitems_go":
-                        //++counter;
-                        //double rps = counter / DateTime.Now.Subtract(start).TotalSeconds;
-                        //Console.WriteLine(rps);
-                        reader = new JsonTextReader(new StringReader(data));
-                        currentProperty = string.Empty;
-                        NewItem newItem = new NewItem();
-                        while (reader.Read()) {
-                            if (reader.Value != null) {
-                                if (reader.TokenType == JsonToken.PropertyName)
-                                    currentProperty = reader.Value.ToString();
-                                else if (reader.TokenType == JsonToken.String) {
-                                    switch (currentProperty) {
-                                        case "i_classid":
-                                            newItem.i_classid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_instanceid":
-                                            newItem.i_instanceid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_market_name":
-                                            newItem.i_market_name = reader.Value.ToString();
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                } else if (currentProperty == "ui_price") {
-                                    newItem.ui_price = (int)(float.Parse(reader.Value.ToString()) * 100);
-
-                                }
-                            }
-                        }
-                        if (newItem.i_market_name == "") {
-                            Log.Warn("Socket item has no market name");
-                            break;
-                        }
-                        //getBestOrder(newItem.i_classid, newItem.i_instanceid);
-                        if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
-                            if (Buy(newItem))
-                                Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
-                            else
-                                Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
-                        }
-                        break;
                     case "history_go":
                         try {
                             char[] trimming = { '[', ']' };
@@ -670,7 +648,7 @@ namespace CSGOTM {
         }
 
         void Subscribe() {
-            socket.Send("newitems_go");
+            //socket.Send("newitems_go");
             socket.Send("history_go");
         }
 
@@ -1021,6 +999,24 @@ namespace CSGOTM {
                 }
                 Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Wait();
             }
+        }
+
+        void SubscribeToBalancer() {
+            if (!subscribed) {
+                Balancer.NewItemAppeared += ProcessNewItem;
+                subscribed = true;
+            }
+        }
+
+        void UnsubscribeFromBalancer() {
+            if (subscribed) {
+                Balancer.NewItemAppeared -= ProcessNewItem;
+                subscribed = false;
+            }
+        }
+
+        ~Protocol() {
+            UnsubscribeFromBalancer();
         }
     }
 }

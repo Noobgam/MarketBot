@@ -81,7 +81,7 @@ namespace SteamBot
 
         public override void OnTradeOfferUpdated(TradeOffer offer)
         {
-            Log.Info($"Handling offer. Message: [{offer.Message}]");
+            //Log.Info($"Handling offer. Message: [{offer.Message}]");
             switch (offer.OfferState)
             {
                 case TradeOfferState.TradeOfferStateAccepted:

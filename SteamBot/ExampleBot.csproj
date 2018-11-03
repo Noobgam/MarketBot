@@ -125,6 +125,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="MarketBot\CS\Balancer.cs" />
     <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
     <Compile Include="MarketBot\CS\Bot\LocalRequest.cs" />
     <Compile Include="MarketBot\CS\Experiment.cs" />

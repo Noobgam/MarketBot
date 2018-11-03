@@ -10,6 +10,7 @@ using SteamKit2;
 using System.Threading.Tasks;
 using System.Net;
 using MarketBot.Server;
+using SteamBot.MarketBot.CS;
 
 namespace SteamBot
 {
@@ -82,6 +83,7 @@ namespace SteamBot
 
         public void Nanny()
         {
+            Balancer.Init();
             while (!disposed)
             {
                 foreach (RunningBot bot in botProcs)
