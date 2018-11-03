@@ -145,7 +145,8 @@ namespace SteamBot.MarketBot.CS {
                                 }
                             }
                         }
-                        NewItemAppeared(null, newItem);
+                        var delegates = NewItemAppeared.GetInvocationList();
+                        Parallel.ForEach(delegates, d => d.DynamicInvoke(null, newItem));
                         break;
                     default:
                         //Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
