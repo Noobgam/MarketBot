@@ -253,7 +253,8 @@ namespace MarketBot.Server {
             } catch (Exception ex) {
                 resp = new JObject {
                     ["success"] = false,
-                    ["error"] = ex.Message
+                    ["error"] = ex.Message,
+                    ["trace"] = ex.StackTrace
                 };
 
             } finally {
