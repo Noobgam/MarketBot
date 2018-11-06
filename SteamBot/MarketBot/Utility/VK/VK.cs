@@ -60,10 +60,11 @@ namespace SteamBot.MarketBot.Utility.VK {
             try {
                 api = new VkApi();
                 api.Authorize(new ApiAuthParams {
-                    ApplicationId = 6742015,
+                    ApplicationId = 6743975,
                     Login = "Novice1998",
                     Password = "7PixelWideNoobgam",
-                    Settings = Settings.Messages
+                    AccessToken = "45ca4499949cfd7298b31891177830589253f0639ff13d6b9be7b3559375a642e75322972556bdeeb11fd",
+                    Settings = Settings.Messages | Settings.Offline
                 });
                 longPollServerInfo = api.Messages.GetLongPollServer(true);
                 return true;
