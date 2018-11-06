@@ -60,7 +60,7 @@ namespace SteamBot.MarketBot.Utility.VK {
             try {
                 api = new VkApi();
                 api.Authorize(new ApiAuthParams {
-                    ApplicationId = 6742015,
+                    ApplicationId = 6743198,
                     Login = "Novice1998",
                     Password = "7PixelWideNoobgam",
                     Settings = Settings.Messages
