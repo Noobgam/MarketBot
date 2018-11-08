@@ -211,7 +211,8 @@ namespace MarketBot.Server {
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.Status) {
-                    bool full = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
+                    bool full  = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
+                    bool table = context.Request.QueryString["table"] == null ? false : bool.Parse(context.Request.QueryString["table"]);
                     JToken extrainfo = new JObject();
                     double moneySum = 0;
                     foreach (var kvp in CurSizes) {
@@ -254,6 +255,9 @@ namespace MarketBot.Server {
                             ["TRADE"] = usd_trade_sum.ToString("C")
                         }
                     };
+                    if (table) {
+                        resp["type"] = "table";
+                    }
                 }
             } catch (Exception ex) {
                 resp = new JObject {
@@ -274,12 +278,7 @@ namespace MarketBot.Server {
 
         // process request and make response
 
-        private void Respond(HttpListenerContext ctx, JObject json) {
-            //TODO(noobgam): prettify if User-Agent is defined
-            string resp = json.ToString(
-                ctx.Request.Headers.GetValues("User-Agent") == null
-                ? Newtonsoft.Json.Formatting.None
-                : Newtonsoft.Json.Formatting.Indented);
+        private void RawRespond(HttpListenerContext ctx, string resp) {
             byte[] buffer = Encoding.UTF8.GetBytes(resp);
             HttpListenerResponse response = ctx.Response;
 
@@ -288,6 +287,90 @@ namespace MarketBot.Server {
             output.Write(buffer, 0, buffer.Length);
 
             output.Close();
+        }
+        
+        private string Row(string[] arr, string type = "th") {
+            string res = "";
+            res += "<tr>";
+            for (int i = 0; i < arr.Length; ++i) {
+                res += $"<{type}>";
+
+                res += arr[i];
+
+                res += $"</{type}>";
+            }
+            res += "</tr>";
+            return res;
+        }
+
+        private bool RespondTable(HttpListenerContext ctx, JObject json) {
+
+            int cnt = 0;
+            string html =
+                @"<!DOCTYPE html>
+<html>
+<head>
+<style>
+table, th, td {
+    border: 1px solid black;
+}
+</style>
+</head>
+<body>";
+            foreach (var table in json) {
+                if (table.Key == "success")
+                    continue;
+                //html += "Table " + table.Key + "</br>";
+                string header =
+                    "<table style=\"width:100%\">";
+                string body = "";
+                Dictionary<string, int> mapping = new Dictionary<string, int>();
+                if (table.Key == "extrainfo") {
+                    foreach (var bot in (JObject)table.Value) {
+                        foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
+                            if (!mapping.ContainsKey(innerkey.Name))
+                                mapping[innerkey.Name] = ++cnt;
+                        }
+                    }
+                    string[] thing = new string[cnt + 1];
+                    foreach (string x in mapping.Keys)
+                        thing[mapping[x]] = x;
+                    body += Row(thing);
+                    foreach (var bot in (JObject)table.Value) {
+                        thing = new string[cnt + 1];
+                        thing[0] = bot.Key;
+                        foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
+                            thing[mapping[innerkey.Name]] = (string)innerkey.Value;
+                        }
+                        body += Row(thing);
+                    }
+                }
+                string footer =
+                    "</table>";
+                html += header + body + footer;
+            }
+            html += @"</body>
+</html>";
+            RawRespond(ctx, html);
+            return true;
+        }
+
+        private void Respond(HttpListenerContext ctx, JObject json) {
+            if (json["error"] == null) {
+                if (json["type"] != null && (string)json["type"] == "table") {
+                    if (RespondTable(ctx, json))
+                        return;
+                    else {
+                        json["respond_error"] = "response could not be processed as table";
+                    }
+                }
+            }
+            //TODO(noobgam): prettify if User-Agent is defined
+            string resp = json.ToString(
+                ctx.Request.Headers.GetValues("User-Agent") == null
+                ? Newtonsoft.Json.Formatting.None
+                : Newtonsoft.Json.Formatting.Indented);
+            RawRespond(ctx, resp);
         }
 
         public void Stop() {
