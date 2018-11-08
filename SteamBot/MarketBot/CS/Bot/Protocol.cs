@@ -643,7 +643,7 @@ namespace CSGOTM {
                 } catch (Exception ex) {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Wait();
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 4000).Wait();
             }
         }
 
