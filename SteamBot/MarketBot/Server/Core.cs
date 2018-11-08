@@ -211,6 +211,7 @@ namespace MarketBot.Server {
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.Status) {
+                    bool full = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
                     JToken extrainfo = new JObject();
                     double moneySum = 0;
                     foreach (var kvp in CurSizes) {
@@ -219,10 +220,12 @@ namespace MarketBot.Server {
                         extrainfo[kvp.Key]["inventorysize"] = kvp.Value;
                     }
                     foreach (var kvp in CurMoney) {
-                        if (extrainfo[kvp.Key] == null)
-                            extrainfo[kvp.Key] = new JObject();
                         double myMoney = (double)kvp.Value / 100;
-                        extrainfo[kvp.Key]["curmoney"] = myMoney;
+                        if (full) {
+                            if (extrainfo[kvp.Key] == null)
+                                extrainfo[kvp.Key] = new JObject();
+                            extrainfo[kvp.Key]["curmoney"] = myMoney;
+                        }
                         moneySum += myMoney;
                     }
                     double usd_inv_sum = 0;
@@ -234,9 +237,11 @@ namespace MarketBot.Server {
                     }
                     double usd_trade_sum = 0;
                     foreach (var kvp in CurTradable) {
-                        if (extrainfo[kvp.Key] == null)
-                            extrainfo[kvp.Key] = new JObject();
-                        extrainfo[kvp.Key]["tradable_usd_cost"] = kvp.Value.ToString("C");
+                        if (full) {
+                            if (extrainfo[kvp.Key] == null)
+                                extrainfo[kvp.Key] = new JObject();
+                            extrainfo[kvp.Key]["tradable_usd_cost"] = kvp.Value.ToString("C");
+                        }
                         usd_trade_sum += kvp.Value;
                     }
                     resp = new JObject {
