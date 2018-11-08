@@ -288,7 +288,7 @@ namespace MarketBot.Server {
             output.Write(buffer, 0, buffer.Length);
 
             output.Close();
-        }
+        }        
         
         private string Row(string[] arr, string type = "th") {
             string res = "";
@@ -305,66 +305,70 @@ namespace MarketBot.Server {
         }
 
         private bool RespondTable(HttpListenerContext ctx, JObject json) {
-
-            int cnt = 0;
-            string html =
-                @"<!DOCTYPE html>
+            try {
+                int cnt = 0;
+                string html =
+                    @"<!DOCTYPE html>
 <html>
 <head>
 <meta charset=" + "\"utf-8\"/>" +
-@"<style>
+    @"<style>
 table, th, td {
     border: 1px solid black;
 }
 </style>
 </head>
 <body>";
-            foreach (var table in json) {
-                if (table.Key == "success")
-                    continue;
-                //html += "Table " + table.Key + "</br>";
-                string header = "";
-                string body = "";
-                Dictionary<string, int> mapping = new Dictionary<string, int>();
-                if (table.Key == "extrainfo") {
-                    header =
-                    "<table style=\"width:100%\">";
-                    foreach (var bot in (JObject)table.Value) {
-                        foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
-                            if (!mapping.ContainsKey(innerkey.Name))
-                                mapping[innerkey.Name] = ++cnt;
+                foreach (var table in json) {
+                    if (table.Key == "success")
+                        continue;
+                    //html += "Table " + table.Key + "</br>";
+                    string header = "";
+                    string body = "";
+                    Dictionary<string, int> mapping = new Dictionary<string, int>();
+                    if (table.Key == "extrainfo") {
+                        header =
+                        "<table style=\"width:100%\">";
+                        foreach (var bot in (JObject)table.Value) {
+                            foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
+                                if (!mapping.ContainsKey(innerkey.Name))
+                                    mapping[innerkey.Name] = ++cnt;
+                            }
+                        }
+                        string[] thing = new string[cnt + 1];
+                        foreach (string x in mapping.Keys)
+                            thing[mapping[x]] = x;
+                        body += Row(thing);
+                        foreach (var bot in (JObject)table.Value) {
+                            thing = new string[cnt + 1];
+                            thing[0] = bot.Key;
+                            foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
+                                thing[mapping[innerkey.Name]] = (string)innerkey.Value;
+                            }
+                            body += Row(thing);
+                        }
+                    } else if (table.Key == "moneysum") {
+                        header =
+                        "<table style=\"width:50%\">";
+                        string[] thing = new string[2];
+                        foreach (var field in (JObject)table.Value) {
+                            thing[0] = field.Key;
+                            thing[1] = (string)field.Value;
+                            body += Row(thing);
                         }
                     }
-                    string[] thing = new string[cnt + 1];
-                    foreach (string x in mapping.Keys)
-                        thing[mapping[x]] = x;
-                    body += Row(thing);
-                    foreach (var bot in (JObject)table.Value) {
-                        thing = new string[cnt + 1];
-                        thing[0] = bot.Key;
-                        foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
-                            thing[mapping[innerkey.Name]] = (string)innerkey.Value;
-                        }
-                        body += Row(thing);
-                    }
-                } else if (table.Key == "moneysum") {
-                    header =
-                    "<table style=\"width:50%\">";
-                    string[] thing = new string[2];
-                    foreach (var field in (JObject)table.Value) {
-                        thing[0] = field.Key;
-                        thing[1] = (string)field.Value;
-                        body += Row(thing);
-                    }
+                    string footer =
+                        "</table>";
+                    html += header + body + footer;
                 }
-                string footer =
-                    "</table>";
-                html += header + body + footer;
-            }
-            html += @"</body>
+                html += @"</body>
 </html>";
-            RawRespond(ctx, html);
-            return true;
+                RawRespond(ctx, html);
+                return true;
+            }
+            catch {
+                return false;
+            }
         }
 
         private void Respond(HttpListenerContext ctx, JObject json) {
