@@ -35,7 +35,6 @@ namespace MarketBot.Server {
             coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
             server.Start();            
             Console.Error.WriteLine("Started!");
-            JObject temp = null;
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
             //Task.Run((Action)DBHitProvider);
@@ -242,7 +241,7 @@ namespace MarketBot.Server {
                         if (full) {
                             if (extrainfo[kvp.Key] == null)
                                 extrainfo[kvp.Key] = new JObject();
-                            extrainfo[kvp.Key]["tradable_usd_cost"] = kvp.Value.ToString("C");
+                            extrainfo[kvp.Key]["tradable_usd_cost"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
                         }
                         usd_trade_sum += kvp.Value;
                     }
@@ -251,9 +250,9 @@ namespace MarketBot.Server {
                         ["extrainfo"] = extrainfo,
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
-                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C"),
-                            ["INVUSD"] = usd_inv_sum.ToString("C"),
-                            ["TRADE"] = usd_trade_sum.ToString("C")
+                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),
+                            ["INVUSD"] = usd_inv_sum.ToString("C", new CultureInfo("en-US")),
+                            ["TRADE"] = usd_trade_sum.ToString("C", new CultureInfo("en-US"))
                         }
                     };
                     if (table) {
