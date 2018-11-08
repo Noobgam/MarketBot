@@ -15,6 +15,7 @@ using Utility;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Web;
+using System.Globalization;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
@@ -225,7 +226,7 @@ namespace MarketBot.Server {
                         if (full) {
                             if (extrainfo[kvp.Key] == null)
                                 extrainfo[kvp.Key] = new JObject();
-                            extrainfo[kvp.Key]["curmoney"] = myMoney;
+                            extrainfo[kvp.Key]["curmoney"] = myMoney.ToString("C", new CultureInfo("ru-RU"));
                         }
                         moneySum += myMoney;
                     }
@@ -233,7 +234,7 @@ namespace MarketBot.Server {
                     foreach (var kvp in CurInventory) {
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
-                        extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C");
+                        extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
                         usd_inv_sum += kvp.Value;
                     }
                     double usd_trade_sum = 0;
@@ -310,7 +311,8 @@ namespace MarketBot.Server {
                 @"<!DOCTYPE html>
 <html>
 <head>
-<style>
+<meta charset=" + "\"utf-8\"/>" +
+@"<style>
 table, th, td {
     border: 1px solid black;
 }
@@ -321,11 +323,12 @@ table, th, td {
                 if (table.Key == "success")
                     continue;
                 //html += "Table " + table.Key + "</br>";
-                string header =
-                    "<table style=\"width:100%\">";
+                string header = "";
                 string body = "";
                 Dictionary<string, int> mapping = new Dictionary<string, int>();
                 if (table.Key == "extrainfo") {
+                    header =
+                    "<table style=\"width:100%\">";
                     foreach (var bot in (JObject)table.Value) {
                         foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
                             if (!mapping.ContainsKey(innerkey.Name))
@@ -342,6 +345,15 @@ table, th, td {
                         foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
                             thing[mapping[innerkey.Name]] = (string)innerkey.Value;
                         }
+                        body += Row(thing);
+                    }
+                } else if (table.Key == "moneysum") {
+                    header =
+                    "<table style=\"width:50%\">";
+                    string[] thing = new string[2];
+                    foreach (var field in (JObject)table.Value) {
+                        thing[0] = field.Key;
+                        thing[1] = (string)field.Value;
                         body += Row(thing);
                     }
                 }
