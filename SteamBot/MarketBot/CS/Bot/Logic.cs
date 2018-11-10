@@ -34,13 +34,13 @@ namespace CSGOTM {
         public Logic(TMBot bot) {
             this.botName = bot.config.Username;
             parent = bot;
-            PREFIXPATH = "CS/" + botName;
-            UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
-            DATABASEPATH = PREFIXPATH + "/database.txt";
-            DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
-            DATABASEJSONPATH = PREFIXPATH + "/database.json";
-            BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
-            MONEYTPATH = PREFIXPATH + "/money.txt";
+            PREFIXPATH = Path.Combine("CS", botName);
+            UNSTICKEREDPATH = Path.Combine(PREFIXPATH, "emptystickered.txt");
+            DATABASEPATH = Path.Combine(PREFIXPATH, "database.txt");
+            DATABASETEMPPATH = Path.Combine(PREFIXPATH, "databaseTemp.txt");
+            DATABASEJSONPATH = Path.Combine(PREFIXPATH, "database.json");
+            BLACKLISTPATH = Path.Combine(PREFIXPATH, "blackList.txt");
+            MONEYTPATH = Path.Combine(PREFIXPATH, "money.txt");
             Thread starter = new Thread(new ThreadStart(StartUp));
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
