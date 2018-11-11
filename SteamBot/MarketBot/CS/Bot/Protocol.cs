@@ -468,7 +468,7 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
-                                    Log.Error(TMBot.RestartPriority.BigError, $"Trade offer was not sent!");
+                                    Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
                                 }
                             } else {
                                 Log.Error("Items.NewVersion = 0! Still trying to send.");
@@ -479,7 +479,7 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(2000);
                                 } else {
-                                    Log.Error(TMBot.RestartPriority.BigError, "Trade offer was not sent!");
+                                    Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!");
                                 }
                             }
                         } catch (Exception ex) {
