@@ -86,9 +86,13 @@ namespace SteamBot.MarketBot.Utility.VK {
             foreach (var attach in message.Attachments) {
                 //attach.Document.Uri
                 if (attach.Type == typeof(VkNet.Model.Attachments.Document) && attach.Instance is VkNet.Model.Attachments.Document doc) {
-                    SteamDataBase.RefreshDatabase(Request.Get(doc.Uri));
-                    Message(message.FromId.Value, $"Спасибо, обновил базу.");
-                    Thread.Sleep(500);
+                    try {
+                        SteamDataBase.RefreshDatabase(Request.Get(doc.Uri));
+                        Message(message.FromId.Value, $"Спасибо, обновил базу.");
+                        Thread.Sleep(500);
+                    } catch {
+                        Message(message.FromId.Value, $"Что ты мне прислал, долбоёб? Думал меня трахнуть? Я тебя сам трахну");
+                    }
                     return;
                 }
             }
