@@ -884,12 +884,12 @@ namespace CSGOTM {
                     return false;
                 JObject json = JObject.Parse(resp);
                 if (json["success"] == null) {
-                    Log.ApiError(TMBot.RestartPriority.SmallError, "Was unable to update inventory");
+                    Log.ApiError("Was unable to update inventory");
                     return false;
                 } else if ((bool)json["success"])
                     return true;
                 else {
-                    Log.ApiError(TMBot.RestartPriority.SmallError, "Was unable to update inventory");
+                    Log.ApiError("Was unable to update inventory");
                     return false;
                 }
             } catch (Exception ex) {
