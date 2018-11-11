@@ -98,6 +98,7 @@ namespace SteamBot.MarketBot.CS {
 
         static void Msg(object sender, MessageReceivedEventArgs e) {
             try {
+                #region ParseType
                 if (e.Message == "pong")
                     return;
                 string type = string.Empty;
@@ -116,8 +117,10 @@ namespace SteamBot.MarketBot.CS {
                         }
                     }
                 }
+                #endregion
                 switch (type) {
                     case "newitems_go":
+                        #region ParseJson
                         reader = new JsonTextReader(new StringReader(data));
                         currentProperty = string.Empty;
                         NewItem newItem = new NewItem();
@@ -146,6 +149,7 @@ namespace SteamBot.MarketBot.CS {
                             }
                         }
                         var delegates = NewItemAppeared.GetInvocationList();
+                        #endregion
                         Parallel.ForEach(delegates, d => d.DynamicInvoke(null, newItem));
                         break;
                     default:
