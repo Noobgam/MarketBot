@@ -105,7 +105,7 @@ namespace CSGOTM {
         public void FlagError(RestartPriority error, string message = "") {
             prior += (int)error;
             if (message != "") {
-                VK.Alert("Error: " + message);
+                Alert("Error: " + message);
             }
         }
 
