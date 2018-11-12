@@ -340,14 +340,14 @@ th {
                         string[] thing = new string[cnt + 1];
                         foreach (string x in mapping.Keys)
                             thing[mapping[x]] = x;
-                        body += Row(thing);
+                        body += Row(thing, "th");
                         foreach (var bot in (JObject)table.Value) {
                             thing = new string[cnt + 1];
                             thing[0] = bot.Key;
                             foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
                                 thing[mapping[innerkey.Name]] = (string)innerkey.Value;
                             }
-                            body += Row(thing);
+                            body += Row(thing, "td");
                         }
                     } else if (table.Key == "moneysum") {
                         header =
@@ -356,7 +356,7 @@ th {
                         foreach (var field in (JObject)table.Value) {
                             thing[0] = field.Key;
                             thing[1] = (string)field.Value;
-                            body += Row(thing);
+                            body += Row(thing, "th");
                         }
                     }
                     string footer =
