@@ -731,7 +731,7 @@ namespace CSGOTM {
 
             }
             if (badTrade) {
-                Log.ApiError(TMBot.RestartPriority.UnknownError, $"Missed an item {item.i_market_name} costing {item.ui_price}");
+                Log.ApiError($"Missed an item {item.i_market_name} costing {item.ui_price}");
                 return false;
             }
             if (parsed["result"] == null) {
