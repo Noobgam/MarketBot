@@ -278,11 +278,6 @@ namespace CSGOTM {
         //double counter = 0;
 
         public void ProcessNewItem(object sender, NewItem newItem) {
-            if (sender == null) {
-                //Log.Info("Item from balancer");
-            } else {
-                Log.Info("Self item");
-            }
             if (!parent.IsRunning())
                 return;
             if (newItem.i_market_name == "") {
