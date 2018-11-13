@@ -73,9 +73,9 @@ namespace CSGOTM {
                             totalprice += price;
                             if (item.Value.tradable) {
                                 tradeprice += price;
-                            } else {
-                                ++untracked;
                             }
+                        } else {
+                            ++untracked;
                         }
                     }
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
