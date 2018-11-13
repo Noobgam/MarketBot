@@ -164,7 +164,7 @@ namespace CSGOTM {
                 response = Utility.Request.Post(Consts.MARKETENDPOINT + url, data);
                 temp.Stop();
                 ShiftEma(0);
-                Log.Info($"POST {url} : {temp.ElapsedMilliseconds}");
+                Log.Nothing($"POST {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
                 Log.Nothing(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
                 bool flagged = false;
