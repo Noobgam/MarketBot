@@ -109,15 +109,18 @@ namespace CSGOTM {
                 Log.Info($"GET {url} : {temp.ElapsedMilliseconds}\n");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to {Consts.MARKETENDPOINT}{url} failed");
+                bool flagged = false;
                 if (ex is WebException webex) {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
                         if (webex.Response is HttpWebResponse resp) {
                             if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521) {
                                 Log.ApiError(TMBot.RestartPriority.MediumError, $"Status code: {(int)resp.StatusCode}");
+                                flagged = true;
                             }
                         }
                     }
-                } else {
+                }
+                if (!flagged) {
                     Log.ApiError(TMBot.RestartPriority.BigError, $"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
                 ShiftEma(1);
@@ -164,15 +167,18 @@ namespace CSGOTM {
                 Log.Info($"POST {url} : {temp.ElapsedMilliseconds}\n");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
+                bool flagged = false;
                 if (ex is WebException webex) {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
                         if (webex.Response is HttpWebResponse resp) {
                             if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521) {
                                 Log.ApiError(TMBot.RestartPriority.MediumError, $"Status code: {(int)resp.StatusCode}");
+                                flagged = true;
                             }
                         }
                     }
-                } else {
+                }
+                if (!flagged) {
                     Log.ApiError(TMBot.RestartPriority.BigError, $"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
                 ShiftEma(1);
