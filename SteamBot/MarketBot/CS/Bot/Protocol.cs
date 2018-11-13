@@ -106,7 +106,7 @@ namespace CSGOTM {
                 response = Utility.Request.Get(Consts.MARKETENDPOINT + url);
                 temp.Stop();
                 ShiftEma(0);
-                Log.Info($"GET {url} : {temp.ElapsedMilliseconds}\n");
+                Log.Info($"GET {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to {Consts.MARKETENDPOINT}{url} failed");
                 bool flagged = false;
@@ -164,7 +164,7 @@ namespace CSGOTM {
                 response = Utility.Request.Post(Consts.MARKETENDPOINT + url, data);
                 temp.Stop();
                 ShiftEma(0);
-                Log.Info($"POST {url} : {temp.ElapsedMilliseconds}\n");
+                Log.Info($"POST {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
                 bool flagged = false;

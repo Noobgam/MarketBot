@@ -59,7 +59,8 @@ namespace SteamBot.MarketBot.CS.Bot {
                 instant.ToString("yyyy-MM-dd HH:mm:ss"),
                 _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
                 );
-            Log._OutputLineToConsole(level, formattedString);
+            if (level != LogLevel.Nothing)
+                _OutputLineToConsole(level, formattedString);
             return new LogMessage {
                 ID = new ObjectId(),
                 Name = bot.config.Username,
