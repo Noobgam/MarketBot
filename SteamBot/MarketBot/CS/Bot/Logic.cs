@@ -13,10 +13,11 @@ using System.Collections.Concurrent;
 using SteamBot.MarketBot.CS;
 using SteamTrade;
 using Utility;
+using SteamBot.MarketBot.CS.Bot;
 
 namespace CSGOTM {
     public class Logic {
-        public MarketLogger Log;
+        public NewMarketLogger Log;
         private readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
         private readonly ReaderWriterLockSlim CurrentItemsLock = new ReaderWriterLockSlim();
         private readonly object RefreshItemsLock = new object();

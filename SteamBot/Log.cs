@@ -27,7 +27,7 @@ namespace SteamBot
         private bool disposed;
         public LogLevel OutputLevel;
         public LogLevel FileLogLevel;
-        public ConsoleColor DefaultConsoleColor = ConsoleColor.White;
+        public static readonly ConsoleColor DefaultConsoleColor = ConsoleColor.White;
         public bool ShowBotName { get; set; }
 
         public Log(string logFile, string botName = "", LogLevel consoleLogLevel = LogLevel.Info, LogLevel fileLogLevel = LogLevel.Info)
@@ -93,7 +93,7 @@ namespace SteamBot
 
         // Outputs a line to both the log and the console, if
         // applicable.
-        protected void _OutputLine(LogLevel level, string line, params object[] formatParams)
+        public void _OutputLine(LogLevel level, string line, params object[] formatParams)
         {
             if (disposed)
                 return;
@@ -129,7 +129,7 @@ namespace SteamBot
 
         // Outputs a line to the console, with the correct color
         // formatting.
-        protected void _OutputLineToConsole (LogLevel level, string line)
+        public static void _OutputLineToConsole (LogLevel level, string line)
         {
             Console.ForegroundColor = _LogColor (level);
             Console.WriteLine (line);
@@ -137,7 +137,7 @@ namespace SteamBot
         }
 
         // Determine the string equivalent of the LogLevel.
-        protected string _LogLevel (LogLevel level)
+        public static string _LogLevel (LogLevel level)
         {
             switch (level)
             {
@@ -164,7 +164,7 @@ namespace SteamBot
 
         // Determine the color to be used when outputting to the
         // console.
-        protected ConsoleColor _LogColor (LogLevel level)
+        protected static ConsoleColor _LogColor (LogLevel level)
         {
             switch (level)
             {

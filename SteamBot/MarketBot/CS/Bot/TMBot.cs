@@ -1,5 +1,6 @@
 ﻿using SteamBot;
 using SteamBot.MarketBot.CS;
+using SteamBot.MarketBot.CS.Bot;
 using SteamBot.MarketBot.Utility.VK;
 using SteamTrade;
 using SuperSocket.ClientEngine;
@@ -22,7 +23,7 @@ namespace CSGOTM {
 
         public void Init() {
             if (Log == null) {
-                Log = new MarketLogger(this);
+                Log = new NewMarketLogger(this);
             }
             Log.Info("Initializing TMBot " + bot.DisplayName);
             logic = new Logic(this);
@@ -129,7 +130,6 @@ namespace CSGOTM {
         }
 
         public void Dispose() {
-            Log.Dispose();
             ScheduleRestart();
         }
 
@@ -140,7 +140,7 @@ namespace CSGOTM {
 
         private Logic logic;
         private Protocol protocol;
-        private MarketLogger Log;
+        private NewMarketLogger Log;
         private bool WaitingForRestart = false; //usually false
     }
 }
