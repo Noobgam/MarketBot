@@ -53,14 +53,15 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         private LogMessage CreateRawLogMessage(LogLevel level, string line, params object[] formatParams) {
             DateTime instant = DateTime.Now;
-            string formattedString = String.Format(
-                "[{0} {1}] {2}: {3}",
-                bot.config.DisplayName,
-                instant.ToString("yyyy-MM-dd HH:mm:ss"),
-                _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
-                );
-            if (level != LogLevel.Nothing)
+            if (level != LogLevel.Nothing) {
+                string formattedString = String.Format(
+                    "[{0} {1}] {2}: {3}",
+                    bot.config.DisplayName,
+                    instant.ToString("yyyy-MM-dd HH:mm:ss"),
+                    _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
+                    );
                 _OutputLineToConsole(level, formattedString);
+            }
             return new LogMessage {
                 ID = new ObjectId(),
                 Name = bot.config.Username,
@@ -113,6 +114,15 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         public void Error(string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Error, data, formatParams));
+        }
+
+        public void Nothing(RestartPriority prior, string data, params object[] formatParams) {
+            bot.FlagError(prior, data);
+            Nothing(data, formatParams);
+        }
+
+        public void Nothing(string data, params object[] formatParams) {
+            logCollection.Insert(CreateRawLogMessage(LogLevel.Nothing, data, formatParams));
         }
     }
 }

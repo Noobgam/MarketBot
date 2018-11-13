@@ -106,7 +106,7 @@ namespace CSGOTM {
                 response = Utility.Request.Get(Consts.MARKETENDPOINT + url);
                 temp.Stop();
                 ShiftEma(0);
-                Log.Info($"GET {url} : {temp.ElapsedMilliseconds}");
+                Log.Nothing($"GET {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to {Consts.MARKETENDPOINT}{url} failed");
                 bool flagged = false;
@@ -166,7 +166,7 @@ namespace CSGOTM {
                 ShiftEma(0);
                 Log.Info($"POST {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
-                Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
+                Log.Nothing(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
                 bool flagged = false;
                 if (ex is WebException webex) {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
