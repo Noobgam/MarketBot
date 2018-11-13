@@ -66,17 +66,20 @@ namespace CSGOTM {
                     int cnt = 0;
                     double totalprice = 0;
                     double tradeprice = 0;
+                    int untracked = 0;
                     foreach (var item in inv.descriptions) {
                         if (SteamDataBase.cache.TryGetValue(item.Value.market_hash_name, out double price)) {
                             ++cnt;
                             totalprice += price;
                             if (item.Value.tradable) {
                                 tradeprice += price;
+                            } else {
+                                ++untracked;
                             }
                         }
                     }
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
-                    LocalRequest.PutTradableCost(config.Username, tradeprice);
+                    LocalRequest.PutTradableCost(config.Username, tradeprice, untracked);
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 if (counter != 0)

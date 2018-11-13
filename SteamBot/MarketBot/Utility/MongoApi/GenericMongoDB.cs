@@ -22,5 +22,9 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
         public void Insert(Data data) {
             collection.InsertOne(data);
         }
+
+        public IFindFluent<Data, Data> Find(BsonDocument filter) {
+            return collection.Find(filter);
+        }
     }
 }

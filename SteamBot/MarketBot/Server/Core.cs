@@ -28,6 +28,7 @@ namespace MarketBot.Server {
             CurSizes = new Dictionary<string, int>();
             CurInventory = new Dictionary<string, double>();
             CurTradable = new Dictionary<string, double>();
+            CurUntracked = new Dictionary<string, int>();
             CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
@@ -86,6 +87,7 @@ namespace MarketBot.Server {
         private Dictionary<string, int> CurMoney;
         private Dictionary<string, double> CurInventory;
         private Dictionary<string, double> CurTradable;
+        private Dictionary<string, int> CurUntracked;
         private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
 
 
@@ -199,7 +201,9 @@ namespace MarketBot.Server {
                     if (data.Length != 1) {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
-                    CurTradable[usernames[0]] = double.Parse(data[0]);
+                    string[] stuff = data[0].Split(':');
+                    CurTradable[usernames[0]] = double.Parse(stuff[0]);
+                    CurUntracked[usernames[0]] = int.Parse(stuff[1]);
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -230,6 +234,14 @@ namespace MarketBot.Server {
                         moneySum += myMoney;
                     }
                     double usd_inv_sum = 0;
+                    if (full) {
+                        foreach (var kvp in CurUntracked) {
+                            if (kvp.Value == 0) continue;
+                            if (extrainfo[kvp.Key] == null)
+                                extrainfo[kvp.Key] = new JObject();
+                            extrainfo[kvp.Key]["untracked"] = kvp.Value.ToString();
+                        }
+                    }
                     foreach (var kvp in CurInventory) {
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
