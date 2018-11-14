@@ -107,7 +107,7 @@ namespace SteamBot
                             mongoLog.ApiError($"Nanny is restarting bot {bot.BotConfig.Username}");
                             VK.Alert($"Nanny is restarting bot {bot.BotConfig.Username}");
                             RestartBot(bot.BotConfig.Username);
-                            lastRestart.Add(bot.BotConfig.Username, DateTime.Now);
+                            lastRestart[bot.BotConfig.Username] = DateTime.Now;
                             Thread.Sleep(100);
                         }
                     }
