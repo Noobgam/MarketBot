@@ -179,6 +179,7 @@
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
     <Compile Include="MarketBot\Utility\Encode.cs" />
     <Compile Include="MarketBot\Utility\MongoApi\GenericMongoDB.cs" />
+    <Compile Include="MarketBot\Utility\MongoApi\MongoLogCollection.cs" />
     <Compile Include="MarketBot\Utility\Request.cs" />
     <Compile Include="MarketBot\Utility\Item.cs" />
     <Compile Include="MarketBot\Utility\Economy.cs" />

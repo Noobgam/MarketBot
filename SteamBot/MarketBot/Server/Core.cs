@@ -16,6 +16,7 @@ using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Web;
 using System.Globalization;
+using SteamBot.MarketBot.Utility.MongoApi;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
@@ -163,6 +164,27 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
+                } else if (Endpoint == Consts.Endpoints.MongoFind) {
+                    if (context.Request.QueryString["query"] == null) {
+                        throw new Exception($"You have to provide query to mongo");
+                    }
+                    string query = context.Request.QueryString["query"];
+                    int limit = context.Request.QueryString["limit"] == null ? -1 : int.Parse(context.Request.QueryString["limit"]);
+                    int skip =  context.Request.QueryString["skip"] == null  ? -1 : int.Parse(context.Request.QueryString["skip"]);
+                    //TODO(noobgam): add other tables
+                    MongoLogCollection mongoLogs = new MongoLogCollection();
+                    var filtered = mongoLogs.Find(query);
+                    var cursor = filtered.ToCursor();
+                    JArray logs = new JArray();
+                    while (cursor.MoveNext()) {
+                        foreach (var msg in cursor.Current) {
+                            logs.Add(msg.ToString());
+                        }
+                    }
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["extrainfo"] = logs
+                    };
                 } else if (Endpoint == Consts.Endpoints.PingPong) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {

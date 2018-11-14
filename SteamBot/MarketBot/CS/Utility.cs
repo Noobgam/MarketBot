@@ -29,6 +29,7 @@ namespace CSGOTM {
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";
             public const string Status = "/status/";
+            public const string MongoFind = "/mongo/find/";
             #endregion
 
             #region PUT

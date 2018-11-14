@@ -27,17 +27,10 @@ namespace SteamBot.MarketBot.CS.Bot {
 
             [BsonElement("message")]
             public string Message { get; set; }
-        }
 
-        private class MongoLogCollection : GenericMongoDB<LogMessage> {
-            const string DBNAME = "steambot_main";
-
-            public MongoLogCollection() : base(DBNAME) {
-                
-            }
-
-            public override string GetCollectionName() {
-                return "logs";
+            public override string ToString() {
+                DateTime now = new DateTime(1970, 1, 1).Add(new TimeSpan(0, 0, TimeStamp.Increment));
+                return $"[{Name} {now.ToString("yyyy-MM-dd HH:mm:ss")}  {Message}";
             }
         }
 
