@@ -169,6 +169,11 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
                     LastPing[usernames[0]] = DateTime.Now;
+                    
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["ping"] = "pong",
+                    };
                 } else if (Endpoint == Consts.Endpoints.SalesHistorySize) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {

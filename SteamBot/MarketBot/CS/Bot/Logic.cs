@@ -62,16 +62,16 @@ namespace CSGOTM {
             FulfillBlackList();
             LoadDataBase();
             RefreshConfig();
-            Tasking.Run((Action)ParsingCycle);
-            Tasking.Run((Action)SaveDataBaseCycle);
-            Tasking.Run((Action)SellFromQueue);
-            Tasking.Run((Action)AddNewItems);
-            Tasking.Run((Action)UnstickeredRefresh);
-            Tasking.Run((Action)SetNewOrder);
+            Tasking.Run((Action)ParsingCycle, botName);
+            Tasking.Run((Action)SaveDataBaseCycle, botName);
+            Tasking.Run((Action)SellFromQueue, botName);
+            Tasking.Run((Action)AddNewItems, botName);
+            Tasking.Run((Action)UnstickeredRefresh, botName);
+            Tasking.Run((Action)SetNewOrder, botName);
             if (!sellOnly) {
-                Tasking.Run((Action)SetOrderForUnstickered);
+                Tasking.Run((Action)SetOrderForUnstickered, botName);
             }
-            Tasking.Run((Action)RefreshConfigThread);
+            Tasking.Run((Action)RefreshConfigThread, botName);
         }
 
         void RefreshConfig() {

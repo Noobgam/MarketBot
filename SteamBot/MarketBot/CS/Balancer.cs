@@ -55,7 +55,7 @@ namespace SteamBot.MarketBot.CS {
             died = false;
             opening = false;
             Log.Success("Connection opened!");
-            Tasking.Run((Action)SocketPinger);
+            Tasking.Run((Action)SocketPinger, "Balancer");
             socket.Send("newitems_go");
             //start = DateTime.Now;
         }

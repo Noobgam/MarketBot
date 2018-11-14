@@ -49,14 +49,25 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection = new MongoLogCollection();
         }
 
+        public NewMarketLogger() {
+            logCollection = new MongoLogCollection();
+        }
+
         private readonly DateTime epoch = new DateTime(1970, 1, 1);
 
         private LogMessage CreateRawLogMessage(LogLevel level, string line, params object[] formatParams) {
+            if (bot != null)
+                return CreateRawLogMessage(level, bot.config.DisplayName, line, formatParams);
+            else
+                return CreateRawLogMessage(level, "EXTRA", line, formatParams);
+        }
+
+        private LogMessage CreateRawLogMessage(LogLevel level, string botname, string line, params object[] formatParams) {
             DateTime instant = DateTime.Now;
             if (level != LogLevel.Nothing) {
                 string formattedString = String.Format(
                     "[{0} {1}] {2}: {3}",
-                    bot.config.DisplayName,
+                    botname,
                     instant.ToString("yyyy-MM-dd HH:mm:ss"),
                     _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
                     );
@@ -64,7 +75,7 @@ namespace SteamBot.MarketBot.CS.Bot {
             }
             return new LogMessage {
                 ID = new ObjectId(),
-                Name = bot.config.Username,
+                Name = botname,
                 Type = _LogLevel(level).ToUpper(),
                 Message = formatParams.Any() ? String.Format(line, formatParams) : line,
                 TimeStamp = new BsonTimestamp((int)instant.Subtract(epoch).TotalSeconds)
@@ -96,6 +107,10 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         public void Info(string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, data, formatParams));
+        }
+
+        public void Info(string botname, string data, params object[] formatParams) {
+            logCollection.Insert(CreateRawLogMessage(LogLevel.Info, botname, data, formatParams));
         }
 
         public void ApiError(RestartPriority prior, string data, params object[] formatParams) {

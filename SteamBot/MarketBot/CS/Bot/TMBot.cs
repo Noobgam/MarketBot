@@ -15,9 +15,11 @@ using Utility;
 namespace CSGOTM {
     public class TMBot : IDisposable {
 
+        private string botName;
         public TMBot(Bot bot, Configuration.BotInfo config) {
             this.bot = bot;
             this.config = new BotConfig(config);
+            botName = config.Username;
             Init();
         }
 
@@ -36,7 +38,7 @@ namespace CSGOTM {
             protocol.Logic = logic;
             WaitingForRestart = false;
 
-            Tasking.Run(Delayer);
+            Tasking.Run(Delayer, botName);
         }
 
         private void Delayer() {
@@ -45,8 +47,8 @@ namespace CSGOTM {
             }
 
             ReadyToRun = true;
-            Tasking.Run(Restarter);
-            Tasking.Run(InventoryFetcher);
+            Tasking.Run(Restarter, botName);
+            Tasking.Run(InventoryFetcher, botName);
         }
 
         private bool Alert(string message) {

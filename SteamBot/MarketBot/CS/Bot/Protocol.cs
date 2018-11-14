@@ -195,12 +195,14 @@ namespace CSGOTM {
         bool opening = false;
         bool died = true;
         WebSocket socket;
+        private string botName;
         public Protocol(TMBot bot) {
             parent = bot;
             Api = bot.config.Api;
+            this.botName = bot.config.Username;
             this.Bot = bot.bot;
             InitializeRPSSemaphores();
-            Tasking.Run((Action)StartUp);
+            Tasking.Run((Action)StartUp, botName);
         }
 
         //I'm going to use different semaphores to allow some requests to have higher RPS than others, without bothering one another.
@@ -235,17 +237,17 @@ namespace CSGOTM {
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             GetMoney();
-            Tasking.Run((Action)PingPongMarket);
-            Tasking.Run((Action)PingPongLocal);
-            Tasking.Run((Action)ReOpener);
-            Tasking.Run((Action)RefreshToken);
-            Tasking.Run((Action)HandleTrades);
+            Tasking.Run((Action)PingPongMarket, botName);
+            Tasking.Run((Action)PingPongLocal, botName);
+            Tasking.Run((Action)ReOpener, botName);
+            Tasking.Run((Action)RefreshToken, botName);
+            Tasking.Run((Action)HandleTrades, botName);
             Tasking.Run(() => {
                 OrdersCall(order => {
                     lock (ordersLock)
                         orders[$"{order.i_classid}_{order.i_instanceid}"] = int.Parse(order.o_price);
                 });
-            });
+            }, botName);
             AllocSocket();
             OpenSocket();            
             SubscribeToBalancer();
@@ -631,7 +633,7 @@ namespace CSGOTM {
         }
 
         void HandleTrades() {
-            Tasking.Run((Action)HandleSoldTrades);
+            Tasking.Run((Action)HandleSoldTrades, botName);
             //Tasking.Run((Action)HandlePurchasedTrades);
             while (parent.IsRunning()) {
                 try {
@@ -669,7 +671,7 @@ namespace CSGOTM {
             opening = false;
             Log.Success("Connection opened!");
             if (Auth())
-                Tasking.Run((Action)SocketPinger);
+                Tasking.Run((Action)SocketPinger, botName);
             //start = DateTime.Now;
         }
 
@@ -940,7 +942,7 @@ namespace CSGOTM {
                 }
                 if (DateTime.Now.Subtract(lastRefresh).TotalMilliseconds > Consts.REFRESHINTERVAL) {
                     lastRefresh = DateTime.Now;
-                    Tasking.Run(() => Logic.RefreshPrices(arr));
+                    Tasking.Run(() => Logic.RefreshPrices(arr), botName);
                 }
                 return arr;
             } catch (Exception ex) {

@@ -1,4 +1,5 @@
 ﻿using SteamBot;
+using SteamBot.MarketBot.CS.Bot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Utility {
     class Tasking {
-        static Log taskLog = new Log("task.log");
+        static NewMarketLogger taskLog = new NewMarketLogger();
         public static async Task<bool> WaitForFalseOrTimeout(Func<bool> condition) {
             await Task.Run(async () => {
                 while (condition()) await Task.Delay(80);
@@ -31,9 +32,9 @@ namespace Utility {
             return temp == waitTask;
         }
 
-        public static void Run(Action x) {
-            taskLog.Info($"[{x.Method}] started");
-            Task.Run(x).ContinueWith(tsk => taskLog.Info($"[{x.Method}] ended"));
+        public static void Run(Action x, string botName) {
+            taskLog.Info(botName, $"[{x.Method}] started");
+            Task.Run(x).ContinueWith(tsk => taskLog.Info(botName, $"[{x.Method}] ended"));
         }
     }
 }
