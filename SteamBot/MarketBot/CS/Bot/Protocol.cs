@@ -472,6 +472,7 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
+                                    ReportFailedTrade(requestId);
                                     Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
                                 }
                             } else {
@@ -483,6 +484,7 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(2000);
                                 } else {
+                                    ReportFailedTrade(requestId);
                                     Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!");
                                 }
                             }
@@ -505,6 +507,31 @@ namespace CSGOTM {
                             ReportCreatedTrade(pr.First, pr.Second);
                         }
                     });
+        }
+
+        bool ReportFailedTrade(string requestId) {
+            if (requestId == "") {
+                return false;
+            }
+            try {
+                string resp = ExecuteApiRequest($"/api/ReportFailedTrade/{requestId}/?key={Api}");
+                if (resp == null)
+                    return false;
+                JObject json = JObject.Parse(resp);
+                if (json["success"] == null) {
+                    Log.Error("TM thinks offer did not fail.");
+                    return false;
+                } else if ((bool)json["success"]) {
+                    Log.Success("TM knows about failed offer");
+                    return true;
+                } else {
+                    Log.Error("TM thinks offer did not fail.");
+                    return false;
+                }
+            } catch (Exception ex) {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                return false;
+            }
         }
 
         bool ReportCreatedTrade(string requestId, string tradeOfferId) {
