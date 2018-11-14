@@ -86,8 +86,8 @@ namespace SteamBot
             return true;
         }
 
-        public void Nanny()
-        {
+        public void Nanny() {
+            Thread.Sleep(5000);
             Balancer.Init();
             while (!disposed)
             {
@@ -99,10 +99,11 @@ namespace SteamBot
                             Thread.Sleep(100);
                         }
                     }
-                    Thread.Sleep(5000);
                 } catch (Exception ex) {
                     mongoLog.Error($"Няне больно =(\n{ex.Message}");
                     VK.Alert($"Няне больно =(\n{ex.Message}");
+                } finally {
+                    Thread.Sleep(5000);
                 }
             }
         }
