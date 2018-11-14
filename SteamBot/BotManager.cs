@@ -13,6 +13,7 @@ using MarketBot.Server;
 using SteamBot.MarketBot.CS;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
+using SteamBot.MarketBot.Utility.VK;
 
 namespace SteamBot
 {
@@ -101,6 +102,8 @@ namespace SteamBot
                 }
                 Thread.Sleep(5000);
             }
+            mongoLog.ApiError($"Nanny has died. Is everything ok?");
+            VK.Alert("Няня умерла!!!");
         }
 
         /// <summary>
