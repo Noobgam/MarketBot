@@ -100,8 +100,8 @@ namespace SteamBot
                         }
                     }
                 } catch (Exception ex) {
-                    mongoLog.Error($"Няне больно =(\n{ex.Message}");
-                    VK.Alert($"Няне больно =(\n{ex.Message}");
+                    mongoLog.Error($"Няне больно =(\n{ex.Message}{ex.StackTrace}");
+                    VK.Alert($"Няне больно =(\n{ex.Message}{ex.StackTrace}");
                 } finally {
                     Thread.Sleep(5000);
                 }
