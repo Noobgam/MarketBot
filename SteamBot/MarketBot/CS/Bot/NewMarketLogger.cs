@@ -57,7 +57,7 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         private LogMessage CreateRawLogMessage(LogLevel level, string line, params object[] formatParams) {
             if (bot != null)
-                return CreateRawLogMessage(level, bot.config.DisplayName, line, formatParams);
+                return CreateRawLogMessage(level, bot.config.Username, line, formatParams);
             else
                 return CreateRawLogMessage(level, "EXTRA", line, formatParams);
         }
