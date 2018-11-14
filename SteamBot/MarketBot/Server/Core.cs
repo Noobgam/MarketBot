@@ -173,7 +173,7 @@ namespace MarketBot.Server {
                     int skip =  context.Request.QueryString["skip"] == null  ? -1 : int.Parse(context.Request.QueryString["skip"]);
                     //TODO(noobgam): add other tables
                     MongoLogCollection mongoLogs = new MongoLogCollection();
-                    var filtered = mongoLogs.Find(query);
+                    var filtered = mongoLogs.Find(query, limit, skip);
                     var cursor = filtered.ToCursor();
                     JArray logs = new JArray();
                     while (cursor.MoveNext()) {
