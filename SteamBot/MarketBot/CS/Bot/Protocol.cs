@@ -453,7 +453,7 @@ namespace CSGOTM {
                         string profile = (string)json["profile"];
                         ulong id = ulong.Parse(profile.Split('/')[4]);
 
-                        Log.Info(json.ToString(Formatting.None));
+                        //Log.Info(json.ToString(Formatting.None));
                         var offer = Bot.NewTradeOffer(new SteamID(id));
                         try {
                             foreach (JToken item in json["request"]["items"]) {
@@ -462,6 +462,18 @@ namespace CSGOTM {
                                     (long)item["contextid"],
                                     (long)item["assetid"],
                                     (long)item["amount"]);
+                            }
+                            HashSet<String> blacklisted = new HashSet<string> {
+                                "https://steamcommunity.com/profiles/76561198328630783/",
+                                "https://steamcommunity.com/profiles/76561198321472965/",
+                                "https://steamcommunity.com/profiles/76561198408228242/",
+                                "https://steamcommunity.com/profiles/76561198033167623/",
+                                "https://steamcommunity.com/profiles/76561198857835986/",
+                                "https://steamcommunity.com/profiles/76561198857940860/",
+                            };
+                            if (blacklisted.Contains((string)json["profile"])) {
+                                Log.Warn("Not sending a request, this user is blacklisted.");
+                                continue;    
                             }
                             Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
                             if (offer.Items.NewVersion) {
