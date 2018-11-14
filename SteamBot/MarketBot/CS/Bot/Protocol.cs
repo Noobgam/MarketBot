@@ -472,7 +472,7 @@ namespace CSGOTM {
                                 "https://steamcommunity.com/profiles/76561198857940860/",
                             };
                             if (blacklisted.Contains((string)json["profile"])) {
-                                Log.Warn("Not sending a request, this user is blacklisted.");
+                                Log.Warn($"Not sending a request, user {(string)json["profile"]} is blacklisted.");
                                 continue;    
                             }
                             Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
