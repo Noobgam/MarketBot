@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using NDesk.Options;
+using Utility;
 
 namespace SteamBot
 {
@@ -122,6 +123,7 @@ namespace SteamBot
             manager = new BotManager();
 
             var loadedOk = manager.LoadConfiguration("settings.json");
+            Tasking.Run(manager.Nanny);
 
             if (!loadedOk)
             {

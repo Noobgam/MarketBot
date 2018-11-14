@@ -34,7 +34,6 @@ namespace SteamBot
             useSeparateProcesses = false;
             botProcs = new List<RunningBot>();
             server = new Core();
-            Tasking.Run((Action)Nanny);
         }
 
         ~BotManager()
@@ -89,13 +88,26 @@ namespace SteamBot
         public void Nanny() {
             Thread.Sleep(5000);
             Balancer.Init();
+            Dictionary<string, DateTime> lastRestart = new Dictionary<string, DateTime>();
+            TimeSpan restartInterval = new TimeSpan(0, 2, 0);
             while (!disposed)
             {
                 try {
                     foreach (RunningBot bot in botProcs) {
-                        if (bot.TheBot.WantToRestart()) {
+                        if (bot.IsRunning && bot.TheBot.WantToRestart()) {
+                            DateTime now = DateTime.Now;
+                            if (lastRestart.TryGetValue(bot.BotConfig.Username, out DateTime dt)) {
+                                TimeSpan timeGone = now.Subtract(dt);
+                                if (restartInterval.CompareTo(timeGone) > 0) {
+                                    mongoLog.ApiError($"Nanny is waiting {restartInterval.Subtract(timeGone).TotalSeconds} seconds");
+                                    VK.Alert($"Nanny is waiting {restartInterval.Subtract(timeGone).TotalSeconds} seconds");
+                                    Thread.Sleep(restartInterval.Subtract(timeGone));
+                                }
+                            }
                             mongoLog.ApiError($"Nanny is restarting bot {bot.BotConfig.Username}");
+                            VK.Alert($"Nanny is restarting bot {bot.BotConfig.Username}");
                             RestartBot(bot.BotConfig.Username);
+                            lastRestart.Add(bot.BotConfig.Username, DateTime.Now);
                             Thread.Sleep(100);
                         }
                     }
