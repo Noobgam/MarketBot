@@ -22,6 +22,7 @@ using System.Net;
 using Utility;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
+using SteamBot.MarketBot.Utility.VK;
 
 namespace CSGOTM {
     public class Protocol {
@@ -127,7 +128,6 @@ namespace CSGOTM {
             } finally {
                 ReleaseApiSemaphore(method);
             }
-            Console.WriteLine((100 * EMA).ToString("n2"));
             if (response == "{\"error\":\"Bad KEY\"}") {
                 Log.ApiError(TMBot.RestartPriority.CriticalError, "Bad key");
                 return null;
@@ -472,8 +472,18 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
-                                    ReportFailedTrade(requestId);
-                                    Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                    try {
+                                        string err = (string)JObject.Parse(newOfferId)["strError"];
+                                        if (err != "There was an error sending your trade offer. Please try again later. (15)") {
+                                            VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                        } else {
+                                            VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                        }
+                                        
+                                    } catch {
+
+                                    }
                                 }
                             } else {
                                 Log.Error("Items.NewVersion = 0! Still trying to send.");
@@ -484,8 +494,17 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(2000);
                                 } else {
-                                    ReportFailedTrade(requestId);
-                                    Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!");
+                                    try {
+                                        string err = (string)JObject.Parse(newOfferId)["strError"];
+                                        if (err != "There was an error sending your trade offer. Please try again later. (15)") {
+                                            VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                        } else {
+                                            VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                        }
+                                    } catch {
+
+                                    }
                                 }
                             }
                         } catch (Exception ex) {

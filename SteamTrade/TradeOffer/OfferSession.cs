@@ -252,8 +252,20 @@ namespace SteamTrade.TradeOffer
             {
                 resp = steamWeb.Fetch(url, "POST", data, false, referer);
             }
-            catch
-            {
+            catch (WebException ex) {
+                var response = ex.Response as HttpWebResponse;
+                if (response != null) {
+                    using (Stream responseStream = response.GetResponseStream()) {
+                        // If the response stream is null it cannot be read. So return an empty string.
+                        if (responseStream == null) {
+                            return false;
+                        }
+                        using (StreamReader reader = new StreamReader(responseStream)) {
+                            newTradeOfferId = reader.ReadToEnd();
+                        }
+                    }
+                    return false;
+                }
                 return false;
             }
             if (!String.IsNullOrEmpty(resp))
