@@ -97,9 +97,9 @@ namespace CSGOTM {
                     if (prior >= (int)RestartPriority.Restart) {
                         ScheduleRestart();
                         Alert("бот перезапускается.");
-                        Task.Delay(5000)
-                            .ContinueWith(task => bot.ScheduleRestart());
-                        break;
+                        Thread.Sleep(5000);
+                        bot.ScheduleRestart();
+                        return;
                     }
 
                 }

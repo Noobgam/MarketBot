@@ -32,7 +32,7 @@ namespace Utility {
             return temp == waitTask;
         }
 
-        public static void Run(Action x, string botName) {
+        public static void Run(Action x, string botName = "EXTRA") {
             taskLog.Info(botName, $"[{x.Method}] started");
             Task.Run(x).ContinueWith(tsk => taskLog.Info(botName, $"[{x.Method}] ended"));
         }

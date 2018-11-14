@@ -11,6 +11,8 @@ using System.Threading.Tasks;
 using System.Net;
 using MarketBot.Server;
 using SteamBot.MarketBot.CS;
+using Utility;
+using SteamBot.MarketBot.CS.Bot;
 
 namespace SteamBot
 {
@@ -21,6 +23,7 @@ namespace SteamBot
     {
         private readonly List<RunningBot> botProcs;
         private Log mainLog;
+        private NewMarketLogger mongoLog;
         private bool useSeparateProcesses;
         private bool disposed;
         private Core server;
@@ -30,7 +33,7 @@ namespace SteamBot
             useSeparateProcesses = false;
             botProcs = new List<RunningBot>();
             server = new Core();
-            Task.Run((Action)Nanny);
+            Tasking.Run((Action)Nanny);
         }
 
         ~BotManager()
@@ -65,6 +68,7 @@ namespace SteamBot
             useSeparateProcesses = ConfigObject.UseSeparateProcesses;
 
             mainLog = new Log(ConfigObject.MainLog, null, Log.LogLevel.Debug, Log.LogLevel.Debug);
+            mongoLog = new NewMarketLogger();
 
             for (int i = 0; i < ConfigObject.Bots.Length; i++)
             {
@@ -90,6 +94,7 @@ namespace SteamBot
                 {
                     if (bot.TheBot.WantToRestart())
                     {
+                        mongoLog.ApiError($"Nanny is restarting bot {bot.BotConfig.Username}");
                         RestartBot(bot.BotConfig.Username);
                         Thread.Sleep(100);
                     }

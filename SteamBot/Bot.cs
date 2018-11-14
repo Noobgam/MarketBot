@@ -156,10 +156,9 @@ namespace SteamBot
             return RestartFlag;
         }
 
-        public void ScheduleRestart()
-        {
-            MarketBot.ScheduleRestart();
+        public void ScheduleRestart() {
             RestartFlag = true;
+            MarketBot.ScheduleRestart();
         }
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
