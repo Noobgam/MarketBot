@@ -480,7 +480,7 @@ namespace CSGOTM {
                                             string err = (string)JObject.Parse(newOfferId)["strError"];
                                             if (err != "There was an error sending your trade offer. Please try again later. (15)") {
                                                 VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                                Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                                //Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
                                             } else {
                                                 VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
                                             }
@@ -507,7 +507,7 @@ namespace CSGOTM {
                                             string err = (string)JObject.Parse(newOfferId)["strError"];
                                             if (err != "There was an error sending your trade offer. Please try again later. (15)") {
                                                 VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                                Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                                //Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
                                             } else {
                                                 VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
                                             }
