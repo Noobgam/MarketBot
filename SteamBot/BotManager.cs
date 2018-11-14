@@ -91,19 +91,20 @@ namespace SteamBot
             Balancer.Init();
             while (!disposed)
             {
-                foreach (RunningBot bot in botProcs)
-                {
-                    if (bot.TheBot.WantToRestart())
-                    {
-                        mongoLog.ApiError($"Nanny is restarting bot {bot.BotConfig.Username}");
-                        RestartBot(bot.BotConfig.Username);
-                        Thread.Sleep(100);
+                try {
+                    foreach (RunningBot bot in botProcs) {
+                        if (bot.TheBot.WantToRestart()) {
+                            mongoLog.ApiError($"Nanny is restarting bot {bot.BotConfig.Username}");
+                            RestartBot(bot.BotConfig.Username);
+                            Thread.Sleep(100);
+                        }
                     }
+                    Thread.Sleep(5000);
+                } catch (Exception ex) {
+                    mongoLog.Error($"Няне больно =(\n{ex.Message}");
+                    VK.Alert($"Няне больно =(\n{ex.Message}");
                 }
-                Thread.Sleep(5000);
             }
-            mongoLog.ApiError($"Nanny has died. Is everything ok?");
-            VK.Alert("Няня умерла!!!");
         }
 
         /// <summary>
