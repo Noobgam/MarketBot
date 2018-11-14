@@ -472,17 +472,22 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
-                                    try {
-                                        string err = (string)JObject.Parse(newOfferId)["strError"];
-                                        if (err != "There was an error sending your trade offer. Please try again later. (15)") {
-                                            VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                            Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
-                                        } else {
-                                            VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                        }
-                                        
-                                    } catch {
+                                    if (newOfferId == "null") {
+                                        VK.Alert("Трейд не отправлен. Ответ: \"null\".\nПроверьте профиль на всякий: " + (string)json["profile"]);
+                                        Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                    } else {
+                                        try {
+                                            string err = (string)JObject.Parse(newOfferId)["strError"];
+                                            if (err != "There was an error sending your trade offer. Please try again later. (15)") {
+                                                VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                                Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                            } else {
+                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            }
 
+                                        } catch {
+
+                                        }
                                     }
                                 }
                             } else {
@@ -494,16 +499,22 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(2000);
                                 } else {
-                                    try {
-                                        string err = (string)JObject.Parse(newOfferId)["strError"];
-                                        if (err != "There was an error sending your trade offer. Please try again later. (15)") {
-                                            VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                            Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
-                                        } else {
-                                            VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                        }
-                                    } catch {
+                                    if (newOfferId == "null") {
+                                        VK.Alert("Трейд не отправлен. Ответ: \"null\".\nПроверьте профиль на всякий: " + (string)json["profile"]);
+                                        Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                    } else {
+                                        try {
+                                            string err = (string)JObject.Parse(newOfferId)["strError"];
+                                            if (err != "There was an error sending your trade offer. Please try again later. (15)") {
+                                                VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                                Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                            } else {
+                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            }
 
+                                        } catch {
+
+                                        }
                                     }
                                 }
                             }
