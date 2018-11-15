@@ -464,6 +464,7 @@ namespace CSGOTM {
                                     (long)item["amount"]);
                             }
                             HashSet<String> blacklisted = new HashSet<string> {
+                                "https://steamcommunity.com/profiles/76561198379677339/",
                                 "https://steamcommunity.com/profiles/76561198328630783/",
                                 "https://steamcommunity.com/profiles/76561198321472965/",
                                 "https://steamcommunity.com/profiles/76561198408228242/",
