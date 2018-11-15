@@ -490,9 +490,9 @@ namespace CSGOTM {
                                     } else {
                                         try {
                                             string err = (string)JObject.Parse(newOfferId)["strError"];
+                                            Log.Error(TMBot.RestartPriority.UnknownError, $"Trade offer not sent. Error: [{err}]");
                                             if (err != "There was an error sending your trade offer. Please try again later. (15)") {
-                                                VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
-                                                //Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                                VK.Alert($"Трейд не отправлен по причине [{err}].\nПроверьте профиль ручками: " + (string)json["profile"]);
                                             } else {
                                                 VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
                                             }
