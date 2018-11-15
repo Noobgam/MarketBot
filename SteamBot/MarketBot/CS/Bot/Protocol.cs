@@ -935,9 +935,11 @@ namespace CSGOTM {
                     return true;
                 } else {
                     if (json.ContainsKey("error")) {
-                        if ((string)json["error"] == "same_price")
+                        if ((string)json["error"] == "same_price") {
                             lock (ordersLock)
                                 orders[$"{classid}_{instanceid}"] = price;
+                            return true;
+                        }
                         Log.ApiError(TMBot.RestartPriority.MediumError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
                     } else
                         Log.ApiError(TMBot.RestartPriority.MediumError, "Was unable to set order, url is :" + uri);
