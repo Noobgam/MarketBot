@@ -476,7 +476,7 @@ namespace CSGOTM {
                                 Log.Warn($"Not sending a request, user {(string)json["profile"]} is blacklisted.");
                                 continue;    
                             }
-                            Log.Info(TMBot.RestartPriority.UnknownError, "Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
+                            Log.Info(TMBot.RestartPriority.UnknownError, "Partner: {0} Token: {1} Tradeoffermessage: {2} Profile: {3}. Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={0}&token={1}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
                             if (offer.Items.NewVersion) {
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
