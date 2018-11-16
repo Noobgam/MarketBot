@@ -150,7 +150,11 @@ namespace SteamBot.MarketBot.CS {
                         }
                         //var delegates = NewItemAppeared.GetInvocationList();
                         #endregion
-                        NewItemAppeared(null, newItem);
+                        if (newItem.i_market_name == "") {
+                            Log.Warn("Socket item has no market name");
+                        } else {
+                            NewItemAppeared(null, newItem);
+                        }
                         break;
                     default:
                         //Log.Info(JObject.Parse(e.Message).ToString(Formatting.Indented));
