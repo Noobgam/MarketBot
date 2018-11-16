@@ -315,17 +315,18 @@ namespace CSGOTM {
             CurrentItemsLock.EnterReadLock();
             if (currentItems.TryGetValue(name, out List<int> prices) && prices.Count > 2) {
                 int price = -1;
-                if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 12
-                    && prices.Count > 4
-                    && prices[4] / prices[2] <= 1.3) {
-                    price = prices[4] - 30;
-                } else if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 15
-                        && prices.Count > 3
-                        && prices[3] / prices[2] <= 1.2) {
-                    price = prices[3] - 30;
-                } else {
-                    price = prices[2] - 30;
-                }
+                price = prices[2] - 30;
+                //if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 12
+                //    && prices.Count > 4
+                //    && prices[4] / prices[2] <= 1.3) {
+                //    price = prices[4] - 30;
+                //} else if (DateTime.Now.Hour > 10 && DateTime.Now.Hour < 15
+                //        && prices.Count > 3
+                //        && prices[3] / prices[2] <= 1.2) {
+                //    price = prices[3] - 30;
+                //} else {
+                //    price = prices[2] - 30;
+                //}
                 _DatabaseLock.EnterReadLock();
                 if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.median || price == -1)) {
                     price = 2 * saleHistory.median;
