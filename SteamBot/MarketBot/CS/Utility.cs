@@ -22,8 +22,8 @@ namespace CSGOTM {
         public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
 
         public static class Endpoints {
-            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/";
-            public const string BotConfig    = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/";
+            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/prod_conf.json";
+            public const string BotConfig    = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
             public const string prefix = "http://+:4345/";
             public const string localhost = "http://localhost:4345";
             #region GET

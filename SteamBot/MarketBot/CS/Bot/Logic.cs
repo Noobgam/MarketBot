@@ -31,6 +31,7 @@ namespace CSGOTM {
         public GenericInventory cachedInventory = null;
         public int cachedTradableCount = 0;
         private int stopsell = -1;
+        public bool stopbuy = false;
 
         public Logic(TMBot bot) {
             this.botName = bot.config.Username;
@@ -85,6 +86,13 @@ namespace CSGOTM {
                 else {
                     if (stopsell != (int)token["stopsell"]) {
                         stopsell = (int)token["stopsell"];
+                    }
+                }
+                if (token["stopbuy"].Type != JTokenType.Boolean)
+                    Log.Error("Have no idea when to stop buying");
+                else {
+                    if (stopbuy != (bool)token["stopbuy"]) {
+                        stopbuy = (bool)token["stopbuy"];
                     }
                 }
 
@@ -740,6 +748,8 @@ namespace CSGOTM {
         }
 
         public bool WantToBuy(NewItem item) {
+            if (stopbuy)
+                return false;
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
