@@ -76,8 +76,7 @@ namespace CSGOTM {
 
         void RefreshConfig() {
 
-            JObject data = JObject.Parse(Utility.Request.Get(
-                "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw"));
+            JObject data = JObject.Parse(Utility.Request.Get(Consts.Endpoints.BotConfig));
             if (!data.TryGetValue(botName, out JToken token)) {
                 Log.Error("Gist config contains no bot definition.");
             } else {
