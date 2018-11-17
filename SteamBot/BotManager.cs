@@ -87,7 +87,7 @@ namespace SteamBot
 
         public void Nanny() {
             Thread.Sleep(5000);
-            //Balancer.Init();
+            Balancer.Init();
             Dictionary<string, DateTime> lastRestart = new Dictionary<string, DateTime>();
             TimeSpan restartInterval = new TimeSpan(0, 2, 0);
             while (!disposed)
