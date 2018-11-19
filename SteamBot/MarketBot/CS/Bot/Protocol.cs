@@ -23,6 +23,7 @@ using Utility;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
 using SteamBot.MarketBot.Utility.VK;
+using SteamBot.MarketBot.Utility.MongoApi;
 
 namespace CSGOTM {
     public class Protocol {
@@ -32,6 +33,7 @@ namespace CSGOTM {
         bool subscribed = false;
         public NewMarketLogger Log;
         private Queue<TradeOffer> QueuedOffers;
+        private MongoOperationHistory operationHistory;
         public Logic Logic;
         public SteamBot.Bot Bot;
         private int money = 0;
@@ -192,6 +194,27 @@ namespace CSGOTM {
             return response;
         }
 
+        public IEnumerable<HistoricalOperation> OperationHistory(DateTime start, DateTime end) {
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.MissingMemberHandling = MissingMemberHandling.Error;
+            string response = ExecuteApiRequest($"/api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key={Api}");
+            if (response == null)
+                return new List<HistoricalOperation>();
+            try {
+                JObject resp = JObject.Parse(response);
+                if ((bool) resp["success"]) {
+                    return resp["history"].ToObject<List<HistoricalOperation>>();
+                } else {
+                    Log.Error($"\"{(string)resp["error"]}\" occured while executing /api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key=<...>");
+                    return new List<HistoricalOperation>();
+                }
+            }
+            catch (Exception e) {
+                Log.Error($"Unexpected error happened while executing /api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key=<...> Error is: {e.Message}");
+                return new List<HistoricalOperation>();
+            }
+        }
+
         bool opening = false;
         bool died = true;
         WebSocket socket;
@@ -202,6 +225,7 @@ namespace CSGOTM {
             this.botName = bot.config.Username;
             this.Bot = bot.bot;
             InitializeRPSSemaphores();
+            operationHistory = new MongoOperationHistory(bot.config.Username);
             Tasking.Run((Action)StartUp, botName);
         }
 
@@ -251,6 +275,32 @@ namespace CSGOTM {
             AllocSocket();
             OpenSocket();            
             SubscribeToBalancer();
+            Tasking.Run(OperationHistoryThread);
+        }
+
+        private void OperationHistoryThread() {
+            const int DELAY = 1000 * 60 * 8;
+            TimeSpan TS_DELAY = new TimeSpan(0, 0, 0, 0, DELAY);
+            DateTime startStamp = DateTime.Now.Subtract(new TimeSpan(7, 0, 0, 0));
+            DateTime curStamp =   DateTime.Now;
+            LogOperationHistory(OperationHistory(startStamp, curStamp));
+            while (parent.IsRunning()) {
+                LogOperationHistory(OperationHistory(curStamp.Subtract(new TimeSpan(0, 10, 0)), curStamp));
+                curStamp.Add(TS_DELAY);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, DELAY).Result)
+                    return;
+            }
+        }
+
+        private void LogOperationHistory(IEnumerable<HistoricalOperation> historicalOperations) {
+            try {
+                foreach (var item in historicalOperations) {
+                    operationHistory.InsertOrReplace(item);
+                }
+                Log.Info($"{historicalOperations.Count()} history operations added");
+            } catch (Exception ex) {
+                Log.Error($"Error happened during LogOperationHistory: {ex.Message}");
+            }
         }
 
         private void AllocSocket() {
@@ -268,23 +318,6 @@ namespace CSGOTM {
             socket.MessageReceived += Msg;
             socket.Open();
         }
-
-        public readonly string[] search = { "<div class=\\\"price\\\"", "<div class=\\\"name\\\"" };
-
-        public class Dummy {
-            public string s;
-        }
-
-        string parse(string s) {
-            var sb = new StringBuilder();
-            sb.Append("{\"s\":\"" + s + "\"}");
-            string t = sb.ToString();
-            var dummy = JsonConvert.DeserializeObject<Dummy>(t);
-            return dummy.s;
-        }
-
-        //DateTime start = DateTime.Now;
-        //double counter = 0;
 
         public void ProcessNewItem(object sender, NewItem newItem) {
             if (!parent.IsRunning())
@@ -943,7 +976,11 @@ namespace CSGOTM {
                                 orders[$"{classid}_{instanceid}"] = price;
                             return true;
                         }
-                        Log.ApiError(TMBot.RestartPriority.MediumError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                        if ((string)json["error"] == "money") {
+                            Log.ApiError(TMBot.RestartPriority.UnknownError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                        } else {
+                            Log.ApiError(TMBot.RestartPriority.MediumError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                        }
                     } else
                         Log.ApiError(TMBot.RestartPriority.MediumError, "Was unable to set order, url is :" + uri);
                     return false;
