@@ -99,9 +99,7 @@ namespace CSGOTM {
                     }
                     logic._DatabaseLock.EnterReadLock();
                     double medianprice = 0;
-                    int something = 0;
                     foreach (var item in inv.descriptions) {
-                        Console.WriteLine(something++);
                         string quality;
                         string runame;
                         try {
