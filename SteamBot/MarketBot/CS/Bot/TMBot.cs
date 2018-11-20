@@ -55,11 +55,28 @@ namespace CSGOTM {
             return VK.Alert($"[{bot.DisplayName}]: {message}");
         }
 
+        private string ConvertQualityToRussian(string en_quality) {
+            switch (en_quality) {
+                case "Factory New":
+                    return "Прямо с завода";
+                case "Minimal Wear":
+                    return "Немного поношенное";
+                case "Field-Tested":
+                    return "После полевых испытаний";
+                case "Well-Worn":
+                    return "Поношенное";
+                case "Battle-Scarred":
+                    return "Закаленное в боях";
+                default:
+                    return "";                    
+            }
+        }
+
         private void InventoryFetcher() {
             while (!WaitingForRestart) {
               
                 GenericInventory inv = new GenericInventory(bot.SteamWeb);
-                inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID);
+                inv.load(730, new long[] { 2 }, bot.SteamUser.SteamID, "russian");
                 int counter = inv.descriptions.Count;
                 if (counter != 0) { //lol...
                     logic.cachedInventory = inv;
@@ -82,16 +99,23 @@ namespace CSGOTM {
                     }
                     logic._DatabaseLock.EnterReadLock();
                     double medianprice = 0;
-                    try {
-                        foreach (var item in inv.descriptions) {
-                            if (logic.dataBase.TryGetValue(item.Value.market_hash_name, out Logic.SalesHistory sales)) {
-                                medianprice += sales.median;
-                            }
+                    int something = 0;
+                    foreach (var item in inv.descriptions) {
+                        Console.WriteLine(something++);
+                        string quality;
+                        try {
+                            quality = item.Value.market_hash_name.Split(new char[] { '(', ')' })[1];
+                        } 
+                        catch {
+                            //???
+                            continue;
+                        }
+                        string runame = item.Value.name + " (" + ConvertQualityToRussian(quality) + ")";
+                        if (logic.dataBase.TryGetValue(runame, out Logic.SalesHistory sales)) {
+                            medianprice += sales.median;
                         }
                     }
-                    finally {
-                        logic._DatabaseLock.ExitReadLock();
-                    }
+                    logic._DatabaseLock.ExitReadLock();
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
                     LocalRequest.PutTradableCost(config.Username, tradeprice, untracked);
                     LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice));

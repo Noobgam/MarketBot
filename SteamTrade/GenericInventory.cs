@@ -128,13 +128,13 @@ namespace SteamTrade
             }
         }
 
-        public void load(int appid, IEnumerable<long> contextIds, SteamID steamid)
+        public void load(int appid, IEnumerable<long> contextIds, SteamID steamid, string language = "english")
         {
             List<long> contextIdsCopy = contextIds.ToList();
-            _loadTask = Task.Factory.StartNew(() => loadImplementation(appid, contextIdsCopy, steamid));
+            _loadTask = Task.Factory.StartNew(() => loadImplementation(appid, contextIdsCopy, steamid, language));
         }
 
-        public void loadImplementation(int appid, IEnumerable<long> contextIds, SteamID steamid)
+        public void loadImplementation(int appid, IEnumerable<long> contextIds, SteamID steamid, string language = "english")
         {
             dynamic invResponse;
             isLoaded = false;
@@ -153,7 +153,7 @@ namespace SteamTrade
                     {
                         var data = String.IsNullOrEmpty(moreStart) ? null : new NameValueCollection {{"start", moreStart}};
                         string response = SteamWeb.Fetch(
-                            String.Format("https://steamcommunity.com/profiles/{0}/inventory/json/{1}/{2}/", steamid.ConvertToUInt64(), appid, contextId),
+                            String.Format("https://steamcommunity.com/profiles/{0}/inventory/json/{1}/{2}/?l={3}", steamid.ConvertToUInt64(), appid, contextId, language),
                             "GET", data);
                         invResponse = JsonConvert.DeserializeObject(response);
 
