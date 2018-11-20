@@ -80,8 +80,21 @@ namespace CSGOTM {
                             ++untracked;
                         }
                     }
+                    logic._DatabaseLock.EnterReadLock();
+                    double medianprice = 0;
+                    try {
+                        foreach (var item in inv.descriptions) {
+                            if (logic.dataBase.TryGetValue(item.Value.market_hash_name, out Logic.SalesHistory sales)) {
+                                medianprice += sales.median;
+                            }
+                        }
+                    }
+                    finally {
+                        logic._DatabaseLock.ExitReadLock();
+                    }
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
                     LocalRequest.PutTradableCost(config.Username, tradeprice, untracked);
+                    LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice));
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 if (counter != 0)

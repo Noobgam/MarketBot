@@ -18,7 +18,7 @@ using SteamBot.MarketBot.CS.Bot;
 namespace CSGOTM {
     public class Logic {
         public NewMarketLogger Log;
-        private readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
+        public readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
         private readonly ReaderWriterLockSlim CurrentItemsLock = new ReaderWriterLockSlim();
         private readonly object RefreshItemsLock = new object();
         private readonly object UnstickeredRefreshItemsLock = new object();
@@ -824,7 +824,7 @@ namespace CSGOTM {
         private Queue<NewHistoryItem> needOrder = new Queue<NewHistoryItem>();
         private Queue<NewHistoryItem> needOrderUnstickered = new Queue<NewHistoryItem>();
         private HashSet<string> blackList = new HashSet<string>();
-        private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
+        public Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
         private Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
 

@@ -38,6 +38,7 @@ namespace CSGOTM {
             public const string PutCurrentInventory = "/putInventory/";
             public const string PutMoney = "/putMoney/";
             public const string PutInventoryCost = "/putInventoryCost/";
+            public const string PutMedianCost = "/putMedianCost/";
             public const string PutTradableCost = "/putTradableCost/";
             public const string SalesHistorySize = "/saleshistorysize/";
             #endregion
