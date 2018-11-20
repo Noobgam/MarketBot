@@ -277,7 +277,7 @@ namespace MarketBot.Server {
                         if (kvp.Value == 0) continue;
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
-                        extrainfo[kvp.Key]["median_sum"] = kvp.Value.ToString();
+                        extrainfo[kvp.Key]["median_sum"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
                     }
                     foreach (var kvp in CurInventory) {
                         if (extrainfo[kvp.Key] == null)

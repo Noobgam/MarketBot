@@ -103,14 +103,16 @@ namespace CSGOTM {
                     foreach (var item in inv.descriptions) {
                         Console.WriteLine(something++);
                         string quality;
+                        string runame;
                         try {
                             quality = item.Value.market_hash_name.Split(new char[] { '(', ')' })[1];
+                            runame = item.Value.name + " (" + ConvertQualityToRussian(quality) + ")";
                         } 
                         catch {
+                            runame = item.Value.name;
                             //???
                             continue;
                         }
-                        string runame = item.Value.name + " (" + ConvertQualityToRussian(quality) + ")";
                         if (logic.dataBase.TryGetValue(runame, out Logic.SalesHistory sales)) {
                             medianprice += sales.median;
                         }
@@ -118,7 +120,7 @@ namespace CSGOTM {
                     logic._DatabaseLock.ExitReadLock();
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
                     LocalRequest.PutTradableCost(config.Username, tradeprice, untracked);
-                    LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice));
+                    LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice / 100));
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 if (counter != 0)
