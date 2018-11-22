@@ -801,7 +801,13 @@ namespace CSGOTM {
                 if (died) {
                     if (!opening) {
                         try {
-                            Log.ApiError(TMBot.RestartPriority.MediumError, $"Trying to reconnect for the {i++}-th time");
+                            int index = i++;
+                            Log.ApiError(TMBot.RestartPriority.UnknownError, $"Trying to reconnect for the {index}-th time");
+                            Task.Delay(5000).ContinueWith(_ => {
+                                if (died == true) {
+                                    Log.ApiError(TMBot.RestartPriority.MediumError, $"{index}-th time");
+                                }
+                            });
                             AllocSocket();
                             OpenSocket();
                         } catch (Exception ex) {
