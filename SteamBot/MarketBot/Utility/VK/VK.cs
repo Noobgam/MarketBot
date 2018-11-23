@@ -95,7 +95,12 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static void HandleMessage(Message message) {
             if (message.Action.Type.ToString() == "chat_pin_message" && message.PeerId == 2000000118 && message.FromId != 62228399) {
-                api.Messages.Pin(2000000000 + 118, 1115190);
+                Task.Delay(2500).ContinueWith(tsk => {
+                    try {
+                        api.Messages.Pin(2000000000 + 118, 1115190);
+                    } catch {
+                    }
+                });
                 return;
             }
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
