@@ -85,14 +85,21 @@ namespace SteamBot.MarketBot.Utility.VK {
             "ты будешь крутиться вокруг хуя какого-нибудь мудака, " +
             "чтобы заработать себе на пропитание.";
 
+        static bool pinning = false;
         static void HandleMessage(Message message) {
             if ((message.Action.Type.ToString() == "chat_pin_message" || message.Action.Type.ToString() == "chat_unpin_message") && message.PeerId == 2000000118 && message.FromId != 62228399) {
-                Task.Delay(2500).ContinueWith(tsk => {
-                    try {
-                        api.Messages.Pin(2000000000 + 118, 1115190);
-                    } catch {
-                    }
-                });
+                if (!pinning) {
+                    pinning = true;
+                    Task.Delay(2500).ContinueWith(tsk => {
+                        try {
+                            api.Messages.Pin(2000000000 + 118, 1115190);
+                        } catch {
+                        }
+                        finally {
+                            pinning = false;
+                        }
+                    });                    
+                }
                 return;
             }
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
