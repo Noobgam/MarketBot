@@ -20,11 +20,6 @@ namespace SteamBot.MarketBot.Utility.VK {
         static VK() {
             Tasking.Run((Action)Refresher);
             Tasking.Run((Action)Listener);
-            try {
-                api.Messages.Pin(2000000000 + 118, 1115190);
-            } catch {
-
-            }
         }
 
         private static bool Message(long id, string message) {
@@ -71,7 +66,11 @@ namespace SteamBot.MarketBot.Utility.VK {
                     AccessToken = "45ca4499949cfd7298b31891177830589253f0639ff13d6b9be7b3559375a642e75322972556bdeeb11fd",
                     Settings = Settings.Messages | Settings.Offline
                 });
-                longPollServerInfo = api.Messages.GetLongPollServer(true);
+                longPollServerInfo = api.Messages.GetLongPollServer(true); try {
+                    api.Messages.Pin(2000000000 + 118, 1115190);
+                } catch {
+
+                }
                 return true;
             } catch (Exception ex) {
                 return false;
