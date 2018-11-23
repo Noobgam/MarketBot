@@ -20,17 +20,10 @@ namespace SteamBot.MarketBot.Utility.VK {
         static VK() {
             Tasking.Run((Action)Refresher);
             Tasking.Run((Action)Listener);
-            Tasking.Run((Action)PinRefresh);
-        }
+            try {
+                api.Messages.Pin(2000000000 + 118, 1115190);
+            } catch {
 
-        private static void PinRefresh() {
-            while (true) {
-                Thread.Sleep(10000);
-                try {
-                    //api.Messages.Pin(2000000000 + 118, 1115190);
-                } catch (Exception e) { 
-                    Console.WriteLine("Error " + e.Message);
-                }
             }
         }
 
