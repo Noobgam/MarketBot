@@ -86,7 +86,7 @@ namespace SteamBot.MarketBot.Utility.VK {
             "чтобы заработать себе на пропитание.";
 
         static void HandleMessage(Message message) {
-            if (message.Action.Type.ToString() == "chat_pin_message" && message.PeerId == 2000000118 && message.FromId != 62228399) {
+            if ((message.Action.Type.ToString() == "chat_pin_message" || message.Action.Type.ToString() == "chat_unpin_message") && message.PeerId == 2000000118 && message.FromId != 62228399) {
                 Task.Delay(2500).ContinueWith(tsk => {
                     try {
                         api.Messages.Pin(2000000000 + 118, 1115190);
