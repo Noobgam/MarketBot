@@ -18,8 +18,20 @@ namespace SteamBot.MarketBot.Utility.VK {
         static VkApi api;
         static LongPollServerResponse longPollServerInfo;
         static VK() {
-            Task.Run((Action)Refresher);
-            Task.Run((Action)Listener);
+            Tasking.Run((Action)Refresher);
+            Tasking.Run((Action)Listener);
+            Tasking.Run((Action)PinRefresh);
+        }
+
+        private static void PinRefresh() {
+            while (true) {
+                Thread.Sleep(10000);
+                try {
+                    //api.Messages.Pin(2000000000 + 118, 1115190);
+                } catch (Exception e) { 
+                    Console.WriteLine("Error " + e.Message);
+                }
+            }
         }
 
         private static bool Message(long id, string message) {
@@ -82,6 +94,10 @@ namespace SteamBot.MarketBot.Utility.VK {
             "чтобы заработать себе на пропитание.";
 
         static void HandleMessage(Message message) {
+            if (message.Action.Type.ToString() == "chat_pin_message" && message.PeerId == 2000000118 && message.FromId != 62228399) {
+                api.Messages.Pin(2000000000 + 118, 1115190);
+                return;
+            }
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
             foreach (var attach in message.Attachments) {
                 //attach.Document.Uri
