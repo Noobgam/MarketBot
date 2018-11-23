@@ -66,11 +66,7 @@ namespace SteamBot.MarketBot.Utility.VK {
                     AccessToken = "45ca4499949cfd7298b31891177830589253f0639ff13d6b9be7b3559375a642e75322972556bdeeb11fd",
                     Settings = Settings.Messages | Settings.Offline
                 });
-                longPollServerInfo = api.Messages.GetLongPollServer(true); try {
-                    api.Messages.Pin(2000000000 + 118, 1115190);
-                } catch {
-
-                }
+                longPollServerInfo = api.Messages.GetLongPollServer(true);
                 return true;
             } catch (Exception ex) {
                 return false;
@@ -87,21 +83,6 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static bool pinning = false;
         static void HandleMessage(Message message) {
-            if ((message.Action.Type.ToString() == "chat_pin_message" || message.Action.Type.ToString() == "chat_unpin_message") && message.PeerId == 2000000118 && message.FromId != 62228399) {
-                if (!pinning) {
-                    pinning = true;
-                    Task.Delay(2500).ContinueWith(tsk => {
-                        try {
-                            api.Messages.Pin(2000000000 + 118, 1115190);
-                        } catch {
-                        }
-                        finally {
-                            pinning = false;
-                        }
-                    });                    
-                }
-                return;
-            }
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
             foreach (var attach in message.Attachments) {
                 //attach.Document.Uri
