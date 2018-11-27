@@ -505,6 +505,8 @@ namespace CSGOTM {
                                 "https://steamcommunity.com/profiles/76561198857835986/",
                                 "https://steamcommunity.com/profiles/76561198857940860/",
                                 "https://steamcommunity.com/profiles/76561198356087536/",
+                                "https://steamcommunity.com/profiles/76561198309616729/",
+                                "https://steamcommunity.com/profiles/76561198316325564/",
                             };
                             if (blacklisted.Contains((string)json["profile"])) {
                                 Log.Warn($"Not sending a request, user {(string)json["profile"]} is blacklisted.");
