@@ -156,9 +156,9 @@ namespace SteamBot
             return RestartFlag;
         }
 
-        public void ScheduleRestart()
-        {
+        public void ScheduleRestart() {
             RestartFlag = true;
+            MarketBot.ScheduleRestart();
         }
 
         public Bot(Configuration.BotInfo config, string apiKey, UserHandlerCreator handlerCreator, bool debug = false, bool process = false)
@@ -246,7 +246,7 @@ namespace SteamBot
 
 
             //Starting CS:
-            MarketBot = new CSGOTM.TMBot(this, config);
+            //MarketBot = new CSGOTM.TMBot(this, config);
         }        
 
         ~Bot()
@@ -286,6 +286,8 @@ namespace SteamBot
                 Log.Info("Connecting...");
                 if (MarketBot == null) {
                     MarketBot = new CSGOTM.TMBot(this, botConfig);
+                } else {
+                    MarketBot.Init();
                 }
                 if (!botThread.IsBusy)
                     botThread.RunWorkerAsync();

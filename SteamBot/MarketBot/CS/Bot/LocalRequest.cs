@@ -40,12 +40,16 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.PutMoney, botname, money.ToString());
         }
 
-        public static void PutSalesHistorySize(string botname, int cnt) {
-#if DEBUG
-            RawPut(Consts.Endpoints.SalesHistorySize, botname, cnt.ToString());
-#else
-            //Console.WriteLine("Don't put sales in release mode.");            
-#endif
+        public static void PutInventoryCost(string botname, double sumprice) {
+            RawPut(Consts.Endpoints.PutInventoryCost, botname, sumprice.ToString());
+        }
+
+        public static void PutTradableCost(string botname, double sumprice, int untracked) {
+            RawPut(Consts.Endpoints.PutTradableCost, botname, sumprice.ToString() + ":" + untracked.ToString());
+        }
+
+        public static void PutMedianCost(string botname, double sumprice) {
+            RawPut(Consts.Endpoints.PutMedianCost, botname, sumprice.ToString());
         }
 
         public static void PutL1Optimized(string botname, int cnt) {

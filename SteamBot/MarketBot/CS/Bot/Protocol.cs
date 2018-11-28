@@ -20,14 +20,20 @@ using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Utility;
+using SteamBot.MarketBot.CS;
+using SteamBot.MarketBot.CS.Bot;
+using SteamBot.MarketBot.Utility.VK;
+using SteamBot.MarketBot.Utility.MongoApi;
 
 namespace CSGOTM {
     public class Protocol {
 #if CAREFUL
         public int totalwasted = 0;
 #endif
-        public MarketLogger Log;
+        bool subscribed = false;
+        public NewMarketLogger Log;
         private Queue<TradeOffer> QueuedOffers;
+        private MongoOperationHistory operationHistory;
         public Logic Logic;
         public SteamBot.Bot Bot;
         private int money = 0;
@@ -89,7 +95,7 @@ namespace CSGOTM {
         void ShiftEma(double x) {
             EMA = EMA * (1 - ALP) + x * ALP;
         }
-        
+                
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
             if (logLevel == ApiLogLevel.LogAll) {
                 Log.Info("Executing " + url);
@@ -103,25 +109,27 @@ namespace CSGOTM {
                 response = Utility.Request.Get(Consts.MARKETENDPOINT + url);
                 temp.Stop();
                 ShiftEma(0);
-                File.AppendAllText($"get_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
+                Log.Nothing($"GET {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
                 Log.ApiError(TMBot.RestartPriority.UnknownError, $"GET call to {Consts.MARKETENDPOINT}{url} failed");
+                bool flagged = false;
                 if (ex is WebException webex) {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
                         if (webex.Response is HttpWebResponse resp) {
                             if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521) {
                                 Log.ApiError(TMBot.RestartPriority.MediumError, $"Status code: {(int)resp.StatusCode}");
+                                flagged = true;
                             }
                         }
                     }
-                } else {
+                }
+                if (!flagged) {
                     Log.ApiError(TMBot.RestartPriority.BigError, $"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
                 ShiftEma(1);
             } finally {
                 ReleaseApiSemaphore(method);
             }
-            Console.WriteLine((100 * EMA).ToString("n2"));
             if (response == "{\"error\":\"Bad KEY\"}") {
                 Log.ApiError(TMBot.RestartPriority.CriticalError, "Bad key");
                 return null;
@@ -158,18 +166,21 @@ namespace CSGOTM {
                 response = Utility.Request.Post(Consts.MARKETENDPOINT + url, data);
                 temp.Stop();
                 ShiftEma(0);
-                File.AppendAllText($"post_log{Logic.botName}", $"{DateTime.Now.ToString("MM/dd/yyyy HH:mm:ss")} ,{url} : {temp.ElapsedMilliseconds}\n");
+                Log.Nothing($"POST {url} : {temp.ElapsedMilliseconds}");
             } catch (Exception ex) {
-                Log.ApiError(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
+                Log.Nothing(TMBot.RestartPriority.UnknownError, $"POST call to {Consts.MARKETENDPOINT}{url} failed");
+                bool flagged = false;
                 if (ex is WebException webex) {
                     if (webex.Status == WebExceptionStatus.ProtocolError) {
                         if (webex.Response is HttpWebResponse resp) {
                             if ((int)resp.StatusCode == 500 || (int)resp.StatusCode == 520 || (int)resp.StatusCode == 521) {
                                 Log.ApiError(TMBot.RestartPriority.MediumError, $"Status code: {(int)resp.StatusCode}");
+                                flagged = true;
                             }
                         }
                     }
-                } else {
+                }
+                if (!flagged) {
                     Log.ApiError(TMBot.RestartPriority.BigError, $"Message: {ex.Message}\nTrace: {ex.StackTrace}");
                 }
                 ShiftEma(1);
@@ -183,15 +194,39 @@ namespace CSGOTM {
             return response;
         }
 
+        public IEnumerable<HistoricalOperation> OperationHistory(DateTime start, DateTime end) {
+            JsonSerializerSettings settings = new JsonSerializerSettings();
+            settings.MissingMemberHandling = MissingMemberHandling.Error;
+            string response = ExecuteApiRequest($"/api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key={Api}");
+            if (response == null)
+                return new List<HistoricalOperation>();
+            try {
+                JObject resp = JObject.Parse(response);
+                if ((bool) resp["success"]) {
+                    return resp["history"].ToObject<List<HistoricalOperation>>();
+                } else {
+                    Log.Error($"\"{(string)resp["error"]}\" occured while executing /api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key=<...>");
+                    return new List<HistoricalOperation>();
+                }
+            }
+            catch (Exception e) {
+                Log.Error($"Unexpected error happened while executing /api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key=<...> Error is: {e.Message}");
+                return new List<HistoricalOperation>();
+            }
+        }
+
         bool opening = false;
         bool died = true;
         WebSocket socket;
+        private string botName;
         public Protocol(TMBot bot) {
             parent = bot;
             Api = bot.config.Api;
+            this.botName = bot.config.Username;
             this.Bot = bot.bot;
             InitializeRPSSemaphores();
-            Task.Run((Action)StartUp);
+            operationHistory = new MongoOperationHistory(bot.config.Username);
+            Tasking.Run((Action)StartUp, botName);
         }
 
         //I'm going to use different semaphores to allow some requests to have higher RPS than others, without bothering one another.
@@ -226,19 +261,46 @@ namespace CSGOTM {
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             GetMoney();
-            Task.Run((Action)PingPongMarket);
-            Task.Run((Action)PingPongLocal);
-            Task.Run((Action)ReOpener);
-            Task.Run((Action)RefreshToken);
-            Task.Run((Action)HandleTrades);
-            Task.Run(() => {
+            Tasking.Run((Action)PingPongMarket, botName);
+            Tasking.Run((Action)PingPongLocal, botName);
+            Tasking.Run((Action)ReOpener, botName);
+            Tasking.Run((Action)RefreshToken, botName);
+            Tasking.Run((Action)HandleTrades, botName);
+            Tasking.Run(() => {
                 OrdersCall(order => {
                     lock (ordersLock)
                         orders[$"{order.i_classid}_{order.i_instanceid}"] = int.Parse(order.o_price);
                 });
-            });
+            }, botName);
             AllocSocket();
-            OpenSocket();
+            OpenSocket();            
+            SubscribeToBalancer();
+            Tasking.Run(OperationHistoryThread);
+        }
+
+        private void OperationHistoryThread() {
+            const int DELAY = 1000 * 60 * 8;
+            TimeSpan TS_DELAY = new TimeSpan(0, 0, 0, 0, DELAY);
+            DateTime startStamp = DateTime.Now.Subtract(new TimeSpan(7, 0, 0, 0));
+            DateTime curStamp =   DateTime.Now;
+            LogOperationHistory(OperationHistory(startStamp, curStamp));
+            while (parent.IsRunning()) {
+                LogOperationHistory(OperationHistory(curStamp.Subtract(new TimeSpan(0, 10, 0)), curStamp));
+                curStamp.Add(TS_DELAY);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, DELAY).Result)
+                    return;
+            }
+        }
+
+        private void LogOperationHistory(IEnumerable<HistoricalOperation> historicalOperations) {
+            try {
+                foreach (var item in historicalOperations) {
+                    operationHistory.InsertOrReplace(item);
+                }
+                Log.Info($"{historicalOperations.Count()} history operations added");
+            } catch (Exception ex) {
+                Log.Error($"Error happened during LogOperationHistory: {ex.Message}");
+            }
         }
 
         private void AllocSocket() {
@@ -257,24 +319,25 @@ namespace CSGOTM {
             socket.Open();
         }
 
-        public readonly string[] search = { "<div class=\\\"price\\\"", "<div class=\\\"name\\\"" };
-
-        public class Dummy {
-            public string s;
+        public void ProcessNewItem(object sender, NewItem newItem) {
+            if (!parent.IsRunning())
+                return;
+            if (newItem.i_market_name == "") {
+                Log.Warn("Socket item has no market name");
+            } else if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
+                if (Buy(newItem))
+                    Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
+                else
+                    Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+            }
         }
-
-        string parse(string s) {
-            var sb = new StringBuilder();
-            sb.Append("{\"s\":\"" + s + "\"}");
-            string t = sb.ToString();
-            var dummy = JsonConvert.DeserializeObject<Dummy>(t);
-            return dummy.s;
-        }
-
-        //DateTime start = DateTime.Now;
-        //double counter = 0;
 
         void Msg(object sender, MessageReceivedEventArgs e) {
+            if (!parent.IsRunning()) {
+                if (socket.State == WebSocketState.Open)
+                    socket.Close();
+                return;
+            }
             try {
                 if (e.Message == "pong")
                     return;
@@ -296,49 +359,6 @@ namespace CSGOTM {
                 }
                 //Console.WriteLine(x.type);
                 switch (type) {
-                    case "newitems_go":
-                        //++counter;
-                        //double rps = counter / DateTime.Now.Subtract(start).TotalSeconds;
-                        //Console.WriteLine(rps);
-                        reader = new JsonTextReader(new StringReader(data));
-                        currentProperty = string.Empty;
-                        NewItem newItem = new NewItem();
-                        while (reader.Read()) {
-                            if (reader.Value != null) {
-                                if (reader.TokenType == JsonToken.PropertyName)
-                                    currentProperty = reader.Value.ToString();
-                                else if (reader.TokenType == JsonToken.String) {
-                                    switch (currentProperty) {
-                                        case "i_classid":
-                                            newItem.i_classid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_instanceid":
-                                            newItem.i_instanceid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_market_name":
-                                            newItem.i_market_name = reader.Value.ToString();
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                } else if (currentProperty == "ui_price") {
-                                    newItem.ui_price = (int)(float.Parse(reader.Value.ToString()) * 100);
-
-                                }
-                            }
-                        }
-                        if (newItem.i_market_name == "") {
-                            Log.Warn("Socket item has no market name");
-                            break;
-                        }
-                        //getBestOrder(newItem.i_classid, newItem.i_instanceid);
-                        if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
-                            if (Buy(newItem))
-                                Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
-                            else
-                                Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
-                        }
-                        break;
                     case "history_go":
                         try {
                             char[] trimming = { '[', ']' };
@@ -364,7 +384,7 @@ namespace CSGOTM {
                             }
                             Logic.ProcessItem(historyItem);
                         } catch (Exception ex) {
-                            Log.Error(ex.Message);
+                            Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                         }
                         break;
 
@@ -398,15 +418,19 @@ namespace CSGOTM {
             } finally {
             }
         }
+        
+        bool Alive() {
+            return !died && parent.IsRunning();
+        }
 
         void SocketPinger() {
-            while (!died) {
+            while (Alive()) {
                 try {
                     socket.Send("ping");
                 } catch (Exception ex) {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(30000);
+                Tasking.WaitForFalseOrTimeout(Alive, 25000).Wait();
             }
         }
 
@@ -444,7 +468,8 @@ namespace CSGOTM {
                 if (resp == null)
                     continue;
                 JObject json = JObject.Parse(resp);
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    return;
                 if (json["success"] == null)
                     continue;
                 if ((bool)json["success"] == false) {
@@ -461,7 +486,7 @@ namespace CSGOTM {
                         string profile = (string)json["profile"];
                         ulong id = ulong.Parse(profile.Split('/')[4]);
 
-                        Log.Info(json.ToString(Formatting.None));
+                        //Log.Info(json.ToString(Formatting.None));
                         var offer = Bot.NewTradeOffer(new SteamID(id));
                         try {
                             foreach (JToken item in json["request"]["items"]) {
@@ -471,7 +496,24 @@ namespace CSGOTM {
                                     (long)item["assetid"],
                                     (long)item["amount"]);
                             }
-                            Log.Info("Partner: {0}\nToken: {1}\nTradeoffermessage: {2}\nProfile: {3}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
+                            HashSet<String> blacklisted = new HashSet<string> {
+                                "https://steamcommunity.com/profiles/76561198379677339/",
+                                "https://steamcommunity.com/profiles/76561198328630783/",
+                                "https://steamcommunity.com/profiles/76561198321472965/",
+                                "https://steamcommunity.com/profiles/76561198408228242/",
+                                "https://steamcommunity.com/profiles/76561198033167623/",
+                                "https://steamcommunity.com/profiles/76561198857835986/",
+                                "https://steamcommunity.com/profiles/76561198857940860/",
+                                "https://steamcommunity.com/profiles/76561198356087536/",
+                                "https://steamcommunity.com/profiles/76561198309616729/",
+                                "https://steamcommunity.com/profiles/76561198316325564/",
+                                "https://steamcommunity.com/profiles/76561198027819122/",
+                            };
+                            if (blacklisted.Contains((string)json["profile"])) {
+                                Log.Warn($"Not sending a request, user {(string)json["profile"]} is blacklisted.");
+                                continue;    
+                            }
+                            Log.Info(TMBot.RestartPriority.UnknownError, "Partner: {0} Token: {1} Tradeoffermessage: {2} Profile: {3}. Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={0}&token={1}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
                             if (offer.Items.NewVersion) {
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
@@ -480,7 +522,25 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(1000);
                                 } else {
-                                    Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                    if (newOfferId == "null") {
+                                        VK.Alert("Трейд не отправлен. Ответ: \"null\".\nПроверьте профиль на всякий: " + (string)json["profile"]);
+                                        Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                    } else {
+                                        try {
+                                            string err = (string)JObject.Parse(newOfferId)["strError"];
+                                            Log.Error(TMBot.RestartPriority.UnknownError, $"Trade offer not sent. Error: [{err}]");
+
+                                            if (err.Contains("(15)")) {
+                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            } else {
+                                                VK.Alert($"Трейд не отправлен по причине [{err}].\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            }
+                                            VK.Alert($"Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={(string)json["request"]["partner"]}&token={(string)json["request"]["token"]}");
+
+                                        } catch {
+
+                                        }
+                                    }
                                 }
                             } else {
                                 Log.Error("Items.NewVersion = 0! Still trying to send.");
@@ -491,7 +551,23 @@ namespace CSGOTM {
                                     sentTrades[trade.ui_bid] = DateTime.Now;
                                     Thread.Sleep(2000);
                                 } else {
-                                    Log.Error(TMBot.RestartPriority.CriticalError, "Trade offer was not sent!");
+                                    if (newOfferId == "null") {
+                                        VK.Alert("Трейд не отправлен. Ответ: \"null\".\nПроверьте профиль на всякий: " + (string)json["profile"]);
+                                        Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                    } else {
+                                        try {
+                                            string err = (string)JObject.Parse(newOfferId)["strError"];
+                                            if (err != "There was an error sending your trade offer. Please try again later. (15)") {
+                                                VK.Alert("Трейд не отправлен по неожиданной причине.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                                //Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
+                                            } else {
+                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                            }
+
+                                        } catch {
+
+                                        }
+                                    }
                                 }
                             }
                         } catch (Exception ex) {
@@ -513,6 +589,31 @@ namespace CSGOTM {
                             ReportCreatedTrade(pr.First, pr.Second);
                         }
                     });
+        }
+
+        bool ReportFailedTrade(string requestId) {
+            if (requestId == "") {
+                return false;
+            }
+            try {
+                string resp = ExecuteApiRequest($"/api/ReportFailedTrade/{requestId}/?key={Api}");
+                if (resp == null)
+                    return false;
+                JObject json = JObject.Parse(resp);
+                if (json["success"] == null) {
+                    Log.Error("TM thinks offer did not fail.");
+                    return false;
+                } else if ((bool)json["success"]) {
+                    Log.Success("TM knows about failed offer");
+                    return true;
+                } else {
+                    Log.Error("TM thinks offer did not fail.");
+                    return false;
+                }
+            } catch (Exception ex) {
+                Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                return false;
+            }
         }
 
         bool ReportCreatedTrade(string requestId, string tradeOfferId) {
@@ -575,6 +676,7 @@ namespace CSGOTM {
         private void RefreshToken() {
             while (parent.IsRunning()) {
                 JObject temp;
+                bool flag = false;
                 try {
                     temp = LocalRequest.GetBestToken(parent.config.Username);
                     if ((bool)temp["success"]) {
@@ -583,11 +685,18 @@ namespace CSGOTM {
                     }  else {
                         if ((string)temp["error"] == "All bots are overflowing!")
                             StopBuy = true;
+                        else
+                            flag = true;
                     }
                 } catch {
+                    flag = true;
                     Log.Error("Could not get a response from local server");
                 }
-                Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 30000).Wait();
+                if (!flag)
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 30000).Wait();
+                if (flag)
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, timeout: 1000).Wait();
+
             }
         }
 
@@ -610,7 +719,7 @@ namespace CSGOTM {
                     }
                 }
                 if ((status & ETradesStatus.SellHandled) != 0) {
-                    Thread.Sleep(30000); //sorry this revokes sessions too often, because TM is retarded.
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
                     status ^= ETradesStatus.SellHandled;
                 }
             }
@@ -628,13 +737,13 @@ namespace CSGOTM {
                     if (boughtTrades.Length != 0)
                         RequestPurchasedItems(boughtTrades);
                 }
-                Thread.Sleep(10000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Wait();
             }
         }
 
         void HandleTrades() {
-            Task.Run((Action)HandleSoldTrades);
-            //Task.Run((Action)HandlePurchasedTrades);
+            Tasking.Run((Action)HandleSoldTrades, botName);
+            //Tasking.Run((Action)HandlePurchasedTrades);
             while (parent.IsRunning()) {
                 try {
                     TMTrade[] arr = GetTradeList();
@@ -642,17 +751,17 @@ namespace CSGOTM {
                         CachedTrades = arr;
                         waitHandle.Set();
                     }
-                    Thread.Sleep(10000);
+                    Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Wait();
                     UpdateInventory();
                 } catch (Exception ex) {
                     Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                 }
-                Thread.Sleep(10000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 4000).Wait();
             }
         }
 
         void Subscribe() {
-            socket.Send("newitems_go");
+            //socket.Send("newitems_go");
             socket.Send("history_go");
         }
 
@@ -671,7 +780,7 @@ namespace CSGOTM {
             opening = false;
             Log.Success("Connection opened!");
             if (Auth())
-                Task.Run((Action)SocketPinger);
+                Tasking.Run((Action)SocketPinger, botName);
             //start = DateTime.Now;
         }
 
@@ -691,11 +800,18 @@ namespace CSGOTM {
         void ReOpener() {
             int i = 1;
             while (parent.IsRunning()) {
-                Thread.Sleep(10000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 10000).Result)
+                    continue;
                 if (died) {
                     if (!opening) {
                         try {
-                            Log.ApiError(TMBot.RestartPriority.MediumError, $"Trying to reconnect for the {i++}-th time");
+                            int index = i++;
+                            Log.ApiError(TMBot.RestartPriority.UnknownError, $"Trying to reconnect for the {index}-th time");
+                            Task.Delay(5000).ContinueWith(_ => {
+                                if (died == true) {
+                                    Log.ApiError(TMBot.RestartPriority.MediumError, $"{index}-th time");
+                                }
+                            });
                             AllocSocket();
                             OpenSocket();
                         } catch (Exception ex) {
@@ -734,7 +850,7 @@ namespace CSGOTM {
 
             }
             if (badTrade) {
-                Log.ApiError(TMBot.RestartPriority.UnknownError, $"Missed an item {item.i_market_name} costing {item.ui_price}");
+                Log.ApiError($"Missed an item {item.i_market_name} costing {item.ui_price}");
                 return false;
             }
             if (parsed["result"] == null) {
@@ -772,14 +888,14 @@ namespace CSGOTM {
             while (parent.IsRunning()) {
                 string uri = $"/api/PingPong/direct/?key={Api}";
                 ExecuteApiRequest(uri);
-                Thread.Sleep(30000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
             }
         }
 
         public void PingPongLocal() {
             while (parent.IsRunning()) {
                 LocalRequest.Ping(parent.config.Username);
-                Thread.Sleep(30000);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
             }
         }
 
@@ -865,10 +981,16 @@ namespace CSGOTM {
                     return true;
                 } else {
                     if (json.ContainsKey("error")) {
-                        if ((string)json["error"] == "same_price")
+                        if ((string)json["error"] == "same_price") {
                             lock (ordersLock)
                                 orders[$"{classid}_{instanceid}"] = price;
-                        Log.ApiError(TMBot.RestartPriority.MediumError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                            return true;
+                        }
+                        if ((string)json["error"] == "money") {
+                            Log.ApiError(TMBot.RestartPriority.UnknownError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                        } else {
+                            Log.ApiError(TMBot.RestartPriority.MediumError, $"Was unable to set order: url is {uri}, error message: {(string)json["error"]}");
+                        }
                     } else
                         Log.ApiError(TMBot.RestartPriority.MediumError, "Was unable to set order, url is :" + uri);
                     return false;
@@ -887,12 +1009,12 @@ namespace CSGOTM {
                     return false;
                 JObject json = JObject.Parse(resp);
                 if (json["success"] == null) {
-                    Log.ApiError(TMBot.RestartPriority.SmallError, "Was unable to update inventory");
+                    Log.ApiError("Was unable to update inventory");
                     return false;
                 } else if ((bool)json["success"])
                     return true;
                 else {
-                    Log.ApiError(TMBot.RestartPriority.SmallError, "Was unable to update inventory");
+                    Log.ApiError("Was unable to update inventory");
                     return false;
                 }
             } catch (Exception ex) {
@@ -941,7 +1063,7 @@ namespace CSGOTM {
                 }
                 if (DateTime.Now.Subtract(lastRefresh).TotalMilliseconds > Consts.REFRESHINTERVAL) {
                     lastRefresh = DateTime.Now;
-                    Task.Run(() => Logic.RefreshPrices(arr));
+                    Tasking.Run(() => Logic.RefreshPrices(arr), botName);
                 }
                 return arr;
             } catch (Exception ex) {
@@ -979,12 +1101,12 @@ namespace CSGOTM {
             int page = 1;
             List<Order> temp = new List<Order>();
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
                 List<Order> temp2 = GetOrderPage(page);
                 if (temp2 == null)
                     return temp;
                 ++page;
                 temp.AddRange(temp2);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Wait();
             }
             return temp;
         }
@@ -993,7 +1115,6 @@ namespace CSGOTM {
             int page = 1;
             List<Order> temp = new List<Order>();
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
                 List<Order> temp2 = GetOrderPage(page);
                 if (temp2 == null)
                     return;
@@ -1001,7 +1122,26 @@ namespace CSGOTM {
                 foreach (Order order in temp2) {
                     callback(order);
                 }
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Wait();
             }
+        }
+
+        void SubscribeToBalancer() {
+            if (!subscribed) {
+                Balancer.NewItemAppeared += ProcessNewItem;
+                subscribed = true;
+            }
+        }
+
+        void UnsubscribeFromBalancer() {
+            if (subscribed) {
+                Balancer.NewItemAppeared -= ProcessNewItem;
+                subscribed = false;
+            }
+        }
+
+        ~Protocol() {
+            UnsubscribeFromBalancer();
         }
     }
 }

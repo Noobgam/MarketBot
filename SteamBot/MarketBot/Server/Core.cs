@@ -15,6 +15,8 @@ using Utility;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Web;
+using System.Globalization;
+using SteamBot.MarketBot.Utility.MongoApi;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
@@ -25,6 +27,10 @@ namespace MarketBot.Server {
         public Core() {
             server = new HttpListener();
             CurSizes = new Dictionary<string, int>();
+            CurInventory = new Dictionary<string, double>();
+            CurTradable = new Dictionary<string, double>();
+            CurMedian = new Dictionary<string, double>();
+            CurUntracked = new Dictionary<string, int>();
             CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
             Console.Error.WriteLine("Starting!");
@@ -32,18 +38,9 @@ namespace MarketBot.Server {
             coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
             server.Start();            
             Console.Error.WriteLine("Started!");
-            JObject temp = null;
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
             //Task.Run((Action)DBHitProvider);
-#if DEBUG
-            try {
-                temp = LocalRequest.GetBestToken("grim2");
-                Console.WriteLine(temp.ToString());
-            } catch {
-                Console.Error.WriteLine("Could not get a response from local server");
-            }
-#endif
         }
 
         private void DBHitProvider() {
@@ -90,6 +87,10 @@ namespace MarketBot.Server {
 
         private Dictionary<string, int> CurSizes;
         private Dictionary<string, int> CurMoney;
+        private Dictionary<string, double> CurInventory;
+        private Dictionary<string, double> CurTradable;
+        private Dictionary<string, double> CurMedian;
+        private Dictionary<string, int> CurUntracked;
         private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
 
 
@@ -165,12 +166,38 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
+                } else if (Endpoint == Consts.Endpoints.MongoFind) {
+                    if (context.Request.QueryString["query"] == null) {
+                        throw new Exception($"You have to provide query to mongo");
+                    }
+                    string query = context.Request.QueryString["query"];
+                    int limit = context.Request.QueryString["limit"] == null ? -1 : int.Parse(context.Request.QueryString["limit"]);
+                    int skip =  context.Request.QueryString["skip"] == null  ? -1 : int.Parse(context.Request.QueryString["skip"]);
+                    //TODO(noobgam): add other tables
+                    MongoLogCollection mongoLogs = new MongoLogCollection();
+                    var filtered = mongoLogs.Find(query, limit, skip);
+                    var cursor = filtered.ToCursor();
+                    JArray logs = new JArray();
+                    while (cursor.MoveNext()) {
+                        foreach (var msg in cursor.Current) {
+                            logs.Add(msg.ToString());
+                        }
+                    }
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["extrainfo"] = logs
+                    };
                 } else if (Endpoint == Consts.Endpoints.PingPong) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
                     LastPing[usernames[0]] = DateTime.Now;
+                    
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["ping"] = "pong",
+                    };
                 } else if (Endpoint == Consts.Endpoints.SalesHistorySize) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -184,6 +211,38 @@ namespace MarketBot.Server {
                         salesHistorySizes[usernames[0]] = new ConcurrentQueue<Pair<DateTime, int>>();
                     }
                     salesHistorySizes[usernames[0]].Enqueue(new Pair<DateTime, int>(DateTime.Now, int.Parse(data[0])));
+                } else if (Endpoint == Consts.Endpoints.PutInventoryCost) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    CurInventory[usernames[0]] = double.Parse(data[0]);
+                } else if (Endpoint == Consts.Endpoints.PutTradableCost) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    string[] stuff = data[0].Split(':');
+                    CurTradable[usernames[0]] = double.Parse(stuff[0]);
+                    CurUntracked[usernames[0]] = int.Parse(stuff[1]);
+                } else if (Endpoint == Consts.Endpoints.PutMedianCost) {
+                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data");
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    CurMedian[usernames[0]] = double.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -195,6 +254,8 @@ namespace MarketBot.Server {
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.Status) {
+                    bool full  = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
+                    bool table = context.Request.QueryString["table"] == null ? false : bool.Parse(context.Request.QueryString["table"]);
                     JToken extrainfo = new JObject();
                     double moneySum = 0;
                     foreach (var kvp in CurSizes) {
@@ -203,25 +264,55 @@ namespace MarketBot.Server {
                         extrainfo[kvp.Key]["inventorysize"] = kvp.Value;
                     }
                     foreach (var kvp in CurMoney) {
+                        double myMoney = (double)kvp.Value / 100;
+                        if (full) {
+                            if (extrainfo[kvp.Key] == null)
+                                extrainfo[kvp.Key] = new JObject();
+                            extrainfo[kvp.Key]["curmoney"] = myMoney.ToString("C", new CultureInfo("ru-RU"));
+                        }
+                        moneySum += myMoney;
+                    }
+                    double usd_inv_sum = 0;
+                    foreach (var kvp in CurMedian) {
+                        if (kvp.Value == 0) continue;
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
-                        double myMoney = (double)kvp.Value / 100;
-                        extrainfo[kvp.Key]["curmoney"] = myMoney;
-                        moneySum += myMoney;
+                        extrainfo[kvp.Key]["median_sum"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
+                    }
+                    foreach (var kvp in CurInventory) {
+                        if (extrainfo[kvp.Key] == null)
+                            extrainfo[kvp.Key] = new JObject();
+                        extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
+                        usd_inv_sum += kvp.Value;
+                    }
+                    double usd_trade_sum = 0;
+                    foreach (var kvp in CurTradable) {
+                        if (full) {
+                            if (extrainfo[kvp.Key] == null)
+                                extrainfo[kvp.Key] = new JObject();
+                            extrainfo[kvp.Key]["tradable_usd_cost"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
+                        }
+                        usd_trade_sum += kvp.Value;
                     }
                     resp = new JObject {
                         ["success"] = true,
                         ["extrainfo"] = extrainfo,
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
-                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C")
+                            ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),
+                            ["INVUSD"] = usd_inv_sum.ToString("C", new CultureInfo("en-US")),
+                            ["TRADE"] = usd_trade_sum.ToString("C", new CultureInfo("en-US"))
                         }
                     };
+                    if (table) {
+                        resp["type"] = "table";
+                    }
                 }
             } catch (Exception ex) {
                 resp = new JObject {
                     ["success"] = false,
-                    ["error"] = ex.Message
+                    ["error"] = ex.Message,
+                    ["trace"] = ex.StackTrace
                 };
 
             } finally {
@@ -236,12 +327,7 @@ namespace MarketBot.Server {
 
         // process request and make response
 
-        private void Respond(HttpListenerContext ctx, JObject json) {
-            //TODO(noobgam): prettify if User-Agent is defined
-            string resp = json.ToString(
-                ctx.Request.Headers.GetValues("User-Agent") == null
-                ? Newtonsoft.Json.Formatting.None
-                : Newtonsoft.Json.Formatting.Indented);
+        private void RawRespond(HttpListenerContext ctx, string resp) {
             byte[] buffer = Encoding.UTF8.GetBytes(resp);
             HttpListenerResponse response = ctx.Response;
 
@@ -250,6 +336,108 @@ namespace MarketBot.Server {
             output.Write(buffer, 0, buffer.Length);
 
             output.Close();
+        }        
+        
+        private string Row(string[] arr, string type = "th") {
+            string res = "";
+            res += "<tr>";
+            for (int i = 0; i < arr.Length; ++i) {
+                res += $"<{type}>";
+
+                res += arr[i];
+
+                res += $"</{type}>";
+            }
+            res += "</tr>";
+            return res;
+        }
+
+        private bool RespondTable(HttpListenerContext ctx, JObject json) {
+            try {
+                int cnt = 0;
+                string html =
+                    @"<!DOCTYPE html>
+<html>
+<head>
+<meta charset=" + "\"utf-8\"/>" +
+    @"<style>
+table, th, td {
+    border: 1px solid black;
+}
+th {
+	background-color: lightblue
+}
+</style>
+</head>
+<body>";
+                foreach (var table in json) {
+                    if (table.Key == "success")
+                        continue;
+                    //html += "Table " + table.Key + "</br>";
+                    string header = "";
+                    string body = "";
+                    Dictionary<string, int> mapping = new Dictionary<string, int>();
+                    if (table.Key == "extrainfo") {
+                        header =
+                        "<table style=\"width:100%\">";
+                        foreach (var bot in (JObject)table.Value) {
+                            foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
+                                if (!mapping.ContainsKey(innerkey.Name))
+                                    mapping[innerkey.Name] = ++cnt;
+                            }
+                        }
+                        string[] thing = new string[cnt + 1];
+                        foreach (string x in mapping.Keys)
+                            thing[mapping[x]] = x;
+                        body += Row(thing, "th");
+                        foreach (var bot in (JObject)table.Value) {
+                            thing = new string[cnt + 1];
+                            thing[0] = bot.Key;
+                            foreach (JProperty innerkey in ((JObject)bot.Value).Properties()) {
+                                thing[mapping[innerkey.Name]] = (string)innerkey.Value;
+                            }
+                            body += Row(thing, "td");
+                        }
+                    } else if (table.Key == "moneysum") {
+                        header =
+                        "<table style=\"width:50%\">";
+                        string[] thing = new string[2];
+                        foreach (var field in (JObject)table.Value) {
+                            thing[0] = field.Key;
+                            thing[1] = (string)field.Value;
+                            body += Row(thing, "th");
+                        }
+                    }
+                    string footer =
+                        "</table>";
+                    html += header + body + footer;
+                }
+                html += @"</body>
+</html>";
+                RawRespond(ctx, html);
+                return true;
+            }
+            catch {
+                return false;
+            }
+        }
+
+        private void Respond(HttpListenerContext ctx, JObject json) {
+            if (json["error"] == null) {
+                if (json["type"] != null && (string)json["type"] == "table") {
+                    if (RespondTable(ctx, json))
+                        return;
+                    else {
+                        json["respond_error"] = "response could not be processed as table";
+                    }
+                }
+            }
+            //TODO(noobgam): prettify if User-Agent is defined
+            string resp = json.ToString(
+                ctx.Request.Headers.GetValues("User-Agent") == null
+                ? Newtonsoft.Json.Formatting.None
+                : Newtonsoft.Json.Formatting.Indented);
+            RawRespond(ctx, resp);
         }
 
         public void Stop() {

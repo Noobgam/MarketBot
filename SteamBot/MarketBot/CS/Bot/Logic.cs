@@ -12,11 +12,13 @@ using System.Linq;
 using System.Collections.Concurrent;
 using SteamBot.MarketBot.CS;
 using SteamTrade;
+using Utility;
+using SteamBot.MarketBot.CS.Bot;
 
 namespace CSGOTM {
     public class Logic {
-        public MarketLogger Log;
-        private readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
+        public NewMarketLogger Log;
+        public readonly ReaderWriterLockSlim _DatabaseLock = new ReaderWriterLockSlim();
         private readonly ReaderWriterLockSlim CurrentItemsLock = new ReaderWriterLockSlim();
         private readonly object RefreshItemsLock = new object();
         private readonly object UnstickeredRefreshItemsLock = new object();
@@ -29,17 +31,18 @@ namespace CSGOTM {
         public GenericInventory cachedInventory = null;
         public int cachedTradableCount = 0;
         private int stopsell = -1;
+        public bool stopbuy = false;
 
         public Logic(TMBot bot) {
             this.botName = bot.config.Username;
             parent = bot;
-            PREFIXPATH = "CS/" + botName;
-            UNSTICKEREDPATH = PREFIXPATH + "/emptystickered.txt";
-            DATABASEPATH = PREFIXPATH + "/database.txt";
-            DATABASETEMPPATH = PREFIXPATH + "/databaseTemp.txt";
-            DATABASEJSONPATH = PREFIXPATH + "/database.json";
-            BLACKLISTPATH = PREFIXPATH + "/blackList.txt";
-            MONEYTPATH = PREFIXPATH + "/money.txt";
+            PREFIXPATH = Path.Combine("CS", botName);
+            UNSTICKEREDPATH = Path.Combine(PREFIXPATH, "emptystickered.txt");
+            DATABASEPATH = Path.Combine(PREFIXPATH, "database.txt");
+            DATABASETEMPPATH = Path.Combine(PREFIXPATH, "databaseTemp.txt");
+            DATABASEJSONPATH = Path.Combine(PREFIXPATH, "database.json");
+            BLACKLISTPATH = Path.Combine(PREFIXPATH, "blackList.txt");
+            MONEYTPATH = Path.Combine(PREFIXPATH, "money.txt");
             Thread starter = new Thread(new ThreadStart(StartUp));
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
@@ -60,22 +63,21 @@ namespace CSGOTM {
             FulfillBlackList();
             LoadDataBase();
             RefreshConfig();
-            Task.Run((Action)ParsingCycle);
-            Task.Run((Action)SaveDataBaseCycle);
-            Task.Run((Action)SellFromQueue);
-            Task.Run((Action)AddNewItems);
-            Task.Run((Action)UnstickeredRefresh);
-            Task.Run((Action)SetNewOrder);
+            Tasking.Run((Action)ParsingCycle, botName);
+            Tasking.Run((Action)SaveDataBaseCycle, botName);
+            Tasking.Run((Action)SellFromQueue, botName);
+            Tasking.Run((Action)AddNewItems, botName);
+            Tasking.Run((Action)UnstickeredRefresh, botName);
+            Tasking.Run((Action)SetNewOrder, botName);
             if (!sellOnly) {
-                Task.Run((Action)SetOrderForUnstickered);
+                Tasking.Run((Action)SetOrderForUnstickered, botName);
             }
-            Task.Run((Action)RefreshConfigThread);
+            Tasking.Run((Action)RefreshConfigThread, botName);
         }
 
         void RefreshConfig() {
 
-            JObject data = JObject.Parse(Utility.Request.Get(
-                "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw"));
+            JObject data = JObject.Parse(Utility.Request.Get(Consts.Endpoints.BotConfig));
             if (!data.TryGetValue(botName, out JToken token)) {
                 Log.Error("Gist config contains no bot definition.");
             } else {
@@ -84,6 +86,13 @@ namespace CSGOTM {
                 else {
                     if (stopsell != (int)token["stopsell"]) {
                         stopsell = (int)token["stopsell"];
+                    }
+                }
+                if (token["stopbuy"].Type != JTokenType.Boolean)
+                    Log.Error("Have no idea when to stop buying");
+                else {
+                    if (stopbuy != (bool)token["stopbuy"]) {
+                        stopbuy = (bool)token["stopbuy"];
                     }
                 }
 
@@ -181,7 +190,8 @@ namespace CSGOTM {
 
         private void SetOrderForUnstickered() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    continue;
                 if (needOrderUnstickered.Count > 0) {
                     var top = needOrderUnstickered.Peek();
                     var info = Protocol.MassInfo(
@@ -259,7 +269,8 @@ namespace CSGOTM {
 
         void SetNewOrder() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    return;
                 if (needOrder.Count != 0) {
                     NewHistoryItem item = needOrder.Dequeue();
                     bool took = false;
@@ -285,7 +296,8 @@ namespace CSGOTM {
 
         void AddNewItems() {
             while (parent.IsRunning()) {
-                Thread.Sleep(3000); //dont want to spin nonstop
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 3000).Result)
+                    continue;
                 while (!toBeSold.IsEmpty) {
                     Thread.Sleep(1000);
                 }
@@ -379,7 +391,8 @@ namespace CSGOTM {
 
         void UnstickeredRefresh() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000);
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    continue;
                 try {
                     Queue<TMTrade> unstickeredTemp;
                     lock (UnstickeredRefreshItemsLock) {
@@ -448,7 +461,8 @@ namespace CSGOTM {
 
         void SellFromQueue() {
             while (parent.IsRunning()) {
-                Thread.Sleep(1000); //dont want to spin nonstop
+                if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, 1000).Result)
+                    continue;
                 while (refreshPrice.IsEmpty && toBeSold.IsEmpty)
                     Thread.Sleep(1000);
                 if (!refreshPrice.IsEmpty) {
@@ -490,14 +504,14 @@ namespace CSGOTM {
                 } else {
                     Log.Error("Couldn\'t parse new DB");
                 }
-                Thread.Sleep(Consts.PARSEDATABASEINTERVAL);
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.PARSEDATABASEINTERVAL).Wait();
             }
         }
 
         void SaveDataBaseCycle() {
             while (parent.IsRunning()) {
                 SaveDataBase();
-                Utility.Tasking.WaitForFalseOrTimeout(parent.IsRunning, 20000).Wait();
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, Consts.MINORCYCLETIMEINTERVAL).Wait();
             }
         }
 
@@ -564,8 +578,7 @@ namespace CSGOTM {
                         string[] item = lines[id].Split(';');
                         if (item[NewItem.mapping["c_stickers"]] == "0")
 
-                            unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
-                                            item[NewItem.mapping["c_instanceid"]]);
+                            unstickeredCache.Add(new Tuple<long, long>(long.Parse(item[NewItem.mapping["c_classid"]]), long.Parse(item[NewItem.mapping["c_instanceid"]])));
                         // new logic
                         else {
                             String name = item[NewItem.mapping["c_market_name"]];
@@ -640,8 +653,10 @@ namespace CSGOTM {
         bool LoadNonStickeredBase() {
             try {
                 string[] lines = File.ReadAllLines(UNSTICKEREDPATH);
-                foreach (var line in lines)
-                    unStickered.Add(line);
+                foreach (var line in lines) {
+                    string[] item = line.Split('_');
+                    unstickeredCache.Add(new Tuple<long, long>(long.Parse(item[0]), long.Parse(item[1])));
+                }
                 return true;
             } catch (Exception e) {
                 Log.Warn("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH +
@@ -654,10 +669,11 @@ namespace CSGOTM {
             try {
                 if (File.Exists(UNSTICKEREDPATH))
                     File.Delete(UNSTICKEREDPATH);
-                string[] lines = new string[unStickered.Count];
+                string[] lines = new string[unstickeredCache.Count];
                 int id = 0;
-                foreach (var line in unStickered)
-                    lines[id++] = line;
+                foreach (var line in unstickeredCache) {
+                    lines[id++] = string.Format("{0}_{1}", line.Item1, line.Item2);
+                }
                 File.WriteAllLines(UNSTICKEREDPATH, lines);
                 return true;
             } catch (Exception e) {
@@ -680,18 +696,16 @@ namespace CSGOTM {
             }
         }
 
-
-        [System.Obsolete("Specify item type instead of cid and iid")]
         bool hasStickers(string classId, string instanceId) {
-            return !unStickered.Contains(classId + '_' + instanceId);
+            return !unstickeredCache.Contains(new Tuple<long, long>(long.Parse(classId), long.Parse(instanceId)));
         }
 
         bool hasStickers(NewItem item) {
-            return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
+            return !unstickeredCache.Contains(new Tuple<long, long>(item.i_classid, item.i_instanceid));
         }
 
         bool hasStickers(NewHistoryItem item) {
-            return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
+            return !unstickeredCache.Contains(new Tuple<long, long>(item.i_classid, item.i_instanceid));
         }
 
         public void ProcessItem(NewHistoryItem item) {
@@ -729,10 +743,12 @@ namespace CSGOTM {
         }
 
         public bool L1(NewItem item) {
-            return item.ui_price < 40000 && !blackList.Contains(item.i_market_name);
+            return item.ui_price < 100000 && !blackList.Contains(item.i_market_name);
         }
 
         public bool WantToBuy(NewItem item) {
+            if (stopbuy)
+                return false;
             if (!hasStickers(item)) {
                 //we might want to manipulate it.
                 string id = item.i_classid + "_" + item.i_instanceid;
@@ -748,7 +764,6 @@ namespace CSGOTM {
             CurrentItemsLock.EnterReadLock();
             try { 
                 if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
-                    LocalRequest.PutSalesHistorySize(parent.config.Username, 0);
                     return false;
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
@@ -766,7 +781,6 @@ namespace CSGOTM {
 
                 //else
                 {
-                    LocalRequest.PutSalesHistorySize(parent.config.Username, salesHistory.cnt);
                     if (prices.Count >= 6
                         && item.ui_price < WANT_TO_BUY * prices[2]
                         && salesHistory.cnt >= Consts.MINSIZE
@@ -794,7 +808,7 @@ namespace CSGOTM {
         private const int MAXSIZE = 12000;
 
         private string PREFIXPATH;
-        private HashSet<string> unStickered = new HashSet<string>();
+        private HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();
 
         private string UNSTICKEREDPATH;
         private string DATABASEPATH;
@@ -810,7 +824,7 @@ namespace CSGOTM {
         private Queue<NewHistoryItem> needOrder = new Queue<NewHistoryItem>();
         private Queue<NewHistoryItem> needOrderUnstickered = new Queue<NewHistoryItem>();
         private HashSet<string> blackList = new HashSet<string>();
-        private Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
+        public Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
 
         private Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
 

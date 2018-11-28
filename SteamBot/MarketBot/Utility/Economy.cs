@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Utility {
     static class Economy {
-        static double CachedRatio = 66.316902;
+        static double CachedRatio = 66.2165;
         static DateTime LastCache = DateTime.MinValue;
         public enum Currency {
             RUB,
