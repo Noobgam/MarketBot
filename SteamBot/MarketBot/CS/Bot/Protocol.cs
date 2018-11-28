@@ -571,7 +571,7 @@ namespace CSGOTM {
                                 }
                             }
                         } catch (Exception ex) {
-                            Log.Error(ex.Message);
+                            Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                             Thread.Sleep(5000); //sleep tight, steam probably went 500
                         }
                     }
