@@ -384,7 +384,7 @@ namespace CSGOTM {
                             }
                             Logic.ProcessItem(historyItem);
                         } catch (Exception ex) {
-                            Log.Error(ex.Message);
+                            Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                         }
                         break;
 

@@ -578,8 +578,7 @@ namespace CSGOTM {
                         string[] item = lines[id].Split(';');
                         if (item[NewItem.mapping["c_stickers"]] == "0")
 
-                            unStickered.Add(item[NewItem.mapping["c_classid"]] + "_" +
-                                            item[NewItem.mapping["c_instanceid"]]);
+                            unstickeredCache.Add(new Tuple<long, long>(long.Parse(item[NewItem.mapping["c_classid"]]), long.Parse(item[NewItem.mapping["c_instanceid"]])));
                         // new logic
                         else {
                             String name = item[NewItem.mapping["c_market_name"]];
@@ -654,8 +653,10 @@ namespace CSGOTM {
         bool LoadNonStickeredBase() {
             try {
                 string[] lines = File.ReadAllLines(UNSTICKEREDPATH);
-                foreach (var line in lines)
-                    unStickered.Add(line);
+                foreach (var line in lines) {
+                    string[] item = line.Split('_');
+                    unstickeredCache.Add(new Tuple<long, long>(long.Parse(item[0]), long.Parse(item[1])));
+                }
                 return true;
             } catch (Exception e) {
                 Log.Warn("Could not load unstickered DB, check whether DB name is correct (\'" + UNSTICKEREDPATH +
@@ -668,10 +669,11 @@ namespace CSGOTM {
             try {
                 if (File.Exists(UNSTICKEREDPATH))
                     File.Delete(UNSTICKEREDPATH);
-                string[] lines = new string[unStickered.Count];
+                string[] lines = new string[unstickeredCache.Count];
                 int id = 0;
-                foreach (var line in unStickered)
-                    lines[id++] = line;
+                foreach (var line in unstickeredCache) {
+                    lines[id++] = string.Format("{0}_{1}", line.Item1, line.Item2);
+                }
                 File.WriteAllLines(UNSTICKEREDPATH, lines);
                 return true;
             } catch (Exception e) {
@@ -694,18 +696,16 @@ namespace CSGOTM {
             }
         }
 
-
-        [System.Obsolete("Specify item type instead of cid and iid")]
         bool hasStickers(string classId, string instanceId) {
-            return !unStickered.Contains(classId + '_' + instanceId);
+            return !unstickeredCache.Contains(new Tuple<long, long>(long.Parse(classId), long.Parse(instanceId)));
         }
 
         bool hasStickers(NewItem item) {
-            return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
+            return !unstickeredCache.Contains(new Tuple<long, long>(item.i_classid, item.i_instanceid));
         }
 
         bool hasStickers(NewHistoryItem item) {
-            return !unStickered.Contains(item.i_classid + "_" + item.i_instanceid);
+            return !unstickeredCache.Contains(new Tuple<long, long>(item.i_classid, item.i_instanceid));
         }
 
         public void ProcessItem(NewHistoryItem item) {
@@ -808,7 +808,7 @@ namespace CSGOTM {
         private const int MAXSIZE = 12000;
 
         private string PREFIXPATH;
-        private HashSet<string> unStickered = new HashSet<string>();
+        private HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();
 
         private string UNSTICKEREDPATH;
         private string DATABASEPATH;
