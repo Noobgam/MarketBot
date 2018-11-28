@@ -261,11 +261,11 @@ namespace CSGOTM {
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
             GetMoney();
-            Tasking.Run((Action)PingPongMarket, botName);
-            Tasking.Run((Action)PingPongLocal, botName);
-            Tasking.Run((Action)ReOpener, botName);
-            Tasking.Run((Action)RefreshToken, botName);
-            Tasking.Run((Action)HandleTrades, botName);
+            Tasking.Run(PingPongMarket, botName);
+            Tasking.Run(PingPongLocal, botName);
+            Tasking.Run(ReOpener, botName);
+            Tasking.Run(RefreshToken, botName);
+            Tasking.Run(HandleTrades, botName);
             Tasking.Run(() => {
                 OrdersCall(order => {
                     lock (ordersLock)
@@ -275,7 +275,7 @@ namespace CSGOTM {
             AllocSocket();
             OpenSocket();            
             SubscribeToBalancer();
-            Tasking.Run(OperationHistoryThread);
+            Tasking.Run(OperationHistoryThread, botName);
         }
 
         private void OperationHistoryThread() {

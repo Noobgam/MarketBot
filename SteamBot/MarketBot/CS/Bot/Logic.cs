@@ -34,7 +34,7 @@ namespace CSGOTM {
         public bool stopbuy = false;
 
         public Logic(TMBot bot) {
-            this.botName = bot.config.Username;
+            botName = bot.config.Username;
             parent = bot;
             PREFIXPATH = Path.Combine("CS", botName);
             UNSTICKEREDPATH = Path.Combine(PREFIXPATH, "emptystickered.txt");
@@ -43,10 +43,9 @@ namespace CSGOTM {
             DATABASEJSONPATH = Path.Combine(PREFIXPATH, "database.json");
             BLACKLISTPATH = Path.Combine(PREFIXPATH, "blackList.txt");
             MONEYTPATH = Path.Combine(PREFIXPATH, "money.txt");
-            Thread starter = new Thread(new ThreadStart(StartUp));
             if (!Directory.Exists(PREFIXPATH))
                 Directory.CreateDirectory(PREFIXPATH);
-            starter.Start();
+            Tasking.Run(StartUp, botName);
         }
 
         ~Logic() {
