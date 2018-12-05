@@ -81,7 +81,7 @@ namespace SteamBot
 
         public override void OnTradeOfferUpdated(TradeOffer offer)
         {
-            Log.Info($"Handling offer. Message: [{offer.Message}]");
+            //Log.Info($"Handling offer. Message: [{offer.Message}]");
             switch (offer.OfferState)
             {
                 case TradeOfferState.TradeOfferStateAccepted:
@@ -98,10 +98,15 @@ namespace SteamBot
                             Log.Warn(st);
                             return;
                         } else {
-                            Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
                             if (tradeAccept.TradeError.Length == 0) {
-                                Log.ApiError("Unknown reason. Restarting bot");
+                                Log.Error("Could not accept for unknown reason. Restarting bot");
+                                try {
+                                    offer.Decline();
+                                } catch {
+                                }
                                 Bot.MarketBot.FlagError(CSGOTM.TMBot.RestartPriority.CriticalError);
+                            } else {
+                                Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
                             }
                         }
                         break;

@@ -10,6 +10,10 @@ using SteamKit2;
 using System.Threading.Tasks;
 using System.Net;
 using MarketBot.Server;
+using SteamBot.MarketBot.CS;
+using Utility;
+using SteamBot.MarketBot.CS.Bot;
+using SteamBot.MarketBot.Utility.VK;
 
 namespace SteamBot
 {
@@ -20,6 +24,7 @@ namespace SteamBot
     {
         private readonly List<RunningBot> botProcs;
         private Log mainLog;
+        private NewMarketLogger mongoLog;
         private bool useSeparateProcesses;
         private bool disposed;
         private Core server;
@@ -29,7 +34,6 @@ namespace SteamBot
             useSeparateProcesses = false;
             botProcs = new List<RunningBot>();
             server = new Core();
-            Task.Run((Action)Nanny);
         }
 
         ~BotManager()
@@ -64,6 +68,7 @@ namespace SteamBot
             useSeparateProcesses = ConfigObject.UseSeparateProcesses;
 
             mainLog = new Log(ConfigObject.MainLog, null, Log.LogLevel.Debug, Log.LogLevel.Debug);
+            mongoLog = new NewMarketLogger();
 
             for (int i = 0; i < ConfigObject.Bots.Length; i++)
             {
@@ -80,19 +85,38 @@ namespace SteamBot
             return true;
         }
 
-        public void Nanny()
-        {
+        public void Nanny() {
+            Thread.Sleep(5000);
+            Balancer.Init();
+            Dictionary<string, DateTime> lastRestart = new Dictionary<string, DateTime>();
+            TimeSpan restartInterval = new TimeSpan(0, 2, 0);
             while (!disposed)
             {
-                foreach (RunningBot bot in botProcs)
-                {
-                    if (bot.TheBot.WantToRestart())
-                    {
-                        RestartBot(bot.BotConfig.Username);
-                        Thread.Sleep(100);
+                try {
+                    foreach (RunningBot bot in botProcs) {
+                        if (bot.IsRunning && bot.TheBot.WantToRestart()) {
+                            DateTime now = DateTime.Now;
+                            if (lastRestart.TryGetValue(bot.BotConfig.Username, out DateTime dt)) {
+                                TimeSpan timeGone = now.Subtract(dt);
+                                if (restartInterval.CompareTo(timeGone) > 0) {
+                                    mongoLog.ApiError($"Nanny is waiting {restartInterval.Subtract(timeGone).TotalSeconds} seconds");
+                                    VK.Alert($"Nanny is waiting {restartInterval.Subtract(timeGone).TotalSeconds} seconds");
+                                    Thread.Sleep(restartInterval.Subtract(timeGone));
+                                }
+                            }
+                            mongoLog.ApiError($"Nanny is restarting bot {bot.BotConfig.Username}");
+                            VK.Alert($"Nanny is restarting bot {bot.BotConfig.Username}");
+                            RestartBot(bot.BotConfig.Username);
+                            lastRestart[bot.BotConfig.Username] = DateTime.Now;
+                            Thread.Sleep(100);
+                        }
                     }
+                } catch (Exception ex) {
+                    mongoLog.Error($"Няне больно =(\n{ex.Message}{ex.StackTrace}");
+                    VK.Alert($"Няне больно =(\n{ex.Message}{ex.StackTrace}");
+                } finally {
+                    Thread.Sleep(5000);
                 }
-                Thread.Sleep(5000);
             }
         }
 
@@ -169,6 +193,7 @@ namespace SteamBot
             if (index < ConfigObject.Bots.Length)
             {
                 StopBot(index);
+                Thread.Sleep(5000);
                 StartBot(index);
             }
         }

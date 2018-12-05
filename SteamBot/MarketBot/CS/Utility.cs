@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -21,19 +22,33 @@ namespace CSGOTM {
 
         public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
 
+        public static class Databases {
+            public static class Mongo {
+                public const string SteamBotMain = "steambot_main";
+            }
+        }
+
         public static class Endpoints {
-            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw";
+            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/prod_conf.json";
+            public const string BotConfig = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
             public const string prefix = "http://+:4345/";
             public const string localhost = "http://localhost:4345";
             #region GET
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";
             public const string Status = "/status/";
+            public const string MongoFind = "/mongo/find/";
+            public const string BanUser = "/ban/";
+            public const string UnBanUser = "/unban/";
+            public const string GetBannedUsers = "/getbannedusers/";
             #endregion
 
             #region PUT
             public const string PutCurrentInventory = "/putInventory/";
             public const string PutMoney = "/putMoney/";
+            public const string PutInventoryCost = "/putInventoryCost/";
+            public const string PutMedianCost = "/putMedianCost/";
+            public const string PutTradableCost = "/putTradableCost/";
             public const string SalesHistorySize = "/saleshistorysize/";
             #endregion
         }
@@ -89,11 +104,93 @@ namespace CSGOTM {
         public string o_state;
     }
 
+    public class HistoricalOperation {
+        public HistoricalOperation() { }
+        public HistoricalOperation(HistoricalOperation rhs) {
+            this.h_id = rhs.h_id;
+            this.h_event = rhs.h_event;
+            this.h_time = rhs.h_time;
+            this.h_event_id = rhs.h_event_id;
+            this.join = rhs.join;
+            this.app = rhs.app;
+            this.id = rhs.id;
+            this.classid = rhs.classid;
+            this.instanceid = rhs.instanceid;
+            this.quality = rhs.quality;
+            this.name_color = rhs.name_color;
+            this.market_name = rhs.market_name;
+            this.market_hash_name = rhs.market_hash_name;
+            this.paid = rhs.paid;
+            this.recieved = rhs.recieved;
+            this.stage = rhs.stage;
+            this.item = rhs.item;
+            this.flags = rhs.flags;
+        }
+
+        public string h_id { get; set; }
+        public string h_event { get; set; }
+        public string h_time { get; set; }
+        [BsonId]
+        public string h_event_id { get; set; }
+        public int join { get; set; }
+        public string app { get; set; }
+        public string id { get; set; }
+        public string classid { get; set; }
+        public string instanceid { get; set; }
+        public string quality { get; set; }
+        public string name_color { get; set; }
+        public string market_name { get; set; }
+        public string market_hash_name { get; set; }
+        public string paid { get; set; }
+        public string recieved { get; set; }
+        public string stage { get; set; }
+        public string item { get; set; }
+        public string flags { get; set; }
+    }
+
+    public class MongoHistoricalOperation : HistoricalOperation {
+        public string botname;
+
+        public MongoHistoricalOperation(HistoricalOperation core, string botname) : base(core) {
+            this.botname = botname;
+        }
+    }
+
+    public class BannedUser : IEquatable<BannedUser> {
+        [BsonId]
+        public long SteamID64;
+
+        public BannedUser(long steamID64) {
+            SteamID64 = steamID64; //I can afford the cast here
+        }
+
+        public override bool Equals(object obj) {
+            return Equals(obj as BannedUser);
+        }
+
+        public bool Equals(BannedUser other) {
+            return other != null &&
+                   SteamID64 == other.SteamID64;
+        }
+
+        public override int GetHashCode() {
+            return 510678916 + SteamID64.GetHashCode();
+        }
+
+        public static bool operator ==(BannedUser user1, BannedUser user2) {
+            return EqualityComparer<BannedUser>.Default.Equals(user1, user2);
+        }
+
+        public static bool operator !=(BannedUser user1, BannedUser user2) {
+            return !(user1 == user2);
+        }
+    }
+
     public class NewItem {
         public long i_classid;
         public long i_instanceid;
         public string i_market_name;
-        public int ui_price;
+        public long ui_price;
 
         public static Dictionary<string, int> mapping = new Dictionary<string, int>();
 
@@ -108,7 +205,7 @@ namespace CSGOTM {
                 i_market_name = i_market_name.Remove(0, 1);
                 i_market_name = i_market_name.Remove(i_market_name.Length - 1);
             }
-            ui_price = int.Parse(item[mapping["c_price"]]);
+            ui_price = long.Parse(item[mapping["c_price"]]);
         }
     }
 
@@ -202,7 +299,7 @@ public static class BinarySerialization {
         return default(T);
     }
 }
-                    
+
 
 public static class JsonSerialization {
     public static void WriteToJsonFile<T>(string filePath, T objectToWrite, bool append = false) where T : new() {

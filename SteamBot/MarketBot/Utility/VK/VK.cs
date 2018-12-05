@@ -1,9 +1,11 @@
-﻿using System;
+﻿using SteamBot.MarketBot.CS;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Utility;
 using VkNet;
 using VkNet.Enums.Filters;
 using VkNet.Model;
@@ -16,8 +18,8 @@ namespace SteamBot.MarketBot.Utility.VK {
         static VkApi api;
         static LongPollServerResponse longPollServerInfo;
         static VK() {
-            Task.Run((Action)Refresher);
-            Task.Run((Action)Listener);
+            Tasking.Run((Action)Refresher);
+            Tasking.Run((Action)Listener);
         }
 
         private static bool Message(long id, string message) {
@@ -36,7 +38,7 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static readonly Dictionary<long, AlertLevel> alerter = new Dictionary<long, AlertLevel>() {
             { 426787197L, AlertLevel.Critical },
-            //{ 30415979L,  AlertLevel.Critical }
+            { 30415979L,  AlertLevel.Critical }
         }; 
 
         public static bool Alert(string message, AlertLevel level = AlertLevel.Critical) {
@@ -58,10 +60,11 @@ namespace SteamBot.MarketBot.Utility.VK {
             try {
                 api = new VkApi();
                 api.Authorize(new ApiAuthParams {
-                    ApplicationId = 6686807,
+                    ApplicationId = 6743975,
                     Login = "Novice1998",
                     Password = "7PixelWideNoobgam",
-                    Settings = Settings.Messages
+                    AccessToken = "45ca4499949cfd7298b31891177830589253f0639ff13d6b9be7b3559375a642e75322972556bdeeb11fd",
+                    Settings = Settings.Messages | Settings.Offline
                 });
                 longPollServerInfo = api.Messages.GetLongPollServer(true);
                 return true;
@@ -78,8 +81,22 @@ namespace SteamBot.MarketBot.Utility.VK {
             "ты будешь крутиться вокруг хуя какого-нибудь мудака, " +
             "чтобы заработать себе на пропитание.";
 
+        static bool pinning = false;
         static void HandleMessage(Message message) {
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
+            foreach (var attach in message.Attachments) {
+                //attach.Document.Uri
+                if (attach.Type == typeof(VkNet.Model.Attachments.Document) && attach.Instance is VkNet.Model.Attachments.Document doc) {
+                    try {
+                        SteamDataBase.RefreshDatabase(Request.Get(doc.Uri));
+                        Message(message.FromId.Value, $"Спасибо, обновил базу.");
+                        Thread.Sleep(500);
+                    } catch {
+                        Message(message.FromId.Value, $"Что ты мне прислал, долбоёб? Думал меня трахнуть? Я тебя сам трахну");
+                    }
+                    return;
+                }
+            }
             //if (message.FromId == 110139244 || message.FromId == 62228399) {
             //    return; //just ignore these two people.
             //}
