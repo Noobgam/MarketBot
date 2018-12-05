@@ -221,6 +221,7 @@ namespace CSGOTM {
         WebSocket socket;
         private string botName;
         public Protocol(TMBot bot) {
+            var lmao = mongoBannedUsers.GetBannedUsers();
             parent = bot;
             Api = bot.config.Api;
             this.botName = bot.config.Username;
