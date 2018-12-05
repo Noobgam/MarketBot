@@ -13,6 +13,28 @@ namespace Utility {
             RUB,
             USD
         }
+        static private Random R = new Random(228);
+
+        public static JObject GetData() {
+            string[] apiKeys = { "01e1f0a1c3a65ded676e69cc09dea8bc",
+                                 "618104c6516893d35cb5cc33e92b345c" };
+            string api = apiKeys[R.Next(apiKeys.Length)];
+            return JObject.Parse(Request.Get($"http://apilayer.net/api/live?access_key={api}&currencies=RUB&source=USD&format=1"));
+        }
+
+        public static bool UpdateCache() {
+            try {
+                JObject temp = GetData();
+                if ((bool)temp["success"]) {
+                    CachedRatio = (double)temp["quotes"]["USDRUB"];
+                    LastCache = DateTime.Now;
+                }
+                return true;
+            } catch {
+                return false;
+            }
+
+        }
 
         /// <summary>
         /// Converts specific amount of one currency into the other.
@@ -22,16 +44,8 @@ namespace Utility {
         /// <param name="amount">Amount of currency to convert from.</param>
         /// <returns>Converted value of new currency.</returns>
         public static double ConvertCurrency(Currency from, Currency to, double amount) {
-            if (DateTime.Now.Subtract(LastCache).TotalMinutes > 30) {
-                try {
-                    JObject temp = JObject.Parse(Request.Get("http://apilayer.net/api/live?access_key=618104c6516893d35cb5cc33e92b345c&currencies=RUB&source=USD&format=1"));
-                    if ((bool)temp["success"]) {
-                        CachedRatio = (double)temp["quotes"]["USDRUB"];
-                        LastCache = DateTime.Now;
-                    }
-                } catch (Exception e) { 
-
-                }
+            if (DateTime.Now.Subtract(LastCache).TotalMinutes > 20) {
+                UpdateCache();
             }
             if (from == Currency.RUB && to == Currency.USD) {
                 return amount / CachedRatio;

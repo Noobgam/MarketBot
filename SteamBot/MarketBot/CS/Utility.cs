@@ -38,6 +38,9 @@ namespace CSGOTM {
             public const string PingPong = "/ping/";
             public const string Status = "/status/";
             public const string MongoFind = "/mongo/find/";
+            public const string BanUser = "/ban/";
+            public const string UnBanUser = "/unban/";
+            public const string GetBannedUsers = "/getbannedusers/";
             #endregion
 
             #region PUT

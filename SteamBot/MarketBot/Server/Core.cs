@@ -24,6 +24,7 @@ namespace MarketBot.Server {
         private CoreConfig coreConfig;
         private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
         private MongoLogCollection mongoLogs = new MongoLogCollection();
+        private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
 
         public Core() {
             server = new HttpListener();
@@ -157,6 +158,36 @@ namespace MarketBot.Server {
                             ["extrainfo"] = extrainfo
                         };
                     }
+                } else if (Endpoint == Consts.Endpoints.BanUser) {
+                    long id = context.Request.QueryString["id"] == null ? -1 : long.Parse(context.Request.QueryString["id"]);
+                    if (id == -1) {
+                        throw new Exception($"Id {id} doesn't look good");
+                    }
+                    if (mongoBannedUsers.Add(id)) {
+                        resp = new JObject {
+                            ["success"] = true
+                        };
+                    } else {
+                        throw new Exception($"Could not add user (possibly he is present)");
+                    }
+                } else if (Endpoint == Consts.Endpoints.UnBanUser) {
+                    long id = context.Request.QueryString["id"] == null ? -1 : long.Parse(context.Request.QueryString["id"]);
+                    if (id == -1) {
+                        throw new Exception($"Id {id} doesn't look good");
+                    }
+                    if (mongoBannedUsers.Delete(id)) {
+                        resp = new JObject {
+                            ["success"] = true
+                        };
+                    } else {
+                        throw new Exception($"Could not delete user (possibly he isn't in banned)");
+                    }
+                } else if (Endpoint == Consts.Endpoints.GetBannedUsers) {
+                    var stuff = new JArray(mongoBannedUsers.GetBannedUsers().Select(user => user.SteamID64));
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["userlist"] = stuff
+                    };
                 } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -173,7 +204,7 @@ namespace MarketBot.Server {
                     }
                     string query = context.Request.QueryString["query"];
                     int limit = context.Request.QueryString["limit"] == null ? -1 : int.Parse(context.Request.QueryString["limit"]);
-                    int skip =  context.Request.QueryString["skip"] == null  ? -1 : int.Parse(context.Request.QueryString["skip"]);
+                    int skip = context.Request.QueryString["skip"] == null ? -1 : int.Parse(context.Request.QueryString["skip"]);
                     //TODO(noobgam): add other tables
                     var filtered = mongoLogs.Find(query, limit, skip);
                     var cursor = filtered.ToCursor();
@@ -193,7 +224,7 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
                     LastPing[usernames[0]] = DateTime.Now;
-                    
+
                     resp = new JObject {
                         ["success"] = true,
                         ["ping"] = "pong",
@@ -254,7 +285,7 @@ namespace MarketBot.Server {
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.Status) {
-                    bool full  = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
+                    bool full = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
                     bool table = context.Request.QueryString["table"] == null ? false : bool.Parse(context.Request.QueryString["table"]);
                     JToken extrainfo = new JObject();
                     double moneySum = 0;

@@ -21,7 +21,7 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
                 ,76561198356087536L
                 ,76561198309616729L
                 ,76561198316325564L
-                ,76561198027819122L);
+                ,76561198027819122L);            
         }
 
         public override string GetCollectionName() {
@@ -42,12 +42,24 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
             }
         }
 
-        public void Add(long id) {
-            collection.ReplaceOne(
+        public bool Delete(long id) {
+            DeleteResult res = collection.DeleteOne(new BsonDocument("_id", id));
+            if (!res.IsAcknowledged)
+                return false;
+            return res.DeletedCount > 0;
+        }
+
+        public bool Add(long id) {
+           ReplaceOneResult res = collection.ReplaceOne(
                 new BsonDocument("_id", id),
                 new BannedUser(id),
                 new UpdateOptions { IsUpsert = true }
                 );
+            if (!res.IsAcknowledged)
+                return false;
+            if (res.UpsertedId != null)
+                return true;
+            return false;
         }
     }
 }
