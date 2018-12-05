@@ -22,6 +22,12 @@ namespace CSGOTM {
 
         public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
 
+        public static class Databases {
+            public static class Mongo {
+                public const string SteamBotMain = "steambot_main";
+            }
+        }
+
         public static class Endpoints {
             public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/prod_conf.json";
             public const string BotConfig = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
@@ -147,11 +153,41 @@ namespace CSGOTM {
         }
     }
 
+    public class BannedUser : IEquatable<BannedUser> {
+        [BsonId]
+        public long SteamID64;
+
+        public BannedUser(long steamID64) {
+            SteamID64 = steamID64; //I can afford the cast here
+        }
+
+        public override bool Equals(object obj) {
+            return Equals(obj as BannedUser);
+        }
+
+        public bool Equals(BannedUser other) {
+            return other != null &&
+                   SteamID64 == other.SteamID64;
+        }
+
+        public override int GetHashCode() {
+            return 510678916 + SteamID64.GetHashCode();
+        }
+
+        public static bool operator ==(BannedUser user1, BannedUser user2) {
+            return EqualityComparer<BannedUser>.Default.Equals(user1, user2);
+        }
+
+        public static bool operator !=(BannedUser user1, BannedUser user2) {
+            return !(user1 == user2);
+        }
+    }
+
     public class NewItem {
         public long i_classid;
         public long i_instanceid;
         public string i_market_name;
-        public int ui_price;
+        public long ui_price;
 
         public static Dictionary<string, int> mapping = new Dictionary<string, int>();
 
@@ -166,7 +202,7 @@ namespace CSGOTM {
                 i_market_name = i_market_name.Remove(0, 1);
                 i_market_name = i_market_name.Remove(i_market_name.Length - 1);
             }
-            ui_price = int.Parse(item[mapping["c_price"]]);
+            ui_price = long.Parse(item[mapping["c_price"]]);
         }
     }
 

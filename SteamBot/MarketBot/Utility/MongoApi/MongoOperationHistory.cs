@@ -6,18 +6,17 @@ using System.Text;
 using System.Threading.Tasks;
 using CSGOTM;
 using MongoDB.Bson;
+using static CSGOTM.Consts;
 
 namespace SteamBot.MarketBot.Utility.MongoApi {
     public class MongoOperationHistory : GenericMongoDB<MongoHistoricalOperation> {
-        const string DBNAME = "steambot_main";
         readonly string botname;
 
-        public MongoOperationHistory(string name) : base(DBNAME) {
+        public MongoOperationHistory(string name) : base() {
             botname = name;
         }
 
-        public void InsertOrReplace(HistoricalOperation data) {
-            
+        public void InsertOrReplace(HistoricalOperation data) {            
             collection.ReplaceOne(
                 new BsonDocument("_id", data.h_event_id),
                 new MongoHistoricalOperation(data, botname),
@@ -27,6 +26,10 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
 
         public override string GetCollectionName() {
             return "operation_history";
+        }
+
+        public override string GetDBName() {
+            return Databases.Mongo.SteamBotMain;
         }
     }
 }

@@ -143,8 +143,7 @@ namespace SteamBot.MarketBot.CS {
                                             break;
                                     }
                                 } else if (currentProperty == "ui_price") {
-                                    newItem.ui_price = (int)(float.Parse(reader.Value.ToString()) * 100);
-
+                                    newItem.ui_price = (long)(float.Parse(reader.Value.ToString()) * 100);
                                 }
                             }
                         }

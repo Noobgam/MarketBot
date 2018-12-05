@@ -742,7 +742,7 @@ namespace CSGOTM {
         }
 
         public bool L1(NewItem item) {
-            return item.ui_price < 100000 && !blackList.Contains(item.i_market_name);
+            return item.ui_price < 100000L && !blackList.Contains(item.i_market_name);
         }
 
         public bool WantToBuy(NewItem item) {

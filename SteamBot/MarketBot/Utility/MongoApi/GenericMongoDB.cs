@@ -8,14 +8,18 @@ using MongoDB.Driver;
 
 namespace SteamBot.MarketBot.Utility.MongoApi {
     public abstract class GenericMongoDB<Data> {
+
+        //Interface
+        public abstract string GetDBName();
         public abstract string GetCollectionName();
+
         protected MongoClient mongoClient;
         protected IMongoDatabase db;
         protected IMongoCollection<Data> collection;
 
-        protected GenericMongoDB(string database) {
+        protected GenericMongoDB() {
             mongoClient = new MongoClient();
-            db = mongoClient.GetDatabase(database);
+            db = mongoClient.GetDatabase(GetDBName());
             collection = db.GetCollection<Data>(GetCollectionName());
         }
 

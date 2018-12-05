@@ -23,6 +23,7 @@ namespace MarketBot.Server {
         private HttpListener server;
         private CoreConfig coreConfig;
         private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
+        private MongoLogCollection mongoLogs = new MongoLogCollection();
 
         public Core() {
             server = new HttpListener();
@@ -174,7 +175,6 @@ namespace MarketBot.Server {
                     int limit = context.Request.QueryString["limit"] == null ? -1 : int.Parse(context.Request.QueryString["limit"]);
                     int skip =  context.Request.QueryString["skip"] == null  ? -1 : int.Parse(context.Request.QueryString["skip"]);
                     //TODO(noobgam): add other tables
-                    MongoLogCollection mongoLogs = new MongoLogCollection();
                     var filtered = mongoLogs.Find(query, limit, skip);
                     var cursor = filtered.ToCursor();
                     JArray logs = new JArray();

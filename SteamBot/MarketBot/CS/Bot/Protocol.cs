@@ -43,6 +43,7 @@ namespace CSGOTM {
         private TMBot parent;
         private string CurrentToken = "";
         private bool StopBuy = false;
+        private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
 
         public enum ApiMethod {
             GetTradeList,
@@ -463,7 +464,6 @@ namespace CSGOTM {
                     if (tmp.Subtract(lastTradeTime).Seconds < 50) //no reason to, chances are it's either fine anyway or is a scam.
                         continue;
                 }
-                Debug.Assert(trade.ui_status == "2");
                 string resp = ExecuteApiRequest($"/api/ItemRequest/in/{trade.ui_bid}/?key=" + Api, ApiMethod.ItemRequest);
                 if (resp == null)
                     continue;
@@ -482,9 +482,15 @@ namespace CSGOTM {
                         } catch {
                             Log.Error("Could not parse request id");
                             Log.Error("Extra info: " + json.ToString(Formatting.None));
+                            continue;
                         }
                         string profile = (string)json["profile"];
                         ulong id = ulong.Parse(profile.Split('/')[4]);
+                        ISet<long> blacklistedUsers = new HashSet<long>(mongoBannedUsers.GetBannedUsers().Select(bannedUser => bannedUser.SteamID64));
+                        if (blacklistedUsers.Contains((long)id /* can afford the cast here */)) {
+                            Log.Warn($"Not sending a request, user {(string)json["profile"]} is blacklisted. (Mongo)");
+                            continue;
+                        }
 
                         //Log.Info(json.ToString(Formatting.None));
                         var offer = Bot.NewTradeOffer(new SteamID(id));
@@ -832,7 +838,7 @@ namespace CSGOTM {
             Log.Debug("Purchased an item for {0}, total wasted {1}", ((int)item.ui_price + .0) / 100, (totalwasted + .0) / 100);
             return true;
 #else
-            string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + ((int)item.ui_price).ToString() + "/?key=" + Api;
+            string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + item.ui_price.ToString() + "/?key=" + Api;
             if (StopBuy) {
                 Log.Error($"Skipping purchase request, all bots are overflowing.");
                 return false;
