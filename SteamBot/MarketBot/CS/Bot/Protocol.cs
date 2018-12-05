@@ -196,8 +196,9 @@ namespace CSGOTM {
         }
 
         public IEnumerable<HistoricalOperation> OperationHistory(DateTime start, DateTime end) {
-            JsonSerializerSettings settings = new JsonSerializerSettings();
-            settings.MissingMemberHandling = MissingMemberHandling.Error;
+            JsonSerializerSettings settings = new JsonSerializerSettings {
+                MissingMemberHandling = MissingMemberHandling.Error
+            };
             string response = ExecuteApiRequest($"/api/OperationHistory/{((DateTimeOffset)start).ToUnixTimeSeconds()}/{((DateTimeOffset)end).ToUnixTimeSeconds()}/?key={Api}");
             if (response == null)
                 return new List<HistoricalOperation>();
@@ -287,10 +288,10 @@ namespace CSGOTM {
             DateTime curStamp =   DateTime.Now;
             LogOperationHistory(OperationHistory(startStamp, curStamp));
             while (parent.IsRunning()) {
-                LogOperationHistory(OperationHistory(curStamp.Subtract(new TimeSpan(0, 10, 0)), curStamp));
-                curStamp.Add(TS_DELAY);
                 if (Tasking.WaitForFalseOrTimeout(parent.IsRunning, DELAY).Result)
                     return;
+                LogOperationHistory(OperationHistory(curStamp.Subtract(new TimeSpan(0, 10, 0)), curStamp));
+                curStamp = curStamp.Add(TS_DELAY);
             }
         }
 
@@ -502,24 +503,6 @@ namespace CSGOTM {
                                     (long)item["contextid"],
                                     (long)item["assetid"],
                                     (long)item["amount"]);
-                            }
-                            HashSet<String> blacklisted = new HashSet<string> {
-                                "https://steamcommunity.com/profiles/76561198379677339/",
-                                "https://steamcommunity.com/profiles/76561198328630783/",
-                                "https://steamcommunity.com/profiles/76561198321472965/",
-                                "https://steamcommunity.com/profiles/76561198408228242/",
-                                "https://steamcommunity.com/profiles/76561198033167623/",
-                                "https://steamcommunity.com/profiles/76561198857835986/",
-                                "https://steamcommunity.com/profiles/76561198857940860/",
-                                "https://steamcommunity.com/profiles/76561198356087536/",
-                                "https://steamcommunity.com/profiles/76561198309616729/",
-                                "https://steamcommunity.com/profiles/76561198316325564/",
-                                "https://steamcommunity.com/profiles/76561198027819122/",
-                                "https://steamcommunity.com/profiles/76561198821440569/",
-                            };
-                            if (blacklisted.Contains((string)json["profile"])) {
-                                Log.Warn($"Not sending a request, user {(string)json["profile"]} is blacklisted.");
-                                continue;    
                             }
                             Log.Info(TMBot.RestartPriority.UnknownError, "Partner: {0} Token: {1} Tradeoffermessage: {2} Profile: {3}. Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={0}&token={1}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
                             if (offer.Items.NewVersion) {
