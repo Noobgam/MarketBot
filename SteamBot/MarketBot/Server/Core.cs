@@ -189,22 +189,19 @@ namespace MarketBot.Server {
                         ["userlist"] = stuff
                     };
                 } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
-                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
-                    string[] data = context.Request.Headers.GetValues("data");
+                    string[] data = context.Request.Headers.GetValues("data") ?? new string[0];
                     if (data.Length != 1) {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.MongoFind) {
-                    if (context.Request.QueryString["query"] == null) {
-                        throw new Exception($"You have to provide query to mongo");
-                    }
-                    string query = context.Request.QueryString["query"];
-                    int limit = context.Request.QueryString["limit"] == null ? -1 : int.Parse(context.Request.QueryString["limit"]);
-                    int skip = context.Request.QueryString["skip"] == null ? -1 : int.Parse(context.Request.QueryString["skip"]);
+                    string query = context.Request.QueryString["query"] ?? "{}";
+                    int limit = int.Parse(context.Request.QueryString["limit"] ?? "-1");
+                    int skip =  int.Parse(context.Request.QueryString["skip"]  ?? "-1");
                     //TODO(noobgam): add other tables
                     var filtered = mongoLogs.Find(query, limit, skip);
                     var cursor = filtered.ToCursor();
@@ -219,7 +216,7 @@ namespace MarketBot.Server {
                         ["extrainfo"] = logs
                     };
                 } else if (Endpoint == Consts.Endpoints.PingPong) {
-                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    string[] usernames = context.Request.Headers.GetValues("botname")??new string[0];
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
