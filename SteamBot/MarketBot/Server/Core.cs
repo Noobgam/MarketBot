@@ -55,7 +55,7 @@ namespace MarketBot.Server {
                     int dbcnt = (int)temp["extrainfo"]["ffedor98"]["dbcnt"];
                     if (dbcnt < 15000)
                         continue;
-                    VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Garbage);
+                    VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Noobgam);
                 } catch {
                     //Console.Error.WriteLine("Could not get a response from local server");
                     continue;

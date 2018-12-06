@@ -514,7 +514,8 @@ namespace CSGOTM {
                                     Thread.Sleep(1000);
                                 } else {
                                     if (newOfferId == "null") {
-                                        VK.Alert("Трейд не отправлен. Ответ: \"null\".\nПроверьте профиль на всякий: " + (string)json["profile"]);
+                                        VK.Alert("Трейд не отправлен. Ответ: \"null\".\nПроверьте профиль на всякий: " + (string)json["profile"], VK.AlertLevel.All);
+                                        VK.Alert($"Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={(string)json["request"]["partner"]}&token={(string)json["request"]["token"]}", VK.AlertLevel.All);
                                         Log.Error(TMBot.RestartPriority.CriticalError, $"Trade offer was not sent!");
                                     } else {
                                         try {
@@ -522,11 +523,11 @@ namespace CSGOTM {
                                             Log.Error(TMBot.RestartPriority.UnknownError, $"Trade offer not sent. Error: [{err}]");
 
                                             if (err.Contains("(15)")) {
-                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"], VK.AlertLevel.All);
                                             } else {
-                                                VK.Alert($"Трейд не отправлен по причине [{err}].\nПроверьте профиль ручками: " + (string)json["profile"]);
+                                                VK.Alert($"Трейд не отправлен по причине [{err}].\nПроверьте профиль ручками: " + (string)json["profile"], VK.AlertLevel.All);
                                             }
-                                            VK.Alert($"Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={(string)json["request"]["partner"]}&token={(string)json["request"]["token"]}");
+                                            VK.Alert($"Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={(string)json["request"]["partner"]}&token={(string)json["request"]["token"]}", VK.AlertLevel.All);
 
                                         } catch {
 

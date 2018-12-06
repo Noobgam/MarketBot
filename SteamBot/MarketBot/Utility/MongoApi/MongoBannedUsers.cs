@@ -19,7 +19,7 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
         }
 
         public List<BannedUser> GetBannedUsers() {
-            return collection.FindSync(FilterDefinition<BannedUser>.Empty).ToList();
+            return FindAll().ToList();
         }
 
         public void Add(params long[] ids) {

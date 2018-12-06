@@ -230,6 +230,13 @@ namespace CSGOTM {
         public long i_instanceid;
         public string i_market_name;
         public int price; //price is measured in kopeykas
+        public NewHistoryItem() {}
+        public NewHistoryItem(NewHistoryItem rhs) {
+            i_classid = rhs.i_classid;
+            i_instanceid = rhs.i_instanceid;
+            i_market_name = rhs.i_market_name;
+            price = rhs.price;
+        }
     }
 
     public class Auth {

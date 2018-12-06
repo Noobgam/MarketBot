@@ -52,7 +52,7 @@ namespace CSGOTM {
         }
 
         private bool Alert(string message) {
-            return VK.Alert($"[{bot.DisplayName}]: {message}");
+            return VK.Alert($"[{bot.DisplayName}]: {message}", VK.AlertLevel.All);
         }
 
         private string ConvertQualityToRussian(string en_quality) {

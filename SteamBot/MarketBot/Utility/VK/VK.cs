@@ -37,14 +37,14 @@ namespace SteamBot.MarketBot.Utility.VK {
         }
 
         static readonly Dictionary<long, AlertLevel> alerter = new Dictionary<long, AlertLevel>() {
-            { 426787197L, AlertLevel.Critical },
-            { 30415979L,  AlertLevel.Critical }
+            { 426787197L, AlertLevel.Noobgam },
+            { 30415979L,  AlertLevel.Felix }
         }; 
 
-        public static bool Alert(string message, AlertLevel level = AlertLevel.Critical) {
+        public static bool Alert(string message, AlertLevel level = AlertLevel.Noobgam) {
             bool result = true;
             foreach (var kv in alerter) {
-                if (kv.Value <= level) {
+                if ((kv.Value & level) == level) {
                     result &= Message(kv.Key, message);
                 }
             }
@@ -52,8 +52,10 @@ namespace SteamBot.MarketBot.Utility.VK {
         }
 
         public enum AlertLevel { 
-            Garbage = 0,
-            Critical = 1,
+            None = 0,
+            Noobgam = 1,
+            Felix = 2,
+            All = Felix | Noobgam
         };
 
         static bool RefreshSession() {

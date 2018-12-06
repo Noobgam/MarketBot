@@ -14,6 +14,8 @@ using SteamBot.MarketBot.CS;
 using SteamTrade;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
+using SteamBot.MarketBot.Utility.MongoApi;
+using MongoDB.Driver;
 
 namespace CSGOTM {
     public class Logic {
@@ -514,14 +516,30 @@ namespace CSGOTM {
             }
         }
 
+        public void LoadDataBaseFromMongo() {
+            MongoHistoryCSGO mongoHistory = new MongoHistoryCSGO();
+            List<MongoHistoryItem> items = mongoHistory.FindAll().ToEnumerable().OrderBy(x => x.id.Timestamp).ToList();
+            _DatabaseLock.EnterWriteLock();
+            try {
+                foreach (MongoHistoryItem item in items) {
+                    if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory temp)) {
+                        temp = new SalesHistory();
+                        dataBase.Add(item.i_market_name, temp);
+                    }
+                    temp.sales.Add(item);
+                }
+            } 
+            finally {
+                _DatabaseLock.ExitWriteLock();
+            }
+        }
 
         public void LoadDataBase() {
-            _DatabaseLock.EnterWriteLock();
             if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH)) {
-                _DatabaseLock.ExitWriteLock();
                 return;
             }
             try {
+                _DatabaseLock.EnterWriteLock();
                 dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
                 if (File.Exists(DATABASETEMPPATH))
                     File.Delete(DATABASETEMPPATH);
@@ -688,6 +706,10 @@ namespace CSGOTM {
             public List<NewHistoryItem> sales = new List<NewHistoryItem>();
             public int median;
             public int cnt;
+
+            public SalesHistory() {
+                cnt = 0;
+            }
 
             public SalesHistory(NewHistoryItem item) {
                 cnt = 1;

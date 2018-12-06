@@ -1,5 +1,7 @@
 ﻿using CSGOTM;
 using Newtonsoft.Json;
+using SteamBot.MarketBot.Utility;
+using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
@@ -18,6 +20,11 @@ namespace SteamBot.MarketBot.CS {
         private static WebSocket socket;
         private static bool opening = false;
         private static bool died = true;
+        public readonly static string BALANCER = Path.Combine("CS", "balancer");
+        public readonly static string UNSTICKEREDPATH = Path.Combine(BALANCER, "emptystickered.txt");
+
+        private static HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();
+        private static MongoHistoryCSGO mongoHistoryCSGO = new MongoHistoryCSGO();
 
         public static void Init() {
             AllocSocket();
@@ -57,6 +64,7 @@ namespace SteamBot.MarketBot.CS {
             Log.Success("Connection opened!");
             Tasking.Run((Action)SocketPinger, "Balancer");
             socket.Send("newitems_go");
+            socket.Send("history_go");
             //start = DateTime.Now;
         }
 
@@ -95,6 +103,9 @@ namespace SteamBot.MarketBot.CS {
             }
         }
 
+        static private void ProcessItem(NewHistoryItem item) {
+            mongoHistoryCSGO.Add(item);
+        }
 
         static void Msg(object sender, MessageReceivedEventArgs e) {
             try {
@@ -153,6 +164,34 @@ namespace SteamBot.MarketBot.CS {
                             Log.Warn("Socket item has no market name");
                         } else {
                             NewItemAppeared(null, newItem);
+                        }
+                        break;
+                    case "history_go":
+                        try {
+                            char[] trimming = { '[', ']' };
+                            data = Encode.DecodeEncodedNonAsciiCharacters(data);
+                            data = data.Replace("\\", "").Replace("\"", "").Trim(trimming);
+                            string[] arr = data.Split(',');
+                            NewHistoryItem historyItem = new NewHistoryItem();
+                            if (arr.Length == 7) {
+                                historyItem.i_classid = long.Parse(arr[0]);
+                                historyItem.i_instanceid = long.Parse(arr[1]);
+                                historyItem.price = Int32.Parse(arr[4]);
+                                historyItem.i_market_name = arr[5];
+                            } else if (arr.Length == 8) {
+                                historyItem.i_classid = long.Parse(arr[0]);
+                                historyItem.i_instanceid = long.Parse(arr[1]);
+                                historyItem.price = Int32.Parse(arr[5]);
+                                historyItem.i_market_name = arr[6];
+                            } else {
+                                historyItem.i_classid = long.Parse(arr[0]);
+                                historyItem.i_instanceid = long.Parse(arr[1]);
+                                historyItem.price = Int32.Parse(arr[5]);
+                                historyItem.i_market_name = arr[6] + "," + arr[7];
+                            }
+                            ProcessItem(historyItem);
+                        } catch (Exception ex) {
+                            Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                         }
                         break;
                     default:
