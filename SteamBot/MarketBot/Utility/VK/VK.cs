@@ -44,7 +44,7 @@ namespace SteamBot.MarketBot.Utility.VK {
         public static bool Alert(string message, AlertLevel level = AlertLevel.Noobgam) {
             bool result = true;
             foreach (var kv in alerter) {
-                if ((kv.Value & level) == level) {
+                if ((kv.Value & level) == kv.Value) {
                     result &= Message(kv.Key, message);
                 }
             }
