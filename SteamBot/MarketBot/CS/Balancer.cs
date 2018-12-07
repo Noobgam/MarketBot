@@ -191,7 +191,7 @@ namespace SteamBot.MarketBot.CS {
                             }
                             ProcessItem(historyItem);
                         } catch (Exception ex) {
-                            Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
+                            Log.Error($"Some error occured during history parse. [{data}] Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                         }
                         break;
                     default:
