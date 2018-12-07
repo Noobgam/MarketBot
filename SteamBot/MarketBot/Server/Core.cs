@@ -478,10 +478,8 @@ th {
         protected virtual void Dispose(bool disposing) {
             if (!disposed) {
                 if (disposing) {
-                    if (server.IsListening)
-                        server.Stop();
+                    server.Close();
                 }
-
                 disposed = true;
             }
         }

@@ -1,5 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json.Linq;
+using SteamBot.MarketBot.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -231,6 +232,28 @@ namespace CSGOTM {
         public string i_market_name;
         public int price; //price is measured in kopeykas
         public NewHistoryItem() {}
+        public NewHistoryItem(string data) {
+            string[] arr = data.Split(',');
+            //cid, iid, hashname
+            //[cid, iid, market_hash_name, date, price, market_name, color, currency]
+            for (int i = 0; i < arr.Length; ++i) {
+                arr[i] = Encode.DecodeEncodedNonAsciiCharacters(arr[i]).Replace("\\", "").Replace("\"", "").Trim('[', ']');
+            }
+            if (arr.Length == 8) {
+                i_classid = long.Parse(arr[0]);
+                i_instanceid = long.Parse(arr[1]);
+                price = Int32.Parse(arr[4]); // 
+                i_market_name = arr[5];
+            } else if (arr.Length == 10) {
+                i_classid = long.Parse(arr[0]);
+                i_instanceid = long.Parse(arr[1]);
+                price = Int32.Parse(arr[5]); // 
+                i_market_name = arr[6] + ", " + arr[7];
+            } else {
+                throw new ArgumentException($"Can't construct newhistory item from {data}");
+            }     
+            //cid - iid
+        }
         public NewHistoryItem(NewHistoryItem rhs) {
             i_classid = rhs.i_classid;
             i_instanceid = rhs.i_instanceid;

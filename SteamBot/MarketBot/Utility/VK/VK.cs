@@ -83,7 +83,6 @@ namespace SteamBot.MarketBot.Utility.VK {
             "ты будешь крутиться вокруг хуя какого-нибудь мудака, " +
             "чтобы заработать себе на пропитание.";
 
-        static bool pinning = false;
         static void HandleMessage(Message message) {
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
             foreach (var attach in message.Attachments) {

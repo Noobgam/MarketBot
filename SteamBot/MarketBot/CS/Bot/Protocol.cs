@@ -364,27 +364,7 @@ namespace CSGOTM {
                 switch (type) {
                     case "history_go":
                         try {
-                            char[] trimming = { '[', ']' };
-                            data = Encode.DecodeEncodedNonAsciiCharacters(data);
-                            data = data.Replace("\\", "").Replace("\"", "").Trim(trimming);
-                            string[] arr = data.Split(',');
-                            NewHistoryItem historyItem = new NewHistoryItem();
-                            if (arr.Length == 7) {
-                                historyItem.i_classid = long.Parse(arr[0]);
-                                historyItem.i_instanceid = long.Parse(arr[1]);
-                                historyItem.price = Int32.Parse(arr[4]);
-                                historyItem.i_market_name = arr[5];
-                            } else if (arr.Length == 8) {
-                                historyItem.i_classid = long.Parse(arr[0]);
-                                historyItem.i_instanceid = long.Parse(arr[1]);
-                                historyItem.price = Int32.Parse(arr[5]);
-                                historyItem.i_market_name = arr[6];
-                            } else {
-                                historyItem.i_classid = long.Parse(arr[0]);
-                                historyItem.i_instanceid = long.Parse(arr[1]);
-                                historyItem.price = Int32.Parse(arr[5]);
-                                historyItem.i_market_name = arr[6] + "," + arr[7];
-                            }
+                            NewHistoryItem historyItem = new NewHistoryItem(data);
                             Logic.ProcessItem(historyItem);
                         } catch (Exception ex) {
                             Log.Error($"Some error occured during history parse. [{data}] Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
