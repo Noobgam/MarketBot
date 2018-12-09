@@ -280,7 +280,7 @@ namespace CSGOTM {
                         if (price != -1 && price < 30000) {
                             _DatabaseLock.EnterReadLock();
                             took = true;
-                            if (dataBase[item.i_market_name].median * MAXFROMMEDIAN - price > 30) {
+                            if (dataBase[item.i_market_name].GetMedian() * MAXFROMMEDIAN - price > 30) {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                             }
                         }
@@ -335,8 +335,8 @@ namespace CSGOTM {
                     price = prices[2] - 30;
                 }
                 _DatabaseLock.EnterReadLock();
-                if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.median || price == -1)) {
-                    price = 2 * saleHistory.median;
+                if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.GetMedian() || price == -1)) {
+                    price = 2 * saleHistory.GetMedian();
                 }
                 _DatabaseLock.ExitReadLock();
                 CurrentItemsLock.ExitReadLock();
@@ -346,7 +346,7 @@ namespace CSGOTM {
             _DatabaseLock.EnterReadLock();
             if (dataBase.TryGetValue(name, out SalesHistory salesHistory)) {
                 _DatabaseLock.ExitReadLock();
-                return salesHistory.median;
+                return salesHistory.GetMedian();
             }
             _DatabaseLock.ExitReadLock();
             return -1;
@@ -384,7 +384,7 @@ namespace CSGOTM {
                 _DatabaseLock.EnterReadLock();
                 int price = -1;
                 if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
-                    price = salesHistory.median;
+                    price = salesHistory.GetMedian();
                 _DatabaseLock.ExitReadLock();
                 return price;
             }
@@ -526,7 +526,10 @@ namespace CSGOTM {
                         temp = new SalesHistory();
                         dataBase.Add(item.i_market_name, temp);
                     }
-                    temp.sales.Add(item);
+                    temp.Add(item);
+                }
+                foreach (var kv in dataBase) {
+                    kv.Value.Recalculate();
                 }
             } 
             finally {
@@ -703,17 +706,45 @@ namespace CSGOTM {
 
         [Serializable]
         public class SalesHistory {
-            public List<NewHistoryItem> sales = new List<NewHistoryItem>();
-            public int median;
-            public int cnt;
+            private List<NewHistoryItem> sales = new List<NewHistoryItem>();
+            private int median;
+            private int cnt;
+            [NonSerialized]
+            private bool fresh = true;
+
+            public int GetCnt() {
+                return cnt;
+            }
+
+            public void Recalculate() {
+                int[] a = new int[cnt];
+                for (int i = 0; i < cnt; i++)
+                    a[i] = sales[i].price;
+                Array.Sort(a);
+                median = a[cnt / 2];
+                fresh = true;
+            }
+
+            public int GetMedian() {
+                if (!fresh) {
+                    Recalculate();
+                }
+                return median;
+            }
 
             public SalesHistory() {
                 cnt = 0;
             }
 
-            public SalesHistory(NewHistoryItem item) {
-                cnt = 1;
+            public SalesHistory(NewHistoryItem item) : this() {
+                Add(item);
+            }
+
+            public void Add(NewHistoryItem item) {
                 sales.Add(item);
+                cnt += 1;
+                median = item.price;
+                fresh = false;
             }
         }
 
@@ -738,24 +769,14 @@ namespace CSGOTM {
             //Console.WriteLine(item.i_market_name);
             _DatabaseLock.EnterWriteLock();
             try {
-                if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
-                    if (salesHistory.cnt == MAXSIZE)
-                        salesHistory.sales.RemoveAt(0);
-                    else
-                        salesHistory.cnt++;
-                    salesHistory.sales.Add(item);
-                } else {
-                    salesHistory = new SalesHistory(item);
+                if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
+                    salesHistory = new SalesHistory();
                     dataBase.Add(item.i_market_name, salesHistory);
                 }
+                salesHistory.Add(item);
+                salesHistory.Recalculate();
 
-                int[] a = new int[salesHistory.cnt];
-                for (int i = 0; i < salesHistory.cnt; i++)
-                    a[i] = salesHistory.sales[i].price;
-                Array.Sort(a);
-                salesHistory.median = a[salesHistory.cnt / 2];
-
-                if (salesHistory.cnt >= Consts.MINSIZE && !blackList.Contains(item.i_market_name)) {
+                if (salesHistory.GetCnt() >= Consts.MINSIZE && !blackList.Contains(item.i_market_name)) {
                     needOrder.Enqueue(item);
                 }
             } finally {
@@ -788,9 +809,9 @@ namespace CSGOTM {
                     return false;
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
-                    if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.median
-                        && salesHistory.median - item.ui_price > 1000
-                        && salesHistory.cnt >= Consts.MINSIZE) {
+                    if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.GetMedian()
+                        && salesHistory.GetMedian() - item.ui_price > 1000
+                        && salesHistory.GetCnt() >= Consts.MINSIZE) {
                         return true; //back to good ol' dayz
                     }
                 }
@@ -804,11 +825,11 @@ namespace CSGOTM {
                 {
                     if (prices.Count >= 6
                         && item.ui_price < WANT_TO_BUY * prices[2]
-                        && salesHistory.cnt >= Consts.MINSIZE
-                        && prices[2] < salesHistory.median * 1.2
+                        && salesHistory.GetCnt() >= Consts.MINSIZE
+                        && prices[2] < salesHistory.GetMedian() * 1.2
                         && prices[2] - item.ui_price > 1000) {
                         Log.Info("Going to buy " + item.i_market_name + ". Expected profit " +
-                                    (salesHistory.median - item.ui_price));
+                                    (salesHistory.GetMedian() - item.ui_price));
                         return true;
                     }
                 }
@@ -825,8 +846,6 @@ namespace CSGOTM {
         public Protocol Protocol;
 
         public string botName;
-
-        private const int MAXSIZE = 12000;
 
         private string PREFIXPATH;
         private HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();

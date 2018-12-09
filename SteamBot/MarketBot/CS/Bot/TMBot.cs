@@ -112,7 +112,7 @@ namespace CSGOTM {
                             continue;
                         }
                         if (logic.dataBase.TryGetValue(runame, out Logic.SalesHistory sales)) {
-                            medianprice += sales.median;
+                            medianprice += sales.GetMedian();
                         }
                     }
                     logic._DatabaseLock.ExitReadLock();
