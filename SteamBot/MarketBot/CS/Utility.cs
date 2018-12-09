@@ -233,29 +233,32 @@ namespace CSGOTM {
         public int price; //price is measured in kopeykas
         public NewHistoryItem() {}
         public NewHistoryItem(string data) {
-            string[] arr = data.Split(',');
+            string[] arr = data.Substring(1, data.Length - 2).Trim('[',']').Split(new string[] { "\\\"" }, StringSplitOptions.RemoveEmptyEntries);
             //cid, iid, hashname
-            //[cid, iid, market_hash_name, date, price, market_name, color, currency]
             for (int i = 0; i < arr.Length; ++i) {
-                arr[i] = Encode.DecodeEncodedNonAsciiCharacters(arr[i]).Replace("\\", "").Replace("\"", "").Trim('[', ']');
+                arr[i] = Encode.DecodeEncodedNonAsciiCharacters(arr[i]);
             }
-            if (arr.Length == 8) {
+            if (arr.Length == 15) {
+                //0 - cid
+                //2 - iid
+                //4 - market_hashname
+                //6 - date
+                //8 - price
+                //10 - market_name
+                //12 - color
+                //14 - currency
+
+                //rest are ','
                 i_classid = long.Parse(arr[0]);
-                i_instanceid = long.Parse(arr[1]);
-                price = Int32.Parse(arr[4]); // 
-                i_market_name = arr[5];
-                if (arr[7] != "RUB") {
+                i_instanceid = long.Parse(arr[2]);
+                price = Int32.Parse(arr[8]);
+                i_market_name = arr[10];
+                if (arr[14] != "RUB") {
                     throw new ArgumentException($"Currencies other than rub are not supported {data}");
                 }
-            } else if (arr.Length == 10) {
-                i_classid = long.Parse(arr[0]);
-                i_instanceid = long.Parse(arr[1]);
-                price = Int32.Parse(arr[5]); // 
-                i_market_name = arr[6] + ", " + arr[7];
-                if (arr[9] != "RUB") {
-                    throw new ArgumentException($"Currencies other than rub are not supported {data}");
-                }
+                return;
             } else {
+                new NewHistoryItem(data);
                 throw new ArgumentException($"Can't construct newhistory item from {data}");
             }     
             //cid - iid
