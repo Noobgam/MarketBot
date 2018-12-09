@@ -131,35 +131,7 @@ namespace SteamBot.MarketBot.CS {
                 #endregion
                 switch (type) {
                     case "newitems_go":
-                        #region ParseJson
-                        reader = new JsonTextReader(new StringReader(data));
-                        currentProperty = string.Empty;
-                        NewItem newItem = new NewItem();
-                        while (reader.Read()) {
-                            if (reader.Value != null) {
-                                if (reader.TokenType == JsonToken.PropertyName)
-                                    currentProperty = reader.Value.ToString();
-                                else if (reader.TokenType == JsonToken.String) {
-                                    switch (currentProperty) {
-                                        case "i_classid":
-                                            newItem.i_classid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_instanceid":
-                                            newItem.i_instanceid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_market_name":
-                                            newItem.i_market_name = reader.Value.ToString();
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                } else if (currentProperty == "ui_price") {
-                                    newItem.ui_price = (long)(float.Parse(reader.Value.ToString()) * 100);
-                                }
-                            }
-                        }
-                        //var delegates = NewItemAppeared.GetInvocationList();
-                        #endregion
+                        NewItem newItem = new NewItem(data);
                         if (newItem.i_market_name == "") {
                             Log.Warn("Socket item has no market name");
                         } else {

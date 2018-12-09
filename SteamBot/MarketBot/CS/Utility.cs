@@ -1,4 +1,5 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SteamBot.MarketBot.Utility;
 using System;
@@ -196,6 +197,39 @@ namespace CSGOTM {
         public static Dictionary<string, int> mapping = new Dictionary<string, int>();
 
         public NewItem() {
+        }
+
+        public NewItem(string data) {
+            JsonTextReader reader = new JsonTextReader(new StringReader(data));
+            string currentProperty = string.Empty;
+            while (reader.Read()) {
+                if (reader.Value != null) {
+                    if (reader.TokenType == JsonToken.PropertyName)
+                        currentProperty = reader.Value.ToString();
+                    else if (reader.TokenType == JsonToken.String) {
+                        switch (currentProperty) {
+                            case "i_classid":
+                                i_classid = long.Parse(reader.Value.ToString());
+                                break;
+                            case "i_instanceid":
+                                i_instanceid = long.Parse(reader.Value.ToString());
+                                break;
+                            case "i_market_name":
+                                i_market_name = reader.Value.ToString();
+                                break;
+                            case "ui_currency":
+                                if (reader.Value.ToString() != "RUB") {
+                                    throw new ArgumentException($"Currencies other than RUB are not supported {data}");
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (currentProperty == "ui_price") {
+                        ui_price = (long)(float.Parse(reader.Value.ToString()) * 100);
+                    }
+                }
+            }
         }
 
         public NewItem(string[] item) {
