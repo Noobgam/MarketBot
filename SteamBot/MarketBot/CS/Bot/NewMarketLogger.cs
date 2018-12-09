@@ -85,7 +85,6 @@ namespace SteamBot.MarketBot.CS.Bot {
         }
 
         public void Warn(RestartPriority prior, string data, params object[] formatParams) {
-            bot.FlagError(prior, data);
             Warn(data, formatParams);
         }
 
@@ -94,7 +93,6 @@ namespace SteamBot.MarketBot.CS.Bot {
         }
 
         public void Info(RestartPriority prior, string data, params object[] formatParams) {
-            bot.FlagError(prior, data);
             Info(data, formatParams);
         }
 
