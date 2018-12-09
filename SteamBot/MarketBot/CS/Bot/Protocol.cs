@@ -376,7 +376,12 @@ namespace CSGOTM {
                         break;
                     case "money":
                         try {
-                            money = (int)(double.Parse(data.Split('\"')[1].Split('<')[0], new CultureInfo("en")) * 100);
+                            string splitted = data.Split('\"')[1].Split('<')[0].Replace(" ", "");
+                            if (splitted.EndsWith("\\u00a0")) {
+                                money = (int)(double.Parse(splitted.Substring(0, splitted.Length - "\\u00a0".Length), new CultureInfo("en")) * 100);
+                            } else {
+                                money = (int)(double.Parse(splitted, new CultureInfo("en")) * 100);
+                            }
                         } catch {
                             Log.Error($"Can't parse money from {data} [{data.Split('\"')[1].Split('<')[0]}]");
                             money = 90000;

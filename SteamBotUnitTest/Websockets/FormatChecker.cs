@@ -4,10 +4,12 @@ using NUnit.Framework;
 using SteamBot.MarketBot.Utility;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Utility;
 using WebSocket4Net;
 
 namespace SteamBotUnitTest.Websockets {
@@ -49,6 +51,19 @@ namespace SteamBotUnitTest.Websockets {
             new NewItem(item3);
             new NewItem(item4);
             new NewItem(item5);
+        }
+
+        [Test]
+        public void ParseMoney() {
+            string data = "\"1 332.56\\u00a0<small><\\/small>\"";
+            int money = 0;
+            string splitted = data.Split('\"')[1].Split('<')[0].Replace(" ", "");
+            if (splitted.EndsWith("\\u00a0")) {
+                money = (int)(double.Parse(splitted.Substring(0, splitted.Length - "\\u00a0".Length), new CultureInfo("en")) * 100);
+            } else {
+                money = (int)(double.Parse(splitted, new CultureInfo("en")) * 100);
+            }
+            Assert.AreEqual(133256, money);
         }
         
         [Test]
