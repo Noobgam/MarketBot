@@ -244,11 +244,17 @@ namespace CSGOTM {
                 i_instanceid = long.Parse(arr[1]);
                 price = Int32.Parse(arr[4]); // 
                 i_market_name = arr[5];
+                if (arr[7] != "RUB") {
+                    throw new ArgumentException($"Currencies other than rub are not supported {data}");
+                }
             } else if (arr.Length == 10) {
                 i_classid = long.Parse(arr[0]);
                 i_instanceid = long.Parse(arr[1]);
                 price = Int32.Parse(arr[5]); // 
                 i_market_name = arr[6] + ", " + arr[7];
+                if (arr[9] != "RUB") {
+                    throw new ArgumentException($"Currencies other than rub are not supported {data}");
+                }
             } else {
                 throw new ArgumentException($"Can't construct newhistory item from {data}");
             }     

@@ -36,16 +36,23 @@ namespace SteamBot.MarketBot.Utility.VK {
             }
         }
 
-        static readonly Dictionary<long, AlertLevel> alerter = new Dictionary<long, AlertLevel>() {
-            { 426787197L, AlertLevel.Noobgam },
-            { 30415979L,  AlertLevel.Felix }
+        public enum Admins {
+            Noobgam = 426787197,
+            Felix = 30415979,
+        }
+
+        static readonly Array AdminList = Enum.GetValues(typeof(Admins));
+
+        static readonly Dictionary<Admins, AlertLevel> alerter = new Dictionary<Admins, AlertLevel>() {
+            { Admins.Noobgam, AlertLevel.Noobgam },
+            { Admins.Felix,  AlertLevel.Felix }
         }; 
 
         public static bool Alert(string message, AlertLevel level = AlertLevel.Noobgam) {
             bool result = true;
             foreach (var kv in alerter) {
                 if ((kv.Value & level) == kv.Value) {
-                    result &= Message(kv.Key, message);
+                    result &= Message((long)kv.Key, message);
                 }
             }
             return result;
@@ -85,6 +92,16 @@ namespace SteamBot.MarketBot.Utility.VK {
 
         static void HandleMessage(Message message) {
             api.Messages.MarkAsReadAsync(message.FromId.Value.ToString(), message.Id);
+            bool admin = false;
+            foreach (var x in AdminList) {
+                if ((long)x == message.FromId) {                    
+                    admin = true;
+                    break;
+                }
+            }
+            if (!admin) {
+                return;
+            }
             foreach (var attach in message.Attachments) {
                 //attach.Document.Uri
                 if (attach.Type == typeof(VkNet.Model.Attachments.Document) && attach.Instance is VkNet.Model.Attachments.Document doc) {
@@ -101,11 +118,6 @@ namespace SteamBot.MarketBot.Utility.VK {
             //if (message.FromId == 110139244 || message.FromId == 62228399) {
             //    return; //just ignore these two people.
             //}
-            if (!alerter.ContainsKey(message.FromId.Value)) {
-                //Message(message.FromId.Value, "Пошёл нахуй, не пиши мне больше, урод");
-                Thread.Sleep(500);
-                return;
-            }
             if (message.FromId == 426787197) {
                 Message(message.FromId.Value, Pineapple);// $"Только пидоры говорят \"{message.Text}\"");
                 Thread.Sleep(500);
