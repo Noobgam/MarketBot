@@ -489,7 +489,7 @@ namespace CSGOTM {
                                     (long)item["assetid"],
                                     (long)item["amount"]);
                             }
-                            Log.Info(TMBot.RestartPriority.UnknownError, "Partner: {0} Token: {1} Tradeoffermessage: {2} Profile: {3}. Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={0}&token={1}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
+                            Log.Info("Partner: {0} Token: {1} Tradeoffermessage: {2} Profile: {3}. Tradelink: https://steamcommunity.com/tradeoffer/new/?partner={0}&token={1}", (string)json["request"]["partner"], (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"], (string)json["profile"]);
                             if (offer.Items.NewVersion) {
                                 if (offer.SendWithToken(out string newOfferId, (string)json["request"]["token"], (string)json["request"]["tradeoffermessage"])) {
                                     Log.Success("Trade offer sent : Offer ID " + newOfferId);
@@ -783,7 +783,7 @@ namespace CSGOTM {
                     if (!opening) {
                         try {
                             int index = i++;
-                            Log.ApiError(TMBot.RestartPriority.UnknownError, $"Trying to reconnect for the {index}-th time");
+                            Log.Info($"Trying to reconnect for the {index}-th time");
                             Task.Delay(5000).ContinueWith(_ => {
                                 if (died == true) {
                                     Log.ApiError(TMBot.RestartPriority.MediumError, $"{index}-th time");

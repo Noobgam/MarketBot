@@ -92,10 +92,6 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Warn, data, formatParams));
         }
 
-        public void Info(RestartPriority prior, string data, params object[] formatParams) {
-            Info(data, formatParams);
-        }
-
         public void Info(string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, data, formatParams));
         }
