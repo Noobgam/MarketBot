@@ -326,7 +326,7 @@ namespace CSGOTM {
             if (!parent.IsRunning())
                 return;
             if (newItem.i_market_name == "") {
-                Log.Warn("Socket item has no market name");
+                Log.Error("Socket item has no market name");
             } else if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
                 if (Buy(newItem))
                     Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
