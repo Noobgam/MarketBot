@@ -199,6 +199,9 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.MongoFind) {
                     string query = context.Request.QueryString["query"] ?? "{}";
                     int limit = int.Parse(context.Request.QueryString["limit"] ?? "-1");
@@ -262,6 +265,9 @@ namespace MarketBot.Server {
                     string[] stuff = data[0].Split(':');
                     CurTradable[usernames[0]] = double.Parse(stuff[0]);
                     CurUntracked[usernames[0]] = int.Parse(stuff[1]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.PutMedianCost) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -272,6 +278,9 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurMedian[usernames[0]] = double.Parse(data[0]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -282,6 +291,9 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.RPS) {
                     resp = new JObject {
                         ["success"] = true,
@@ -479,6 +491,7 @@ th {
 
         private void Respond(HttpListenerContext ctx, JObject json) {
             if (json["error"] == null) {
+                //ctx.Response.StatusCode = 200;
                 if (json["type"] != null && (string)json["type"] == "table") {
                     if (RespondTable(ctx, json))
                         return;
@@ -487,7 +500,7 @@ th {
                     }
                 }
             } else {
-                ctx.Response.StatusCode = 500;
+                //ctx.Response.StatusCode = 500;
             }
             //TODO(noobgam): prettify if User-Agent is defined
             string resp = json.ToString(

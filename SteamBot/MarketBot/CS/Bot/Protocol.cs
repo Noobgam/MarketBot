@@ -677,7 +677,7 @@ namespace CSGOTM {
                         else
                             flag = true;
                     }
-                } catch {
+                } catch (Exception e) {
                     flag = true;
                     Log.Error("Could not get a response from local server");
                 }
