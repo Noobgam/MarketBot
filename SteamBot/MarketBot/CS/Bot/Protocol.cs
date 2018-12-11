@@ -841,6 +841,7 @@ namespace CSGOTM {
                 Log.ApiError("<Async> Some huge server sided error happened during buy. " + parsed.ToString(Formatting.None));
                 return false;
             } else if ((string)parsed["result"] == "ok") {
+                Log.Success("Purchased: " + item.i_market_name + " " + item.ui_price);
                 return true;
             } else {
                 Log.ApiError($"<Async> Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));

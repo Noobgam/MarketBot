@@ -112,9 +112,7 @@ namespace SteamBot.MarketBot.CS {
         static private void ProcessItem(NewHistoryItem item) {
             mongoHistoryCSGO.Add(item);
         }
-
-        static int lol = 0;
-
+        
         static void Msg(object sender, MessageReceivedEventArgs e) {
             try {
                 #region ParseType
