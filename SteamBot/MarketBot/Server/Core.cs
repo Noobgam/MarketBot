@@ -457,15 +457,15 @@ table, th, td {
 th {
 	background-color: lightblue
 }
-</style>
-<script>" + SteamBot.Properties.Resources.chartUpdateScript + "</script>" + 
+</style>" +
+//"<script>" + SteamBot.Properties.Resources.chartUpdateScript + "</script>" + 
 @"</head>
 <body>";
-                html += "<script src=\"https://canvasjs.com/assets/script/canvasjs.min.js\"></script>";
+                //html += "<script src=\"https://canvasjs.com/assets/script/canvasjs.min.js\"></script>";
                 if (!ConvertToDomTable(json, out string body)) {
                     return false;
                 }
-                html += SteamBot.Properties.Resources.chartdiv;
+                //html += SteamBot.Properties.Resources.chartdiv;
                 html += body;
                 html += @"</body>
 </html>";
