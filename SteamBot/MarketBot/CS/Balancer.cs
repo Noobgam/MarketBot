@@ -12,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Utility;
 using WebSocket4Net;
+using static CSGOTM.Perfomance;
 
 namespace SteamBot.MarketBot.CS {
     static class Balancer {
@@ -22,9 +23,14 @@ namespace SteamBot.MarketBot.CS {
         private static bool died = true;
         public readonly static string BALANCER = Path.Combine("CS", "balancer");
         public readonly static string UNSTICKEREDPATH = Path.Combine(BALANCER, "emptystickered.txt");
+        private static readonly RPSKeeper newItemRpsKeeper = new RPSKeeper();
 
         private static HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();
         private static MongoHistoryCSGO mongoHistoryCSGO = new MongoHistoryCSGO();
+
+        public static double GetNewItemsRPS() {
+            return newItemRpsKeeper.GetRps();
+        }
 
         public static void Init() {
             AllocSocket();
@@ -107,6 +113,8 @@ namespace SteamBot.MarketBot.CS {
             mongoHistoryCSGO.Add(item);
         }
 
+        static int lol = 0;
+
         static void Msg(object sender, MessageReceivedEventArgs e) {
             try {
                 #region ParseType
@@ -132,6 +140,7 @@ namespace SteamBot.MarketBot.CS {
                 switch (type) {
                     case "newitems_go":
                         NewItem newItem = new NewItem(data);
+                        newItemRpsKeeper.Tick();
                         if (newItem.i_market_name == "") {
                             Log.Warn("Socket item has no market name");
                         } else {

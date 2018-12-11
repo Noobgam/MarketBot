@@ -9,6 +9,16 @@ using System.Threading.Tasks;
 namespace Utility {
     public static class Request {
         public static NewMarketLogger Log = new NewMarketLogger();
+        public static HttpClient httpClient = new HttpClient();
+
+        static Request() {
+        }
+
+        public static async Task<string> GetAsync(string uri) {
+            using (HttpResponseMessage result = await httpClient.GetAsync(uri)) {
+                return await result.Content.ReadAsStringAsync();
+            }
+        }
 
         public static string Get(string uri) {
             try {

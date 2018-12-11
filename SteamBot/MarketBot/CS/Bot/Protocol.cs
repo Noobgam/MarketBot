@@ -96,7 +96,22 @@ namespace CSGOTM {
         void ShiftEma(double x) {
             EMA = EMA * (1 - ALP) + x * ALP;
         }
-                
+
+        private async Task<string> ExecuteApiRequestAsync(string url, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
+            try {
+                ObtainApiSemaphore(method);
+                if (logLevel == ApiLogLevel.LogAll) {
+                    Log.Info("<Async> Executing " + url);
+                }
+                return await Request.GetAsync(Consts.MARKETENDPOINT + url);
+            } catch (Exception e) {
+                Log.ApiError(TMBot.RestartPriority.UnknownError, $"<Async> GET call to {Consts.MARKETENDPOINT}{url} failed");
+                return null;
+            } finally {
+                ReleaseApiSemaphore(method);
+            }
+        }
+
         private string ExecuteApiRequest(string url, ApiMethod method = ApiMethod.GenericCall, ApiLogLevel logLevel = ApiLogLevel.DoNotLog) {
             if (logLevel == ApiLogLevel.LogAll) {
                 Log.Info("Executing " + url);
@@ -107,7 +122,7 @@ namespace CSGOTM {
                 ObtainApiSemaphore(method);
                 //Log.Success("Executing api call " + url);
                 temp.Start();
-                response = Utility.Request.Get(Consts.MARKETENDPOINT + url);
+                response = Request.Get(Consts.MARKETENDPOINT + url);
                 temp.Stop();
                 ShiftEma(0);
                 Log.Nothing($"GET {url} : {temp.ElapsedMilliseconds}");
@@ -148,9 +163,9 @@ namespace CSGOTM {
         /// <returns></returns>
         public JArray PopularItems(int page = 1, int amount = 56, int lowest_price = 0, int highest_price = 100000, bool any_stickers = false) {
             if (any_stickers) {
-                return JArray.Parse(Utility.Request.Get($"{Consts.MARKETENDPOINT}/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/-1"));
+                return JArray.Parse(Request.Get($"{Consts.MARKETENDPOINT}/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/-1"));
             } else {
-                return JArray.Parse(Utility.Request.Get($"{Consts.MARKETENDPOINT}/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/all"));
+                return JArray.Parse(Request.Get($"{Consts.MARKETENDPOINT}/ajax/i_popularity/all/all/all/{page}/{amount}/{lowest_price};{highest_price}/all/all/all"));
             }
         }
 
@@ -328,10 +343,7 @@ namespace CSGOTM {
             if (newItem.i_market_name == "") {
                 Log.Error("Socket item has no market name");
             } else if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
-                if (Buy(newItem))
-                    Log.Success("Purchased: " + newItem.i_market_name + " " + newItem.ui_price);
-                else
-                    Log.Warn("Couldn\'t purchase " + newItem.i_market_name + " " + newItem.ui_price);
+                _ = BuyAsync(newItem);
             }
         }
 
@@ -802,6 +814,39 @@ namespace CSGOTM {
             }
         }
 
+        public async Task<bool> BuyAsync(NewItem item) {
+            string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + item.ui_price.ToString() + "/?key=" + Api;
+            if (StopBuy) {
+                Log.Error($"Skipping purchase request, all bots are overflowing.");
+                return false;
+            }
+            if (CurrentToken != "")
+                url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
+            string response = await ExecuteApiRequestAsync(url, ApiMethod.Buy, ApiLogLevel.LogAll);
+            if (response == null) {
+                return false;
+            }
+            JObject parsed = JObject.Parse(response);
+            bool badTrade = false;
+            try {
+                badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";
+            } catch {
+
+            }
+            if (badTrade) {
+                Log.ApiError($"<Async> Missed an item {item.i_market_name} costing {item.ui_price}");
+                return false;
+            }
+            if (parsed["result"] == null) {
+                Log.ApiError("<Async> Some huge server sided error happened during buy. " + parsed.ToString(Formatting.None));
+                return false;
+            } else if ((string)parsed["result"] == "ok") {
+                return true;
+            } else {
+                Log.ApiError($"<Async> Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));
+                return false;
+            }
+        }
 
         public bool Buy(NewItem item) {
 #if CAREFUL
@@ -816,10 +861,11 @@ namespace CSGOTM {
             }
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
-            string a = ExecuteApiRequest(url, ApiMethod.Buy, ApiLogLevel.LogAll);
-            if (a == null)
+            string response = ExecuteApiRequest(url, ApiMethod.Buy, ApiLogLevel.LogAll);
+            if (response == null) {
                 return false;
-            JObject parsed = JObject.Parse(a);
+            }
+            JObject parsed = JObject.Parse(response);
             bool badTrade = false;
             try {
                 badTrade = parsed.ContainsKey("id") && (bool)parsed["id"] == false && (string)parsed["result"] == "Недостаточно средств на счету";

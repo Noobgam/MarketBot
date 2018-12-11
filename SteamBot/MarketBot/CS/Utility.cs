@@ -40,6 +40,7 @@ namespace CSGOTM {
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";
             public const string Status = "/status/";
+            public const string RPS = "/rps/";
             public const string MongoFind = "/mongo/find/";
             public const string BanUser = "/ban/";
             public const string UnBanUser = "/unban/";
@@ -337,6 +338,41 @@ namespace CSGOTM {
         }
 
         public List<SteamItem> content;
+    }
+
+    public class Perfomance {
+
+        public class RPSKeeper {
+
+            const int SHIFT = 5;
+
+            int[] Calls;
+            public RPSKeeper() {
+                Calls = new int[60];      
+            }
+            
+            public void Tick(int ticks = 1) {
+                int CurrentSecond = DateTime.Now.Second;
+                int PrevSecond = CurrentSecond - SHIFT - 1;
+                if (PrevSecond < 0)
+                    PrevSecond += 60;
+                Calls[DateTime.Now.Second] += ticks;
+                Calls[PrevSecond] = 0;
+            }
+
+            public double GetRps() {
+                int sum = 0;
+                int CurrentSecond = DateTime.Now.Second;
+                for (int iter = 0; iter < SHIFT; ++iter) {
+                    sum += Calls[CurrentSecond];
+                    CurrentSecond--;
+                    if (CurrentSecond < 0) {
+                        CurrentSecond += 60;
+                    }
+                }
+                return (double)sum / SHIFT;
+            }
+        }
     }
 
     public class SortUtils {

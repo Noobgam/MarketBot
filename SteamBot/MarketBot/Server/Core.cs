@@ -17,6 +17,7 @@ using System.Collections.Specialized;
 using System.Web;
 using System.Globalization;
 using SteamBot.MarketBot.Utility.MongoApi;
+using SteamBot.MarketBot.CS;
 
 namespace MarketBot.Server {
     public class Core : IDisposable {
@@ -201,7 +202,7 @@ namespace MarketBot.Server {
                 } else if (Endpoint == Consts.Endpoints.MongoFind) {
                     string query = context.Request.QueryString["query"] ?? "{}";
                     int limit = int.Parse(context.Request.QueryString["limit"] ?? "-1");
-                    int skip =  int.Parse(context.Request.QueryString["skip"]  ?? "-1");
+                    int skip = int.Parse(context.Request.QueryString["skip"] ?? "-1");
                     //TODO(noobgam): add other tables
                     var filtered = mongoLogs.Find(query, limit, skip);
                     var cursor = filtered.ToCursor();
@@ -216,7 +217,7 @@ namespace MarketBot.Server {
                         ["extrainfo"] = logs
                     };
                 } else if (Endpoint == Consts.Endpoints.PingPong) {
-                    string[] usernames = context.Request.Headers.GetValues("botname")??new string[0];
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
@@ -281,6 +282,11 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
+                } else if (Endpoint == Consts.Endpoints.RPS) {
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["rps"] = Balancer.GetNewItemsRPS()
+                    };
                 } else if (Endpoint == Consts.Endpoints.Status) {
                     bool full = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
                     bool table = context.Request.QueryString["table"] == null ? false : bool.Parse(context.Request.QueryString["table"]);
@@ -325,6 +331,7 @@ namespace MarketBot.Server {
                     resp = new JObject {
                         ["success"] = true,
                         ["extrainfo"] = extrainfo,
+                        ["rps"] = Balancer.GetNewItemsRPS(),
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
                             ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),
@@ -333,22 +340,23 @@ namespace MarketBot.Server {
                         }
                     };
                     if (table) {
-                        resp["type"] = "table";
+                        if (RespondTable(context, resp)) {
+                            return;
+                        }
                     }
                 }
+                if (resp == null)
+                    resp = new JObject {
+                        ["success"] = false,
+                        ["error"] = "Unsupported request"
+                    };
+                Respond(context, resp);
             } catch (Exception ex) {
                 resp = new JObject {
                     ["success"] = false,
                     ["error"] = ex.Message,
                     ["trace"] = ex.StackTrace
                 };
-
-            } finally {
-                if (resp == null)
-                    resp = new JObject {
-                        ["success"] = false,
-                        ["error"] = "Unsupported request"
-                    };
                 Respond(context, resp);
             }
         }
@@ -380,27 +388,13 @@ namespace MarketBot.Server {
             return res;
         }
 
-        private bool RespondTable(HttpListenerContext ctx, JObject json) {
+        private bool ConvertToDomTable(JObject json, out string html) {
+            html = "";
             try {
                 int cnt = 0;
-                string html =
-                    @"<!DOCTYPE html>
-<html>
-<head>
-<meta charset=" + "\"utf-8\"/>" +
-    @"<style>
-table, th, td {
-    border: 1px solid black;
-}
-th {
-	background-color: lightblue
-}
-</style>
-</head>
-<body>";
                 SortUtils.Sort(json);
                 foreach (var table in json) {
-                    if (table.Key == "success")
+                    if (table.Key != "extrainfo" && table.Key != "moneysum")
                         continue;
                     //html += "Table " + table.Key + "</br>";
                     string header = "";
@@ -441,6 +435,38 @@ th {
                         "</table>";
                     html += header + body + footer;
                 }
+                return true;
+
+            } catch {
+                return false;
+            }
+
+        }
+
+        private bool RespondTable(HttpListenerContext ctx, JObject json) {
+            try {
+                string html =
+                    @"<!DOCTYPE html>
+<html>
+<head>
+<meta charset=" + "\"utf-8\"/>" +
+    @"<style>
+table, th, td {
+    border: 1px solid black;
+}
+th {
+	background-color: lightblue
+}
+</style>
+<script>" + SteamBot.Properties.Resources.chartUpdateScript + "</script>" + 
+@"</head>
+<body>";
+                html += "<script src=\"https://canvasjs.com/assets/script/canvasjs.min.js\"></script>";
+                if (!ConvertToDomTable(json, out string body)) {
+                    return false;
+                }
+                html += SteamBot.Properties.Resources.chartdiv;
+                html += body;
                 html += @"</body>
 </html>";
                 RawRespond(ctx, html);
@@ -460,6 +486,8 @@ th {
                         json["respond_error"] = "response could not be processed as table";
                     }
                 }
+            } else {
+                ctx.Response.StatusCode = 500;
             }
             //TODO(noobgam): prettify if User-Agent is defined
             string resp = json.ToString(
