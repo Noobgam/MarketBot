@@ -15,6 +15,7 @@ using SteamKit2.Internal;
 using SteamTrade.TradeOffer;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using SteamBot.MarketBot.Utility.VK;
 
 namespace SteamBot
 {
@@ -1075,6 +1076,9 @@ namespace SteamBot
             disposed = true;
         }
 
+
+        private int failedlogins = 0;
+
         private void SubscribeSteamCallbacks()
         {
             #region Login
@@ -1094,6 +1098,12 @@ namespace SteamBot
                 else
                 {
                     Log.Error("Login Error: {0}", callback.Result);
+                    ++failedlogins;
+                    if (failedlogins >= 3) {
+                        StopBot();
+                        VK.Alert($"Bot {botConfig.Username} failed to start, please take a look manually.");
+                        return;
+                    }
                 }
 
                 if (callback.Result == EResult.AccountLoginDeniedNeedTwoFactor)
@@ -1111,6 +1121,7 @@ namespace SteamBot
                 }
                 else if (callback.Result == EResult.TwoFactorCodeMismatch)
                 {
+                    Thread.Sleep(1500);
                     SteamAuth.TimeAligner.AlignTime();
                     logOnDetails.TwoFactorCode = SteamGuardAccount.GenerateSteamGuardCode();
                     Log.Success("Regenerated 2FA code.");
