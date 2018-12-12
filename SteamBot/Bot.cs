@@ -647,9 +647,6 @@ namespace SteamBot
             } while(!IsLoggedIn);
 
             Log.Success("User Authenticated!");
-            if (botConfig.SetGamePlayed) {
-                SetGamePlaying(730);
-            }
 
             tradeManager = new TradeManager(ApiKey, SteamWeb);
             tradeManager.SetTradeTimeLimits(MaximumTradeTime, MaximumActionGap, tradePollingInterval);
@@ -1149,6 +1146,9 @@ namespace SteamBot
                 Log.Success("Steam Bot Logged In Completely!");
 
                 GetUserHandler(SteamClient.SteamID).OnLoginCompleted();
+                if (botConfig.SetGamePlayed) {
+                    SetGamePlaying(730);
+                }
             });
 
             steamCallbackManager.Subscribe<SteamUser.WebAPIUserNonceCallback>(webCallback =>
