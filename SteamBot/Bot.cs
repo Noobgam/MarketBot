@@ -647,6 +647,9 @@ namespace SteamBot
             } while(!IsLoggedIn);
 
             Log.Success("User Authenticated!");
+            if (botConfig.SetGamePlayed) {
+                SetGamePlaying(730);
+            }
 
             tradeManager = new TradeManager(ApiKey, SteamWeb);
             tradeManager.SetTradeTimeLimits(MaximumTradeTime, MaximumActionGap, tradePollingInterval);
