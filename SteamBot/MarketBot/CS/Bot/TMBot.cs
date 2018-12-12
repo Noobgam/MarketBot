@@ -179,6 +179,10 @@ namespace CSGOTM {
             ScheduleRestart();
         }
 
+        public NewMarketLogger GetLog() {
+            return Log;
+        }
+
         public int prior = 0;
         public Bot bot;
         public bool ReadyToRun = false;
