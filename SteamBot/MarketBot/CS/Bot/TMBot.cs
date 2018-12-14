@@ -86,17 +86,6 @@ namespace CSGOTM {
                     double totalprice = 0;
                     double tradeprice = 0;
                     int untracked = 0;
-                    foreach (var item in inv.descriptions) {
-                        if (SteamDataBase.cache.TryGetValue(item.Value.market_hash_name, out double price)) {
-                            ++cnt;
-                            totalprice += price;
-                            if (item.Value.tradable) {
-                                tradeprice += price;
-                            }
-                        } else {
-                            ++untracked;
-                        }
-                    }
                     logic._DatabaseLock.EnterReadLock();
                     double medianprice = 0;
                     foreach (var item in inv.descriptions) {
@@ -113,11 +102,14 @@ namespace CSGOTM {
                         }
                         if (logic.dataBase.TryGetValue(runame, out Logic.SalesHistory sales)) {
                             medianprice += sales.GetMedian();
+                            if (item.Value.tradable) {
+                                tradeprice += sales.GetMedian();
+                            }
                         }
                     }
                     logic._DatabaseLock.ExitReadLock();
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
-                    LocalRequest.PutTradableCost(config.Username, tradeprice, untracked);
+                    LocalRequest.PutTradableCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, tradeprice / 100), untracked);
                     LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice / 100));
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
