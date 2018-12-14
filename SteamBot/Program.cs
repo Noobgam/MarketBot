@@ -33,6 +33,7 @@ namespace SteamBot
                     return;
             }
 #else
+
             opts.Parse(args);
 
             if (showHelp)
