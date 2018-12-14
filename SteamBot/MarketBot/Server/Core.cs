@@ -19,7 +19,7 @@ using System.Globalization;
 using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.CS;
 
-namespace MarketBot.Server {
+namespace Server {
     public class Core : IDisposable {
         private HttpListener server;
         private CoreConfig coreConfig;
@@ -46,37 +46,21 @@ namespace MarketBot.Server {
             //Task.Run((Action)DBHitProvider);
         }
 
-        private void DBHitProvider() {
-            //Doesn't work now.
-            while (true) {
-                Thread.Sleep(2000);
-                try {
-                    var temp = LocalRequest.RawGet(Consts.Endpoints.GetBestToken + "?dbhit=70&extradb=1", "ffedor98");
-                    double dbhit = (double)temp["extrainfo"]["ffedor98"]["dbhit"];
-                    int dbcnt = (int)temp["extrainfo"]["ffedor98"]["dbcnt"];
-                    if (dbcnt < 15000)
-                        continue;
-                    VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Noobgam);
-                } catch {
-                    //Console.Error.WriteLine("Could not get a response from local server");
-                    continue;
-                }
-                Thread.Sleep(180000);
-            }
-        }
-
         private void BackgroundCheck() {
             Thread.Sleep(15000);
             while (!disposed) {
-                foreach (BotConfig bot in coreConfig.botList) {
-                    if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
-                        DateTime temp = DateTime.Now;
-                        if (temp.Subtract(dt).TotalSeconds > 60) {
-                            VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                try {
+                    foreach (BotConfig bot in coreConfig.botList) {
+                        if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
+                            DateTime temp = DateTime.Now;
+                            if (temp.Subtract(dt).TotalSeconds > 120) {
+                                VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                            }
+                        } else {
+                            VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                         }
-                    } else {
-                        //VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                     }
+                } catch {
                 }
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
             }
@@ -84,7 +68,11 @@ namespace MarketBot.Server {
 
         private void Listen() {
             while (!disposed) {
-                ThreadPool.QueueUserWorkItem(Process, server.GetContext());
+                try {
+                    ThreadPool.QueueUserWorkItem(Process, server.GetContext());
+                } catch {
+
+                }
             }
         }
 
@@ -297,7 +285,7 @@ namespace MarketBot.Server {
                 } else if (Endpoint == Consts.Endpoints.RPS) {
                     resp = new JObject {
                         ["success"] = true,
-                        ["rps"] = Balancer.GetNewItemsRPS()
+                        //["rps"] = Balancer.GetNewItemsRPS()
                     };
                 } else if (Endpoint == Consts.Endpoints.Status) {
                     bool full = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
@@ -343,7 +331,6 @@ namespace MarketBot.Server {
                     resp = new JObject {
                         ["success"] = true,
                         ["extrainfo"] = extrainfo,
-                        ["rps"] = Balancer.GetNewItemsRPS(),
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
                             ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),

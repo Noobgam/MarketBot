@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using NDesk.Options;
+using Server;
 using Utility;
 
 namespace SteamBot
@@ -24,6 +25,14 @@ namespace SteamBot
         [STAThread]
         public static void Main(string[] args)
         {
+#if CORE
+            Core core = new Core();
+            while (true) {
+                string input = Console.ReadLine();
+                if (input == "exit")
+                    return;
+            }
+#else
             opts.Parse(args);
 
             if (showHelp)
@@ -44,9 +53,10 @@ namespace SteamBot
             {
                 BotMode(botIndex);
             }
+#endif
         }
 
-        #region SteamBot Operational Modes
+#region SteamBot Operational Modes
 
         // This mode is to run a single Bot until it's terminated.
         private static void BotMode(int botIndex)
@@ -179,7 +189,7 @@ namespace SteamBot
             }
         }
 
-        #endregion Bot Modes
+#endregion Bot Modes
 
         private static bool ConsoleCtrlCheck(CtrlTypes ctrlType)
         {
@@ -202,7 +212,7 @@ namespace SteamBot
             return true;
         }
 
-        #region Console Control Handler Imports
+#region Console Control Handler Imports
 
         // Declare the SetConsoleCtrlHandler function
         // as external and receiving a delegate.
@@ -224,6 +234,6 @@ namespace SteamBot
             CTRL_SHUTDOWN_EVENT
         }
 
-        #endregion
+#endregion
     }
 }

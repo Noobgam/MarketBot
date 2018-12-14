@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MarketBot.Server {
+namespace Server {
     [Serializable]
     struct CoreConfig {
         [JsonProperty("bots")]
