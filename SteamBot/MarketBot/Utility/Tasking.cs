@@ -39,7 +39,6 @@ namespace Utility {
                 try {
                     runnable();;
                 } catch (Exception e) {
-                    VK.Alert($"Unhandled exception occured.\n Message: {e.Message} \n {e.StackTrace}");
                     taskLog.Crash($"Message: {e.Message} \n {e.StackTrace}");
                 }
             }).ContinueWith(tsk => taskLog.Info(botName, $"[{runnable.Method}] ended"));

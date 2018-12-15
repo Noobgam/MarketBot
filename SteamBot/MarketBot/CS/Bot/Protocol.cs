@@ -275,7 +275,10 @@ namespace CSGOTM {
             while (!parent.ReadyToRun) {
                 Thread.Sleep(10);
             }
-            SetSteamAPIKey(parent.bot.botConfig.ApiKey);
+            if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
+                Log.Crash("Steam api key could not be set");
+                throw new Exception("Steam api key could not be set");
+            }
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();

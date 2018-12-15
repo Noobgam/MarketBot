@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using SteamBot.MarketBot.Utility.MongoApi;
+using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -97,6 +98,7 @@ namespace SteamBot.MarketBot.CS.Bot {
         }
 
         public void Crash(string data, params object[] formatParams) {
+            VK.Alert($"Unhandled exception occured: {data}");
             logCollection.Insert(CreateRawLogMessage(LogLevel.Crash, data, formatParams));
         }
 
