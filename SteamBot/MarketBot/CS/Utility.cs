@@ -23,8 +23,6 @@ namespace CSGOTM {
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
         public const string MARKETENDPOINT = "https://market.csgo.com";
 
-        public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
-
         public static class Databases {
             public static class Mongo {
                 public const string SteamBotMain = "steambot_main";
@@ -54,6 +52,7 @@ namespace CSGOTM {
             public const string PutMedianCost = "/putMedianCost/";
             public const string PutTradableCost = "/putTradableCost/";
             public const string SalesHistorySize = "/saleshistorysize/";
+            public const string PutTradeToken = "/puttradetoken/";
             #endregion
         }
     }

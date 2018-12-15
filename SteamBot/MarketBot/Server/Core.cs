@@ -21,6 +21,8 @@ using SteamBot.MarketBot.CS;
 
 namespace Server {
     public class Core : IDisposable {
+
+        public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
         private HttpListener server;
         private CoreConfig coreConfig;
         private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
@@ -96,7 +98,7 @@ namespace Server {
                         BotConfig forcedBot = Forced.First();
                         resp = new JObject {
                             ["success"] = true,
-                            ["token"] = Consts.TokenCache[forcedBot.Name],
+                            ["token"] = TokenCache[forcedBot.Name],
                             ["botname"] = forcedBot.Name,
                         };
                     } else {
@@ -142,7 +144,7 @@ namespace Server {
                         }
                         resp = new JObject {
                             ["success"] = true,
-                            ["token"] = Consts.TokenCache[kv.Key],
+                            ["token"] = TokenCache[kv.Key],
                             ["botname"] = kv.Key,
                             ["extrainfo"] = extrainfo
                         };
@@ -176,6 +178,19 @@ namespace Server {
                     resp = new JObject {
                         ["success"] = true,
                         ["userlist"] = stuff
+                    };
+                } else if (Endpoint == Consts.Endpoints.PutTradeToken) {
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data") ?? new string[0];
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    TokenCache[usernames[0]] = data[0];
+                    resp = new JObject {
+                        ["success"] = true
                     };
                 } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
                     string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
