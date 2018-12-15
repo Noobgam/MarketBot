@@ -148,7 +148,7 @@ namespace SteamBot
         [Obsolete("Refactored to be Log instead of log")]
         public Log log { get { return Log; } }
 
-        Configuration.BotInfo botConfig;
+        public Configuration.BotInfo botConfig;
         public CSGOTM.TMBot MarketBot;
         private bool RestartFlag = false;
 

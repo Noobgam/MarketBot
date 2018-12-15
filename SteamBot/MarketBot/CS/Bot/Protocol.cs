@@ -275,6 +275,7 @@ namespace CSGOTM {
             while (!parent.ReadyToRun) {
                 Thread.Sleep(10);
             }
+            SetSteamAPIKey(parent.bot.botConfig.ApiKey);
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
             QueuedOffers = new Queue<TradeOffer>();
@@ -847,6 +848,18 @@ namespace CSGOTM {
                 Log.ApiError($"<Async> Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));
                 return false;
             }
+        }
+
+        public bool SetSteamAPIKey(string apiKey) {
+            string url = $"/api/SetSteamAPIKey/{apiKey}/?key={Api}";
+            string response = ExecuteApiRequest(url, ApiMethod.GenericCall, ApiLogLevel.LogAll);
+            if (response == null) {
+                return false;
+            }
+            JObject parsed = JObject.Parse(response);
+            if (parsed["success"] == null || parsed["success"].Type != JTokenType.Boolean || !(bool)parsed["success"])
+                return false;
+            return true;
         }
 
         public bool Buy(NewItem item) {
