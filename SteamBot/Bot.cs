@@ -1158,7 +1158,9 @@ namespace SteamBot
 
                 GetUserHandler(SteamClient.SteamID).OnLoginCompleted();
                 if (botConfig.SetGamePlayed) {
-                    SetGamePlaying(730);
+                    if (DateTime.Now.Hour > 16 || DateTime.Now.Hour < 2) {
+                        SetGamePlaying(730);
+                    }
                 }
             });
 
