@@ -96,6 +96,11 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, data, formatParams));
         }
 
+        public void Crash(string data, params object[] formatParams) {
+            logCollection.Insert(CreateRawLogMessage(LogLevel.Crash, data, formatParams));
+        }
+
+        [System.Obsolete]
         public void Info(string botname, string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, botname, data, formatParams));
         }
