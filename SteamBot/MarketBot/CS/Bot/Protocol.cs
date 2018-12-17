@@ -345,9 +345,15 @@ namespace CSGOTM {
             if (!parent.IsRunning())
                 return;
             if (newItem.i_market_name == "") {
-                Log.Error("Socket item has no market name");
+                //Log.Info("Socket item has no market name");
             } else if (!Logic.sellOnly && Logic.WantToBuy(newItem)) {
-                _ = BuyAsync(newItem);
+                BuyAsync(newItem).ContinueWith(
+                    t => {
+                            if(t.IsFaulted) {
+                                Log.Crash($"Async buy threw unhandled exception. Message: {t.Exception.Message} Trace: {t.Exception.StackTrace}");
+                            }
+                        }
+                    );
             }
         }
 
