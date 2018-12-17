@@ -1099,7 +1099,7 @@ namespace SteamBot
                 {
                     Log.Error("Login Error: {0}", callback.Result);
                     ++failedlogins;
-                    if (failedlogins >= 3) {
+                    if (failedlogins > 3) {
                         StopBot();
                         VK.Alert($"Bot {botConfig.Username} failed to start, please take a look manually.");
                         return;
@@ -1121,7 +1121,18 @@ namespace SteamBot
                 }
                 else if (callback.Result == EResult.TwoFactorCodeMismatch)
                 {
-                    Thread.Sleep(1500);
+                    int waitQ = 0;
+                    if (failedlogins > 0) {
+                        waitQ += 1500;
+                    }
+                    if (failedlogins > 1) {
+                        waitQ += 5500;
+                    }
+                    if (failedlogins > 2) {
+                        waitQ += 10500;
+                    }
+
+                    Thread.Sleep(waitQ);
                     SteamAuth.TimeAligner.AlignTime();
                     logOnDetails.TwoFactorCode = SteamGuardAccount.GenerateSteamGuardCode();
                     Log.Success("Regenerated 2FA code.");
