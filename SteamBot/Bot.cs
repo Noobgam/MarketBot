@@ -1100,8 +1100,8 @@ namespace SteamBot
                     Log.Error("Login Error: {0}", callback.Result);
                     ++failedlogins;
                     if (failedlogins >= 3) {
-                        StopBot();
                         VK.Alert($"Bot {botConfig.Username} failed to start, please take a look manually.");
+                        StopBot();
                         return;
                     }
                 }
