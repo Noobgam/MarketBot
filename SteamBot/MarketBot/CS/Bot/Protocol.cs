@@ -821,7 +821,7 @@ namespace CSGOTM {
         public async Task<bool> BuyAsync(NewItem item) {
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + item.ui_price.ToString() + "/?key=" + Api;
             if (StopBuy) {
-                Log.Error($"Skipping purchase request, all bots are overflowing.");
+                Log.Info($"Skipping purchase request, all bots are overflowing.");
                 return false;
             }
             if (CurrentToken != "")
@@ -873,7 +873,7 @@ namespace CSGOTM {
 #else
             string url = "/api/Buy/" + item.i_classid + "_" + item.i_instanceid + "/" + item.ui_price.ToString() + "/?key=" + Api;
             if (StopBuy) {
-                Log.Error($"Skipping purchase request, all bots are overflowing.");
+                Log.Info($"Skipping purchase request, all bots are overflowing.");
                 return false;
             }
             if (CurrentToken != "")
