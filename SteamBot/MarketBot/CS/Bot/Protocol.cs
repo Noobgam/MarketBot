@@ -275,9 +275,13 @@ namespace CSGOTM {
             while (!parent.ReadyToRun) {
                 Thread.Sleep(10);
             }
+            string token = parent.bot.botConfig.TradeToken;
+            string partnerId = token.Split('&')[0].Split('=')[1];
+            if (!SetToken(partnerId)) {
+                Log.Crash("Steam trade token could not be set");
+            }
             if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
                 Log.Crash("Steam api key could not be set");
-                throw new Exception("Steam api key could not be set");
             }
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
@@ -857,6 +861,18 @@ namespace CSGOTM {
                 Log.ApiError($"<Async> Could not buy an item. {item.i_market_name} costing {item.ui_price}" + parsed.ToString(Formatting.None));
                 return false;
             }
+        }
+
+        public bool SetToken(string token) {
+            string url = $"/api/SetToken/{token}/?key={Api}";
+            string response = ExecuteApiRequest(url, ApiMethod.GenericCall, ApiLogLevel.LogAll);
+            if (response == null) {
+                return false;
+            }
+            JObject parsed = JObject.Parse(response);
+            if (parsed["success"] == null || parsed["success"].Type != JTokenType.Boolean || !(bool)parsed["success"])
+                return false;
+            return true;
         }
 
         public bool SetSteamAPIKey(string apiKey) {
