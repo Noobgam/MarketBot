@@ -17,7 +17,7 @@ namespace CSGOTM {
         public const int GLOBALRPSLIMIT = 1;
         public const int DAY = 86400;
         public const int MINSIZE = 70;
-        public const int CRITICALTHRESHHOLD = 960;
+        public const int CRITICALTHRESHHOLD = 600;
         public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
         public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
