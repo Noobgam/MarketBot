@@ -275,9 +275,9 @@ namespace CSGOTM {
             while (!parent.ReadyToRun) {
                 Thread.Sleep(10);
             }
-            string token = parent.bot.botConfig.TradeToken;
-            string partnerId = token.Split('&')[0].Split('=')[1];
-            if (!SetToken(partnerId)) {
+            string tradeToken = parent.bot.botConfig.TradeToken;
+            string token = tradeToken.Split('&')[1].Split('=')[1];
+            if (!SetToken(token)) {
                 Log.Crash("Steam trade token could not be set");
             }
             if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
