@@ -865,13 +865,7 @@ namespace CSGOTM {
 
         public bool SetToken(string token) {
             string url = $"/api/SetToken/{token}/?key={Api}";
-            string response = ExecuteApiRequest(url, ApiMethod.GenericCall, ApiLogLevel.LogAll);
-            if (response == null) {
-                return false;
-            }
-            JObject parsed = JObject.Parse(response);
-            if (parsed["success"] == null || parsed["success"].Type != JTokenType.Boolean || !(bool)parsed["success"])
-                return false;
+            ExecuteApiRequest(url, ApiMethod.GenericCall, ApiLogLevel.LogAll);
             return true;
         }
 
