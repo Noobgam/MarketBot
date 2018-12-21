@@ -9,7 +9,6 @@ using Newtonsoft.Json;
 using SteamKit2;
 using System.Threading.Tasks;
 using System.Net;
-using MarketBot.Server;
 using SteamBot.MarketBot.CS;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
@@ -27,13 +26,11 @@ namespace SteamBot
         private NewMarketLogger mongoLog;
         private bool useSeparateProcesses;
         private bool disposed;
-        private Core server;
 
         public BotManager()
         {
             useSeparateProcesses = false;
             botProcs = new List<RunningBot>();
-            server = new Core();
         }
 
         ~BotManager()
@@ -371,7 +368,6 @@ namespace SteamBot
             {
                 foreach (IDisposable bot in botProcs)
                     bot.Dispose();
-                server.Stop();
             }
             disposed = true;
         }

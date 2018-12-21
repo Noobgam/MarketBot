@@ -1,5 +1,7 @@
 ﻿using CSGOTM;
 using Newtonsoft.Json;
+using SteamBot.MarketBot.Utility;
+using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
@@ -10,6 +12,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Utility;
 using WebSocket4Net;
+using static CSGOTM.Perfomance;
 
 namespace SteamBot.MarketBot.CS {
     static class Balancer {
@@ -18,6 +21,16 @@ namespace SteamBot.MarketBot.CS {
         private static WebSocket socket;
         private static bool opening = false;
         private static bool died = true;
+        public readonly static string BALANCER = Path.Combine("CS", "balancer");
+        public readonly static string UNSTICKEREDPATH = Path.Combine(BALANCER, "emptystickered.txt");
+        private static readonly RPSKeeper newItemRpsKeeper = new RPSKeeper();
+
+        private static HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();
+        private static MongoHistoryCSGO mongoHistoryCSGO = new MongoHistoryCSGO();
+
+        public static double GetNewItemsRPS() {
+            return newItemRpsKeeper.GetRps();
+        }
 
         public static void Init() {
             AllocSocket();
@@ -57,6 +70,7 @@ namespace SteamBot.MarketBot.CS {
             Log.Success("Connection opened!");
             Tasking.Run((Action)SocketPinger, "Balancer");
             socket.Send("newitems_go");
+            socket.Send("history_go");
             //start = DateTime.Now;
         }
 
@@ -95,7 +109,10 @@ namespace SteamBot.MarketBot.CS {
             }
         }
 
-
+        static private void ProcessItem(NewHistoryItem item) {
+            mongoHistoryCSGO.Add(item);
+        }
+        
         static void Msg(object sender, MessageReceivedEventArgs e) {
             try {
                 #region ParseType
@@ -120,39 +137,20 @@ namespace SteamBot.MarketBot.CS {
                 #endregion
                 switch (type) {
                     case "newitems_go":
-                        #region ParseJson
-                        reader = new JsonTextReader(new StringReader(data));
-                        currentProperty = string.Empty;
-                        NewItem newItem = new NewItem();
-                        while (reader.Read()) {
-                            if (reader.Value != null) {
-                                if (reader.TokenType == JsonToken.PropertyName)
-                                    currentProperty = reader.Value.ToString();
-                                else if (reader.TokenType == JsonToken.String) {
-                                    switch (currentProperty) {
-                                        case "i_classid":
-                                            newItem.i_classid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_instanceid":
-                                            newItem.i_instanceid = long.Parse(reader.Value.ToString());
-                                            break;
-                                        case "i_market_name":
-                                            newItem.i_market_name = reader.Value.ToString();
-                                            break;
-                                        default:
-                                            break;
-                                    }
-                                } else if (currentProperty == "ui_price") {
-                                    newItem.ui_price = (long)(float.Parse(reader.Value.ToString()) * 100);
-                                }
-                            }
-                        }
-                        //var delegates = NewItemAppeared.GetInvocationList();
-                        #endregion
+                        NewItem newItem = new NewItem(data);
+                        newItemRpsKeeper.Tick();
                         if (newItem.i_market_name == "") {
                             Log.Warn("Socket item has no market name");
                         } else {
                             NewItemAppeared(null, newItem);
+                        }
+                        break;
+                    case "history_go":
+                        try {
+                            NewHistoryItem historyItem = new NewHistoryItem(data);
+                            ProcessItem(historyItem);
+                        } catch (Exception ex) {
+                            Log.Error($"Some error occured during history parse. [{data}] Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
                         }
                         break;
                     default:

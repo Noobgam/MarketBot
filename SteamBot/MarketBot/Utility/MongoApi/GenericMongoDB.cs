@@ -27,6 +27,10 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
             collection.InsertOne(data);
         }
 
+        public IAsyncCursor<Data> FindAll() {
+            return collection.FindSync(FilterDefinition<Data>.Empty);
+        }
+
         public IFindFluent<Data, Data> Find(string query, int limit = -1, int skip = -1) {
             try {
                 var bson = MongoDB.Bson.Serialization.BsonSerializer.Deserialize<BsonDocument>(query);

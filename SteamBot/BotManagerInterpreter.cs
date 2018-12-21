@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Collections.ObjectModel;
+using SteamBot.MarketBot.CS;
 
 namespace SteamBot
 {
@@ -44,7 +45,9 @@ namespace SteamBot
                                              "input (X) (Y) where X = the username or index of the bot and Y = your input",
                                              InputCommand),
                         new BotManagerOption("restart", "restart (X) where X = the username or index of the configured bot",
-                                            RestartBot)
+                                            RestartBot),
+                        new BotManagerOption("rps", "restart (X) where X = the username or index of the configured bot",
+                                            ShowRps)
                     };
         }
 
@@ -74,6 +77,10 @@ namespace SteamBot
                     }
                 }
             }
+        }
+
+        public void ShowRps(string command) {
+            Console.WriteLine($"Current rps: {Balancer.GetNewItemsRPS()}");
         }
 
         public void RestartBot(string command)

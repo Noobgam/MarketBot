@@ -12,6 +12,7 @@ using System.Security.Cryptography.X509Certificates;
 using System.Net.Security;
 using SteamKit2;
 using System.Threading;
+using System.Linq;
 
 namespace SteamTrade
 {
@@ -466,15 +467,9 @@ namespace SteamTrade
                 throw new Exception("The binary key cannot have an odd number of digits");
             }
 
-            byte[] arr = new byte[hex.Length >> 1];
-            int l = hex.Length;
-
-            for (int i = 0; i < (l >> 1); ++i)
-            {
-                arr[i] = (byte)((GetHexVal(hex[i << 1]) << 4) + (GetHexVal(hex[(i << 1) + 1])));
-            }
-
-            return arr;
+            return Enumerable.Range(0, hex.Length / 2)
+                .Select(x => Convert.ToByte(hex.Substring(x * 2, 2), 16))
+                .ToArray();
         }
 
         /// <summary>

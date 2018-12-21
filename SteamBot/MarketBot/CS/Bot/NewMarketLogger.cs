@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using SteamBot.MarketBot.Utility.MongoApi;
+using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -85,7 +86,6 @@ namespace SteamBot.MarketBot.CS.Bot {
         }
 
         public void Warn(RestartPriority prior, string data, params object[] formatParams) {
-            bot.FlagError(prior, data);
             Warn(data, formatParams);
         }
 
@@ -93,15 +93,16 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Warn, data, formatParams));
         }
 
-        public void Info(RestartPriority prior, string data, params object[] formatParams) {
-            bot.FlagError(prior, data);
-            Info(data, formatParams);
-        }
-
         public void Info(string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, data, formatParams));
         }
 
+        public void Crash(string data, params object[] formatParams) {
+            VK.Alert($"Unhandled exception occured: {data}");
+            logCollection.Insert(CreateRawLogMessage(LogLevel.Crash, data, formatParams));
+        }
+
+        [System.Obsolete]
         public void Info(string botname, string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, botname, data, formatParams));
         }

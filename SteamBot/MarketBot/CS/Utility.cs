@@ -1,9 +1,12 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SteamBot.MarketBot.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading;
 
 namespace CSGOTM {
@@ -14,13 +17,11 @@ namespace CSGOTM {
         public const int GLOBALRPSLIMIT = 1;
         public const int DAY = 86400;
         public const int MINSIZE = 70;
-        public const int CRITICALTHRESHHOLD = 960;
+        public const int CRITICALTHRESHHOLD = 600;
         public const double DEFAULTRPS = 0.5; //TODO(noobgam): make it great again
         public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
         public const string MARKETENDPOINT = "https://market.csgo.com";
-
-        public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
 
         public static class Databases {
             public static class Mongo {
@@ -37,6 +38,7 @@ namespace CSGOTM {
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";
             public const string Status = "/status/";
+            public const string RPS = "/rps/";
             public const string MongoFind = "/mongo/find/";
             public const string BanUser = "/ban/";
             public const string UnBanUser = "/unban/";
@@ -50,6 +52,7 @@ namespace CSGOTM {
             public const string PutMedianCost = "/putMedianCost/";
             public const string PutTradableCost = "/putTradableCost/";
             public const string SalesHistorySize = "/saleshistorysize/";
+            public const string PutTradeToken = "/puttradetoken/";
             #endregion
         }
     }
@@ -197,6 +200,39 @@ namespace CSGOTM {
         public NewItem() {
         }
 
+        public NewItem(string data) {
+            JsonTextReader reader = new JsonTextReader(new StringReader(data));
+            string currentProperty = string.Empty;
+            while (reader.Read()) {
+                if (reader.Value != null) {
+                    if (reader.TokenType == JsonToken.PropertyName)
+                        currentProperty = reader.Value.ToString();
+                    else if (reader.TokenType == JsonToken.String) {
+                        switch (currentProperty) {
+                            case "i_classid":
+                                i_classid = long.Parse(reader.Value.ToString());
+                                break;
+                            case "i_instanceid":
+                                i_instanceid = long.Parse(reader.Value.ToString());
+                                break;
+                            case "i_market_name":
+                                i_market_name = reader.Value.ToString();
+                                break;
+                            case "ui_currency":
+                                if (reader.Value.ToString() != "RUB") {
+                                    throw new ArgumentException($"Currencies other than RUB are not supported {data}");
+                                }
+                                break;
+                            default:
+                                break;
+                        }
+                    } else if (currentProperty == "ui_price") {
+                        ui_price = (long)(float.Parse(reader.Value.ToString()) * 100);
+                    }
+                }
+            }
+        }
+
         public NewItem(string[] item) {
             i_classid = long.Parse(item[mapping["c_classid"]]);
             i_instanceid = long.Parse(item[mapping["c_instanceid"]]);
@@ -230,6 +266,44 @@ namespace CSGOTM {
         public long i_instanceid;
         public string i_market_name;
         public int price; //price is measured in kopeykas
+        public NewHistoryItem() {}
+        public NewHistoryItem(string data) {
+            string[] arr = data.Substring(1, data.Length - 2).Trim('[',']').Split(new string[] { "\\\"" }, StringSplitOptions.RemoveEmptyEntries);
+            //cid, iid, hashname
+            for (int i = 0; i < arr.Length; ++i) {
+                arr[i] = Encode.DecodeEncodedNonAsciiCharacters(arr[i]);
+            }
+            if (arr.Length == 15) {
+                //0 - cid
+                //2 - iid
+                //4 - market_hashname
+                //6 - date
+                //8 - price
+                //10 - market_name
+                //12 - color
+                //14 - currency
+
+                //rest are ','
+                i_classid = long.Parse(arr[0]);
+                i_instanceid = long.Parse(arr[2]);
+                price = Int32.Parse(arr[8]);
+                i_market_name = arr[10];
+                if (arr[14] != "RUB") {
+                    throw new ArgumentException($"Currencies other than rub are not supported {data}");
+                }
+                return;
+            } else {
+                new NewHistoryItem(data);
+                throw new ArgumentException($"Can't construct newhistory item from {data}");
+            }     
+            //cid - iid
+        }
+        public NewHistoryItem(NewHistoryItem rhs) {
+            i_classid = rhs.i_classid;
+            i_instanceid = rhs.i_instanceid;
+            i_market_name = rhs.i_market_name;
+            price = rhs.price;
+        }
     }
 
     public class Auth {
@@ -263,6 +337,62 @@ namespace CSGOTM {
         }
 
         public List<SteamItem> content;
+    }
+
+    public class Perfomance {
+
+        public class RPSKeeper {
+
+            const int SHIFT = 5;
+
+            int[] Calls;
+            public RPSKeeper() {
+                Calls = new int[60];      
+            }
+            
+            public void Tick(int ticks = 1) {
+                int CurrentSecond = DateTime.Now.Second;
+                int PrevSecond = CurrentSecond - SHIFT - 1;
+                if (PrevSecond < 0)
+                    PrevSecond += 60;
+                Calls[DateTime.Now.Second] += ticks;
+                Calls[PrevSecond] = 0;
+            }
+
+            public double GetRps() {
+                int sum = 0;
+                int CurrentSecond = DateTime.Now.Second;
+                for (int iter = 0; iter < SHIFT; ++iter) {
+                    sum += Calls[CurrentSecond];
+                    CurrentSecond--;
+                    if (CurrentSecond < 0) {
+                        CurrentSecond += 60;
+                    }
+                }
+                return (double)sum / SHIFT;
+            }
+        }
+    }
+
+    public class SortUtils {
+        public static void Sort(JObject jObj) {
+            var props = jObj.Properties().ToList();
+            foreach (var prop in props) {
+                prop.Remove();
+            }
+
+            foreach (var prop in props.OrderBy(p => p.Name)) {
+                jObj.Add(prop);
+                if (prop.Value is JObject)
+                    Sort((JObject)prop.Value);
+                if (prop.Value is JArray) {
+                    Int32 iCount = prop.Value.Count();
+                    for (Int32 iIterator = 0; iIterator < iCount; iIterator++)
+                        if (prop.Value[iIterator] is JObject)
+                            Sort((JObject)prop.Value[iIterator]);
+                }
+            }
+        }
     }
 }
 

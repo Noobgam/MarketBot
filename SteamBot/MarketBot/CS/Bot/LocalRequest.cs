@@ -48,6 +48,10 @@ namespace CSGOTM {
             RawPut(Consts.Endpoints.PutTradableCost, botname, sumprice.ToString() + ":" + untracked.ToString());
         }
 
+        public static void PutTradeToken(string botname, string token) {
+            RawPut(Consts.Endpoints.PutTradeToken, botname, token);
+        }
+
         public static void PutMedianCost(string botname, double sumprice) {
             RawPut(Consts.Endpoints.PutMedianCost, botname, sumprice.ToString());
         }
