@@ -293,7 +293,6 @@ namespace CSGOTM {
                 }
                 return;
             } else {
-                new NewHistoryItem(data);
                 throw new ArgumentException($"Can't construct newhistory item from {data}");
             }     
             //cid - iid
