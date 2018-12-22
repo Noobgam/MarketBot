@@ -137,7 +137,6 @@ namespace SteamBot.MarketBot.CS {
                 #endregion
                 switch (type) {
                     case "newitems_go":
-                        Log.Info("newitems_go");
                         NewItem newItem = new NewItem(data);
                         newItemRpsKeeper.Tick();
                         if (newItem.i_market_name == "") {
@@ -147,7 +146,6 @@ namespace SteamBot.MarketBot.CS {
                         }
                         break;
                     case "history_go":
-                        Log.Info("history_go");
                         try {
                             NewHistoryItem historyItem = new NewHistoryItem(data);
                             ProcessItem(historyItem);
