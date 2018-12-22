@@ -114,7 +114,7 @@ namespace SteamBot.MarketBot.CS {
         
         static void Msg(object sender, MessageEventArgs e) {
             try {
-                Log.Info($"Message: {e.Data}");
+                //Log.Info($"Message: {e.Data}");
                 #region ParseType
                 if (e.Data == "pong")
                     return;
@@ -137,6 +137,7 @@ namespace SteamBot.MarketBot.CS {
                 #endregion
                 switch (type) {
                     case "newitems_go":
+                        Log.Info("newitems_go");
                         NewItem newItem = new NewItem(data);
                         newItemRpsKeeper.Tick();
                         if (newItem.i_market_name == "") {
@@ -146,6 +147,7 @@ namespace SteamBot.MarketBot.CS {
                         }
                         break;
                     case "history_go":
+                        Log.Info("history_go");
                         try {
                             NewHistoryItem historyItem = new NewHistoryItem(data);
                             ProcessItem(historyItem);
