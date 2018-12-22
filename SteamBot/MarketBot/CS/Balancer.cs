@@ -114,6 +114,7 @@ namespace SteamBot.MarketBot.CS {
         
         static void Msg(object sender, MessageEventArgs e) {
             try {
+                Log.Info($"Message: {e.Data}");
                 #region ParseType
                 if (e.Data == "pong")
                     return;
