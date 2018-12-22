@@ -364,7 +364,7 @@ namespace CSGOTM {
         void Msg(object sender, MessageEventArgs e) {
             if (!parent.IsRunning()) {
                 if (socket.ReadyState == WebSocketState.Open)
-                    socket.Close();
+                    socket = null;
                 return;
             }
             try {
