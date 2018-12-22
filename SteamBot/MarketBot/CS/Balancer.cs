@@ -11,7 +11,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Utility;
-using WebSocket4Net;
+using WebSocketSharp;
 using static CSGOTM.Perfomance;
 
 namespace SteamBot.MarketBot.CS {
@@ -39,18 +39,18 @@ namespace SteamBot.MarketBot.CS {
 
         private static void AllocSocket() {
             if (socket != null) {
-                socket.Dispose();
+                socket = null;
             }
-            socket = new WebSocket("wss://wsn.dota2.net/wsn/", receiveBufferSize: 65536);
+            socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         }
 
         private static void OpenSocket() {
             opening = true;
-            socket.Opened += Open;
-            socket.Error += Error;
-            socket.Closed += Close;
-            socket.MessageReceived += Msg;
-            socket.Open();
+            socket.OnOpen += Open;
+            socket.OnError += Error;
+            socket.OnClose += Close;
+            socket.OnMessage += Msg;
+            socket.Connect();
         }
 
         static void SocketPinger() {
@@ -75,14 +75,13 @@ namespace SteamBot.MarketBot.CS {
         }
 
         static void Error(object sender, EventArgs e) {
-            //Log.Error($"Connection error: " + e.ToString());
+            Log.Error($"Connection error: " + e.ToString());
         }
 
         static void Close(object sender, EventArgs e) {
-            //Log.Error($"Connection closed: " + e.ToString());
+            Log.Error($"Connection closed: " + e.ToString());
             if (!died) {
                 died = true;
-                socket.Dispose();
                 socket = null;
             }
         }
@@ -113,14 +112,14 @@ namespace SteamBot.MarketBot.CS {
             mongoHistoryCSGO.Add(item);
         }
         
-        static void Msg(object sender, MessageReceivedEventArgs e) {
+        static void Msg(object sender, MessageEventArgs e) {
             try {
                 #region ParseType
-                if (e.Message == "pong")
+                if (e.Data == "pong")
                     return;
                 string type = string.Empty;
                 string data = string.Empty;
-                JsonTextReader reader = new JsonTextReader(new StringReader(e.Message));
+                JsonTextReader reader = new JsonTextReader(new StringReader(e.Data));
                 string currentProperty = string.Empty;
                 while (reader.Read()) {
                     if (reader.Value != null) {

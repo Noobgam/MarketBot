@@ -5,7 +5,7 @@ using System.Threading;
 using System.Collections.Generic;
 
 using SteamKit2;
-using WebSocket4Net;
+using WebSocketSharp;
 
 using SteamTrade.TradeOffer;
 using System.Globalization;
@@ -331,18 +331,18 @@ namespace CSGOTM {
 
         private void AllocSocket() {
             if (socket != null) {
-                socket.Dispose();
+                socket = null;
             }
-            socket = new WebSocket("wss://wsn.dota2.net/wsn/", receiveBufferSize: 65536);
+            socket = new WebSocket("wss://wsn.dota2.net/wsn/");
         }
 
         private void OpenSocket() {
             opening = true;
-            socket.Opened += Open;
-            socket.Error += Error;
-            socket.Closed += Close;
-            socket.MessageReceived += Msg;
-            socket.Open();
+            socket.OnOpen += Open;
+            socket.OnError += Error;
+            socket.OnClose += Close;
+            socket.OnMessage += Msg;
+            socket.Connect();
         }
 
         public void ProcessNewItem(object sender, NewItem newItem) {
@@ -361,18 +361,18 @@ namespace CSGOTM {
             }
         }
 
-        void Msg(object sender, MessageReceivedEventArgs e) {
+        void Msg(object sender, MessageEventArgs e) {
             if (!parent.IsRunning()) {
-                if (socket.State == WebSocketState.Open)
+                if (socket.ReadyState == WebSocketState.Open)
                     socket.Close();
                 return;
             }
             try {
-                if (e.Message == "pong")
+                if (e.Data == "pong")
                     return;
                 string type = string.Empty;
                 string data = string.Empty;
-                JsonTextReader reader = new JsonTextReader(new StringReader(e.Message));
+                JsonTextReader reader = new JsonTextReader(new StringReader(e.Data));
                 string currentProperty = string.Empty;
                 while (reader.Read()) {
                     if (reader.Value != null) {
@@ -788,14 +788,13 @@ namespace CSGOTM {
         }
 
         void Error(object sender, EventArgs e) {
-            //Log.Error($"Connection error: " + e.ToString());
+            Log.Error($"Connection error: " + e.ToString());
         }
 
         void Close(object sender, EventArgs e) {
-            //Log.Error($"Connection closed: " + e.ToString());
+            Log.Error($"Connection closed: " + e.ToString());
             if (!died) {
                 died = true;
-                socket.Dispose();
                 socket = null;
             }
         }

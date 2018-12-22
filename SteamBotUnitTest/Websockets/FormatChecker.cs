@@ -10,7 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Utility;
-using WebSocket4Net;
+using WebSocketSharp;
 
 namespace SteamBotUnitTest.Websockets {
 
@@ -22,9 +22,9 @@ namespace SteamBotUnitTest.Websockets {
 
         [SetUp]
         public void Init() {
-            socket = new WebSocket("wss://wsn.dota2.net/wsn/", receiveBufferSize: 65536);
-            socket.Open();
-            while (socket.State != WebSocketState.Open) {
+            socket = new WebSocket("wss://wsn.dota2.net/wsn/");
+            socket.Connect();
+            while (socket.ReadyState != WebSocketState.Open) {
                 Thread.Sleep(100);
             }
         }
@@ -72,10 +72,10 @@ namespace SteamBotUnitTest.Websockets {
             socket.Send("newitems_go");
             int historyItemCounter = 0;
             int newItemCounter = 0;
-            socket.MessageReceived += (sender, e) => {
-                if (e.Message == "pong")
+            socket.OnMessage += (sender, e) => {
+                if (e.Data == "pong")
                     return;
-                JObject temp = JObject.Parse(e.Message);
+                JObject temp = JObject.Parse(e.Data);
                 string type = (string)temp["type"];
                 string data = (string)temp["data"];
                 switch (type) {

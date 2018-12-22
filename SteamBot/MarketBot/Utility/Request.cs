@@ -32,7 +32,7 @@ namespace Utility {
                 }
             } catch (Exception) {
                 Log.Error($"Error happened during GET {uri}");
-                throw;
+                return "";
             }
         }
 
@@ -49,7 +49,8 @@ namespace Utility {
                 }
             } catch (Exception) {
                 Log.Error($"Error happened during GET {uri}");
-                throw;
+                return "";
+                //throw;
             }
         }
 
@@ -74,7 +75,7 @@ namespace Utility {
                 }
             } catch (Exception) {
                 Log.Error($"Error happened during POST {uri}");
-                throw;
+                return "";
             }
         }
     }
