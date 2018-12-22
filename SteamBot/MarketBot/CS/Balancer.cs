@@ -41,7 +41,7 @@ namespace SteamBot.MarketBot.CS {
             if (socket != null) {
                 socket = null;
             }
-            socket = new WebSocket("wss://wsn.dota2.net/wsn/");
+            socket = new WebSocket(Consts.Endpoints.TMSocket);
         }
 
         private static void OpenSocket() {

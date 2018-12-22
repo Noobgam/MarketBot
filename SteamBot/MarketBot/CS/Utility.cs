@@ -34,6 +34,7 @@ namespace CSGOTM {
             public const string BotConfig = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
             public const string prefix = "http://+:4345/";
             public const string localhost = "http://localhost:4345";
+            public const string TMSocket = "ws://wsn.dota2.net/wsn/";
             #region GET
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";
