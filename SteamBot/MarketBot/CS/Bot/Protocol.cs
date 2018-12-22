@@ -367,6 +367,7 @@ namespace CSGOTM {
                     if (socket.ReadyState == WebSocketState.Open) {
                         socket.Close();
                     }
+                    socket = null;
                 }
                 return;
             }
