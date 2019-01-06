@@ -954,7 +954,7 @@ namespace CSGOTM {
         public void PingPongLocal() {
             while (parent.IsRunning()) {
                 LocalRequest.Ping(parent.config.Username);
-                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 30000).Wait();
+                Tasking.WaitForFalseOrTimeout(parent.IsRunning, 5000).Wait();
             }
         }
 
