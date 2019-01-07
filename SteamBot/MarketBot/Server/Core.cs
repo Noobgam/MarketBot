@@ -227,6 +227,7 @@ namespace Server {
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
+                    Console.WriteLine($"{usernames[0]} ping");
                     LastPing[usernames[0]] = DateTime.Now;
 
                     resp = new JObject {
