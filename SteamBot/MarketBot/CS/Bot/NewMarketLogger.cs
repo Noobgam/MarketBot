@@ -37,6 +37,7 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         private TMBot bot;
         private MongoLogCollection logCollection;
+        private string StoredName = null;
 
         public NewMarketLogger(TMBot bot) {
             this.bot = bot;
@@ -47,13 +48,18 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection = new MongoLogCollection();
         }
 
+        public NewMarketLogger(string name) {
+            StoredName = name;
+            logCollection = new MongoLogCollection();
+        }
+
         private readonly DateTime epoch = new DateTime(1970, 1, 1);
 
         private LogMessage CreateRawLogMessage(LogLevel level, string line, params object[] formatParams) {
             if (bot != null)
                 return CreateRawLogMessage(level, bot.config.Username, line, formatParams);
             else
-                return CreateRawLogMessage(level, "EXTRA", line, formatParams);
+                return CreateRawLogMessage(level, (StoredName ?? "EXTRA"), line, formatParams);
         }
 
         private LogMessage CreateRawLogMessage(LogLevel level, string botname, string line, params object[] formatParams) {

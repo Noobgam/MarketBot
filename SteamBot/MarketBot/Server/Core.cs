@@ -18,11 +18,13 @@ using System.Web;
 using System.Globalization;
 using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.CS;
+using SteamBot.MarketBot.CS.Bot;
 
 namespace Server {
     public class Core : IDisposable {
 
-        public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
+        public Dictionary<string, string> TokenCache = new Dictionary<string, string>();
+        public NewMarketLogger logger;
         private HttpListener server;
         private CoreConfig coreConfig;
         private ConcurrentDictionary<string, DateTime> LastPing = new ConcurrentDictionary<string, DateTime>();
@@ -31,6 +33,7 @@ namespace Server {
 
         public Core() {
             server = new HttpListener();
+            logger = new NewMarketLogger("Core");
             CurSizes = new Dictionary<string, int>();
             CurInventory = new Dictionary<string, double>();
             CurTradable = new Dictionary<string, double>();
@@ -38,11 +41,12 @@ namespace Server {
             CurUntracked = new Dictionary<string, int>();
             CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
-            Console.Error.WriteLine("Starting!");
+
+            logger.Nothing("Starting!");
             VK.Init();
             coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
-            server.Start();            
-            Console.Error.WriteLine("Started!");
+            server.Start();
+            logger.Nothing("Started!");
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
             //Task.Run((Action)DBHitProvider);
@@ -56,9 +60,11 @@ namespace Server {
                         if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
                             DateTime temp = DateTime.Now;
                             if (temp.Subtract(dt).TotalSeconds > 120) {
+                                logger.Warn($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
                                 VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
                             }
                         } else {
+                            logger.Warn($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                             VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                         }
                     }
@@ -227,7 +233,7 @@ namespace Server {
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
-                    Console.WriteLine($"{usernames[0]} ping");
+                    logger.Info($"{usernames[0]} ping");
                     LastPing[usernames[0]] = DateTime.Now;
 
                     resp = new JObject {

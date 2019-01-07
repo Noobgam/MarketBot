@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace Utility {
     public class Tasking {
-        static NewMarketLogger taskLog = new NewMarketLogger();
+        static NewMarketLogger taskLog = new NewMarketLogger("Tasking");
         public static async Task<bool> WaitForFalseOrTimeout(Func<bool> condition) {
             await Task.Run(async () => {
                 while (condition()) await Task.Delay(80);
