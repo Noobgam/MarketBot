@@ -25,7 +25,7 @@ namespace Server {
         public static Dictionary<string, string> TokenCache = new Dictionary<string, string>();
         private HttpListener server;
         private CoreConfig coreConfig;
-        private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
+        private ConcurrentDictionary<string, DateTime> LastPing = new ConcurrentDictionary<string, DateTime>();
         private MongoLogCollection mongoLogs = new MongoLogCollection();
         private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
 
@@ -379,14 +379,18 @@ namespace Server {
         // process request and make response
 
         private void RawRespond(HttpListenerContext ctx, string resp) {
-            byte[] buffer = Encoding.UTF8.GetBytes(resp);
-            HttpListenerResponse response = ctx.Response;
+            try {
+                byte[] buffer = Encoding.UTF8.GetBytes(resp);
+                HttpListenerResponse response = ctx.Response;
 
-            response.ContentLength64 = buffer.Length;
-            Stream output = response.OutputStream;
-            output.Write(buffer, 0, buffer.Length);
+                response.ContentLength64 = buffer.Length;
+                Stream output = response.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
 
-            output.Close();
+                output.Close();
+            } catch (Exception ex) { 
+                // might help in some dumb cases.
+            }
         }        
         
         private string Row(string[] arr, string type = "th") {
