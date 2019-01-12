@@ -387,6 +387,7 @@ namespace Server {
         private void RawRespond(HttpListenerContext ctx, string resp) {
             try {
                 byte[] buffer = Encoding.UTF8.GetBytes(resp);
+                ctx.Response.Headers["Access-Control-Allow-Origin"] = "*";
                 HttpListenerResponse response = ctx.Response;
 
                 response.ContentLength64 = buffer.Length;
