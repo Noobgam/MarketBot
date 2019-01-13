@@ -510,7 +510,8 @@ namespace CSGOTM {
                         }
 
                         //Log.Info(json.ToString(Formatting.None));
-                        var offer = Bot.NewTradeOffer(new SteamID(id));
+                        SteamID otherId = new SteamID(id);
+                        var offer = Bot.NewTradeOffer(otherId);
                         try {
                             foreach (JToken item in json["request"]["items"]) {
                                 offer.Items.AddMyItem(
@@ -538,7 +539,13 @@ namespace CSGOTM {
                                             Log.Error(TMBot.RestartPriority.UnknownError, $"Trade offer not sent. Error: [{err}]");
 
                                             if (err.Contains("(15)")) {
-                                                VK.Alert("Трейд не отправлен по ошибке 15.\nПроверьте профиль ручками: " + (string)json["profile"], VK.AlertLevel.All);
+                                                bool banned = CheckUserBan(otherId.ConvertToUInt64());
+                                                if (banned) {
+                                                    VK.Alert("Юзер в чс из-за того что есть баны в профиле. Проверь профиль ручками, и разбань если произошла ошибка\n: " + (string)json["profile"], VK.AlertLevel.All);
+                                                    mongoBannedUsers.Add((long)otherId.ConvertToUInt64());
+                                                } else {
+                                                    VK.Alert("Трейд не отправлен по ошибке 15.\n: " + (string)json["profile"], VK.AlertLevel.All);
+                                                }
                                             } else {
                                                 VK.Alert($"Трейд не отправлен по причине [{err}].\nПроверьте профиль ручками: " + (string)json["profile"], VK.AlertLevel.All);
                                             }
@@ -596,6 +603,28 @@ namespace CSGOTM {
                             ReportCreatedTrade(pr.First, pr.Second);
                         }
                     });
+        }
+
+        bool CheckUserBan(ulong id) {
+            bool banned = false;
+            try {
+                using (dynamic iface = WebAPI.GetInterface("ISteamUser", Bot.botConfig.ApiKey)) {
+                    KeyValue pair = iface.GetPlayerBans(steamids: id.ToString());
+
+                    foreach (var bans in pair["players"].Children) {
+                        if (bans["SteamId"].AsString() == id.ToString()) {
+                            var hasVacBan = bans["VACBanned"].AsBoolean(); // VAC Bans
+                            var gameBansCount = bans["NumberOfGameBans"].AsInteger(); // OW Bans
+                            var economyBan = bans["EconomyBan"].AsString(); // CT Bans
+
+                            banned = hasVacBan || gameBansCount > 0 || economyBan != "none";
+                        }
+                    }
+                    return banned;
+                }
+            } catch {
+                return false;
+            }
         }
 
         bool ReportFailedTrade(string requestId) {

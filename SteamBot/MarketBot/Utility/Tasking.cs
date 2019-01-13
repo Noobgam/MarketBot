@@ -29,7 +29,7 @@ namespace Utility {
 
             Task waitTask = Task.Run(async () => {
                 try {
-                    while (condition()) {
+                    while (!ct.IsCancellationRequested && condition()) {
                         await Task.Delay(1000, ct);
                     }
                 } catch (Exception) {
