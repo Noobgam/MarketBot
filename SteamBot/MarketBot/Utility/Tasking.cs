@@ -28,15 +28,26 @@ namespace Utility {
             CancellationToken ct = tokenSource2.Token;
 
             Task waitTask = Task.Run(async () => {
-                while (condition()) {
-                    await Task.Delay(1000, ct);
+                try {
+                    while (condition()) {
+                        await Task.Delay(1000, ct);
+                    }
+                } catch (Exception) {
                 }
             });
             Task delayTask = Task.Run(async () => {
-                await Task.Delay(timeout, ct);
+                try {
+                    await Task.Delay(timeout, ct);
+                } catch (Exception) {
+                }
             });
             Task temp = await Task.WhenAny(waitTask, delayTask);
             tokenSource2.Cancel();
+            try {
+                Task.WaitAll(waitTask, delayTask);
+            } finally {
+                tokenSource2.Dispose();
+            }
             return temp == waitTask;
         }
 
@@ -44,7 +55,7 @@ namespace Utility {
             taskLog.Info(botName, $"[{runnable.Method}] started");
             Task.Run(() => {
                 try {
-                    runnable();;
+                    runnable();
                 } catch (Exception e) {
                     taskLog.Crash($"Message: {e.Message} \n {e.StackTrace}");
                 }
