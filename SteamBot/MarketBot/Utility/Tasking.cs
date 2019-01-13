@@ -37,7 +37,6 @@ namespace Utility {
             });
             Task temp = await Task.WhenAny(waitTask, delayTask);
             tokenSource2.Cancel();
-            await Task.WhenAll(waitTask, delayTask);
             return temp == waitTask;
         }
 
