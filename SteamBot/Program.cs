@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using CSGOTM;
 using NDesk.Options;
 using Server;
 using Utility;
@@ -134,7 +135,6 @@ namespace SteamBot
             manager = new BotManager();
 
             var loadedOk = manager.LoadConfiguration("settings.json");
-            Tasking.Run(manager.Nanny);
 
             if (!loadedOk)
             {
@@ -147,6 +147,8 @@ namespace SteamBot
             {
                 if (manager.ConfigObject.UseSeparateProcesses)
                     SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
+                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "localhost";
+                Tasking.Run(manager.Nanny);
 
                 if (manager.ConfigObject.AutoStartAllBots)
                 {

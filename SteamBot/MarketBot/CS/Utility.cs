@@ -32,9 +32,9 @@ namespace CSGOTM {
         public static class Endpoints {
             public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/prod_conf.json";
             public const string BotConfig = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
-            public const string prefix = "http://+:4345/";
-            public const string localhost = "http://localhost:4345";
-            public const string TMSocket = "ws://wsn.dota2.net/wsn/";
+            public static string prefix = "http://+:4345/";
+            public static string juggler = "http://172.31.38.89:4345";
+            public static string TMSocket = "ws://wsn.dota2.net/wsn/";
             #region GET
             public const string GetBestToken = "/getbesttoken/";
             public const string PingPong = "/ping/";

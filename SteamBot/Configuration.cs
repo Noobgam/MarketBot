@@ -99,6 +99,13 @@ namespace SteamBot
         public string ApiKey { get; set; }
 
         /// <summary>
+        /// Gets or sets bot juggler endpoint.
+        /// </summary>
+        /// <value>
+        /// </value>
+        public string JugglerEndpoint { get; set; }
+
+        /// <summary>
         /// Gets or sets the main log file name.
         /// </summary>
         public string MainLog { get; set; }

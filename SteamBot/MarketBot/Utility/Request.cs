@@ -47,7 +47,7 @@ namespace Utility {
                 using (StreamReader reader = new StreamReader(stream)) {
                     return reader.ReadToEnd();
                 }
-            } catch (Exception) {
+            } catch (Exception e) {
                 Log.Error($"Error happened during GET {uri}");
                 return "";
                 //throw;
