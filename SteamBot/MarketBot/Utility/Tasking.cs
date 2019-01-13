@@ -5,6 +5,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 
 namespace Utility {
@@ -21,15 +22,22 @@ namespace Utility {
             if (timeout <= 3000) {
                 await Task.Delay(timeout);
                 return !condition();
-            }
+            }            
             Console.WriteLine($"Timeout: {timeout}");
-            Task waitTask = Task.Run(async () => {
-                while (condition()) await Task.Delay(1000);
-            });
+            var tokenSource2 = new CancellationTokenSource();
+            CancellationToken ct = tokenSource2.Token;
 
-            Task temp = await Task.WhenAny(waitTask, Task.Delay(timeout));
-            if (temp == waitTask)
-                Console.WriteLine("Emergency stop");
+            Task waitTask = Task.Run(async () => {
+                while (condition()) {
+                    await Task.Delay(1000, ct);
+                }
+            });
+            Task delayTask = Task.Run(async () => {
+                await Task.Delay(timeout, ct);
+            });
+            Task temp = await Task.WhenAny(waitTask, delayTask);
+            tokenSource2.Cancel();
+            await Task.WhenAll(waitTask, delayTask);
             return temp == waitTask;
         }
 
