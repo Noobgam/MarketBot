@@ -762,7 +762,9 @@ namespace CSGOTM {
 
         public void ProcessItem(NewHistoryItem item) {
             if (!hasStickers(item)) {
-                needOrderUnstickered.Enqueue(item);
+                if (needOrderUnstickered.Count < Consts.MAXORDERQUEUESIZE) {
+                    needOrderUnstickered.Enqueue(item);
+                }
                 return;
             }
 
@@ -777,7 +779,9 @@ namespace CSGOTM {
                 salesHistory.Recalculate();
 
                 if (salesHistory.GetCnt() >= Consts.MINSIZE && !blackList.Contains(item.i_market_name)) {
-                    needOrder.Enqueue(item);
+                    if (needOrder.Count <= Consts.MAXORDERQUEUESIZE) {
+                        needOrder.Enqueue(item);
+                    }
                 }
             } finally {
                 _DatabaseLock.ExitWriteLock();

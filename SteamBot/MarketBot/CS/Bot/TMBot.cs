@@ -82,7 +82,6 @@ namespace CSGOTM {
                     logic.cachedInventory = inv;
                     logic.cachedTradableCount = counter;
                     LocalRequest.PutInventory(config.Username, inv);
-                    int cnt = 0;
                     double totalprice = 0;
                     double tradeprice = 0;
                     int untracked = 0;

@@ -32,7 +32,6 @@ namespace CSGOTM {
 #endif
         bool subscribed = false;
         public NewMarketLogger Log;
-        private Queue<TradeOffer> QueuedOffers;
         private MongoOperationHistory operationHistory;
         public Logic Logic;
         public SteamBot.Bot Bot;
@@ -285,7 +284,6 @@ namespace CSGOTM {
             }
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
-            QueuedOffers = new Queue<TradeOffer>();
             GetMoney();
             Tasking.Run(PingPongMarket, botName);
             Tasking.Run(PingPongLocal, botName);

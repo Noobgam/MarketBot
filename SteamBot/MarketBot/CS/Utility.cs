@@ -22,6 +22,7 @@ namespace CSGOTM {
         public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
         public const string MARKETENDPOINT = "https://market.csgo.com";
+        public const int MAXORDERQUEUESIZE = 150;
 
         public static class Databases {
             public static class Mongo {
