@@ -15,6 +15,7 @@ using SteamKit2.Internal;
 using SteamTrade.TradeOffer;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using SteamBot.MarketBot.Utility.VK;
 
 namespace SteamBot
 {
@@ -147,7 +148,7 @@ namespace SteamBot
         [Obsolete("Refactored to be Log instead of log")]
         public Log log { get { return Log; } }
 
-        Configuration.BotInfo botConfig;
+        public Configuration.BotInfo botConfig;
         public CSGOTM.TMBot MarketBot;
         private bool RestartFlag = false;
 
@@ -1075,6 +1076,9 @@ namespace SteamBot
             disposed = true;
         }
 
+
+        private int failedlogins = 0;
+
         private void SubscribeSteamCallbacks()
         {
             #region Login
@@ -1094,6 +1098,12 @@ namespace SteamBot
                 else
                 {
                     Log.Error("Login Error: {0}", callback.Result);
+                    ++failedlogins;
+                    if (failedlogins > 3) {
+                        VK.Alert($"Bot {botConfig.Username} failed to start, please take a look manually.");
+                        StopBot();
+                        return;
+                    }
                 }
 
                 if (callback.Result == EResult.AccountLoginDeniedNeedTwoFactor)
@@ -1111,6 +1121,18 @@ namespace SteamBot
                 }
                 else if (callback.Result == EResult.TwoFactorCodeMismatch)
                 {
+                    int waitQ = 0;
+                    if (failedlogins > 0) {
+                        waitQ += 1500;
+                    }
+                    if (failedlogins > 1) {
+                        waitQ += 5500;
+                    }
+                    if (failedlogins > 2) {
+                        waitQ += 10500;
+                    }
+
+                    Thread.Sleep(waitQ);
                     SteamAuth.TimeAligner.AlignTime();
                     logOnDetails.TwoFactorCode = SteamGuardAccount.GenerateSteamGuardCode();
                     Log.Success("Regenerated 2FA code.");
@@ -1146,6 +1168,11 @@ namespace SteamBot
                 Log.Success("Steam Bot Logged In Completely!");
 
                 GetUserHandler(SteamClient.SteamID).OnLoginCompleted();
+                if (botConfig.SetGamePlayed) {
+                    if (DateTime.Now.Hour > 16 || DateTime.Now.Hour < 2) {
+                        SetGamePlaying(730);
+                    }
+                }
             });
 
             steamCallbackManager.Subscribe<SteamUser.WebAPIUserNonceCallback>(webCallback =>

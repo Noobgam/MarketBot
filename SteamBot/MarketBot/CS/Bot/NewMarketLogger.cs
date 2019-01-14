@@ -2,6 +2,7 @@
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using SteamBot.MarketBot.Utility.MongoApi;
+using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -36,6 +37,7 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         private TMBot bot;
         private MongoLogCollection logCollection;
+        private string StoredName = null;
 
         public NewMarketLogger(TMBot bot) {
             this.bot = bot;
@@ -46,13 +48,18 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection = new MongoLogCollection();
         }
 
+        public NewMarketLogger(string name) {
+            StoredName = name;
+            logCollection = new MongoLogCollection();
+        }
+
         private readonly DateTime epoch = new DateTime(1970, 1, 1);
 
         private LogMessage CreateRawLogMessage(LogLevel level, string line, params object[] formatParams) {
             if (bot != null)
                 return CreateRawLogMessage(level, bot.config.Username, line, formatParams);
             else
-                return CreateRawLogMessage(level, "EXTRA", line, formatParams);
+                return CreateRawLogMessage(level, (StoredName ?? "EXTRA"), line, formatParams);
         }
 
         private LogMessage CreateRawLogMessage(LogLevel level, string botname, string line, params object[] formatParams) {
@@ -85,7 +92,6 @@ namespace SteamBot.MarketBot.CS.Bot {
         }
 
         public void Warn(RestartPriority prior, string data, params object[] formatParams) {
-            bot.FlagError(prior, data);
             Warn(data, formatParams);
         }
 
@@ -93,15 +99,16 @@ namespace SteamBot.MarketBot.CS.Bot {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Warn, data, formatParams));
         }
 
-        public void Info(RestartPriority prior, string data, params object[] formatParams) {
-            bot.FlagError(prior, data);
-            Info(data, formatParams);
-        }
-
         public void Info(string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, data, formatParams));
         }
 
+        public void Crash(string data, params object[] formatParams) {
+            VK.Alert($"Unhandled exception occured: {data}");
+            logCollection.Insert(CreateRawLogMessage(LogLevel.Crash, data, formatParams));
+        }
+
+        [System.Obsolete]
         public void Info(string botname, string data, params object[] formatParams) {
             logCollection.Insert(CreateRawLogMessage(LogLevel.Info, botname, data, formatParams));
         }

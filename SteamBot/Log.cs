@@ -14,6 +14,7 @@ namespace SteamBot
             Warn,
             Error,
             ApiError,
+            Crash,
             Interface, // if the user needs to input something
             Nothing    // not recommended; it basically silences
                        // the console output because nothing is
@@ -157,6 +158,8 @@ namespace SteamBot
                     return "interface";
                 case LogLevel.Nothing:
                     return "nothing";
+                case LogLevel.Crash:
+                    return "crash";
                 default:
                     return "undef";
             }
@@ -179,6 +182,8 @@ namespace SteamBot
                 case LogLevel.Warn:
                     return ConsoleColor.Yellow;
                 case LogLevel.Error:
+                    return ConsoleColor.Red;
+                case LogLevel.Crash:
                     return ConsoleColor.Red;
                 case LogLevel.Interface:
                     return ConsoleColor.DarkCyan;

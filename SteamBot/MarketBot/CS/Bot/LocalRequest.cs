@@ -7,10 +7,10 @@ using System.Net;
 namespace CSGOTM {
     public static class LocalRequest {
         private static void VoidRawGet(string endpoint, WebHeaderCollection headers) {
-            Utility.Request.Get(Consts.Endpoints.localhost + endpoint, headers);
+            Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers);
         }
         private static JToken RawGet(string endpoint, WebHeaderCollection headers) {
-            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.localhost + endpoint, headers));
+            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers));
         }
 
         public static JToken RawGet(string endpoint, string botname) {
@@ -46,6 +46,10 @@ namespace CSGOTM {
 
         public static void PutTradableCost(string botname, double sumprice, int untracked) {
             RawPut(Consts.Endpoints.PutTradableCost, botname, sumprice.ToString() + ":" + untracked.ToString());
+        }
+
+        public static void PutTradeToken(string botname, string token) {
+            RawPut(Consts.Endpoints.PutTradeToken, botname, token);
         }
 
         public static void PutMedianCost(string botname, double sumprice) {

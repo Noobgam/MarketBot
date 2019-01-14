@@ -104,9 +104,9 @@ namespace SteamBot
                                     offer.Decline();
                                 } catch {
                                 }
-                                Bot.MarketBot.FlagError(CSGOTM.TMBot.RestartPriority.CriticalError);
+                                Bot.MarketBot.GetLog().Error(CSGOTM.TMBot.RestartPriority.CriticalError, "Could not accept for unknown reason. Restarting bot");
                             } else {
-                                Log.Error($"Could not accept offer {tradeAccept.TradeError}.");
+                                Bot.MarketBot.GetLog().Error($"Could not accept offer {tradeAccept.TradeError}.");
                             }
                         }
                         break;

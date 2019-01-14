@@ -17,15 +17,23 @@ using System.Collections.Specialized;
 using System.Web;
 using System.Globalization;
 using SteamBot.MarketBot.Utility.MongoApi;
+using SteamBot.MarketBot.CS;
+using SteamBot.MarketBot.CS.Bot;
 
-namespace MarketBot.Server {
+namespace Server {
     public class Core : IDisposable {
+
+        public Dictionary<string, string> TokenCache = new Dictionary<string, string>();
+        public NewMarketLogger logger;
         private HttpListener server;
         private CoreConfig coreConfig;
-        private Dictionary<string, DateTime> LastPing = new Dictionary<string, DateTime>();
+        private ConcurrentDictionary<string, DateTime> LastPing = new ConcurrentDictionary<string, DateTime>();
+        private MongoLogCollection mongoLogs = new MongoLogCollection();
+        private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
 
         public Core() {
             server = new HttpListener();
+            logger = new NewMarketLogger("Core");
             CurSizes = new Dictionary<string, int>();
             CurInventory = new Dictionary<string, double>();
             CurTradable = new Dictionary<string, double>();
@@ -33,47 +41,34 @@ namespace MarketBot.Server {
             CurUntracked = new Dictionary<string, int>();
             CurMoney = new Dictionary<string, int>();
             server.Prefixes.Add(Consts.Endpoints.prefix);
-            Console.Error.WriteLine("Starting!");
+
+            logger.Nothing("Starting!");
             VK.Init();
             coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
-            server.Start();            
-            Console.Error.WriteLine("Started!");
+            server.Start();
+            logger.Nothing("Started!");
             Task.Run((Action)Listen);
             Task.Run((Action)BackgroundCheck);
             //Task.Run((Action)DBHitProvider);
         }
 
-        private void DBHitProvider() {
-            //Doesn't work now.
-            while (true) {
-                Thread.Sleep(2000);
-                try {
-                    var temp = LocalRequest.RawGet(Consts.Endpoints.GetBestToken + "?dbhit=70&extradb=1", "ffedor98");
-                    double dbhit = (double)temp["extrainfo"]["ffedor98"]["dbhit"];
-                    int dbcnt = (int)temp["extrainfo"]["ffedor98"]["dbcnt"];
-                    if (dbcnt < 15000)
-                        continue;
-                    VK.Alert(DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss") + " - " + dbhit.ToString(), VK.AlertLevel.Garbage);
-                } catch {
-                    //Console.Error.WriteLine("Could not get a response from local server");
-                    continue;
-                }
-                Thread.Sleep(180000);
-            }
-        }
-
         private void BackgroundCheck() {
             Thread.Sleep(15000);
             while (!disposed) {
-                foreach (BotConfig bot in coreConfig.botList) {
-                    if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
-                        DateTime temp = DateTime.Now;
-                        if (temp.Subtract(dt).TotalSeconds > 60) {
-                            VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                try {
+                    foreach (BotConfig bot in coreConfig.botList) {
+                        if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
+                            DateTime temp = DateTime.Now;
+                            if (temp.Subtract(dt).TotalSeconds > 120) {
+                                logger.Warn($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                                VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                            }
+                        } else {
+                            logger.Warn($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
+                            VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                         }
-                    } else {
-                        //VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
                     }
+                } catch {
                 }
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
             }
@@ -81,7 +76,11 @@ namespace MarketBot.Server {
 
         private void Listen() {
             while (!disposed) {
-                ThreadPool.QueueUserWorkItem(Process, server.GetContext());
+                try {
+                    ThreadPool.QueueUserWorkItem(Process, server.GetContext());
+                } catch {
+
+                }
             }
         }
 
@@ -105,7 +104,7 @@ namespace MarketBot.Server {
                         BotConfig forcedBot = Forced.First();
                         resp = new JObject {
                             ["success"] = true,
-                            ["token"] = Consts.TokenCache[forcedBot.Name],
+                            ["token"] = TokenCache[forcedBot.Name],
                             ["botname"] = forcedBot.Name,
                         };
                     } else {
@@ -151,30 +150,72 @@ namespace MarketBot.Server {
                         }
                         resp = new JObject {
                             ["success"] = true,
-                            ["token"] = Consts.TokenCache[kv.Key],
+                            ["token"] = TokenCache[kv.Key],
                             ["botname"] = kv.Key,
                             ["extrainfo"] = extrainfo
                         };
                     }
-                } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
-                    string[] usernames = context.Request.Headers.GetValues("botname");
+                } else if (Endpoint == Consts.Endpoints.BanUser) {
+                    long id = context.Request.QueryString["id"] == null ? -1 : long.Parse(context.Request.QueryString["id"]);
+                    if (id == -1) {
+                        throw new Exception($"Id {id} doesn't look good");
+                    }
+                    if (mongoBannedUsers.Add(id)) {
+                        resp = new JObject {
+                            ["success"] = true
+                        };
+                    } else {
+                        throw new Exception($"Could not add user (possibly he is present)");
+                    }
+                } else if (Endpoint == Consts.Endpoints.UnBanUser) {
+                    long id = context.Request.QueryString["id"] == null ? -1 : long.Parse(context.Request.QueryString["id"]);
+                    if (id == -1) {
+                        throw new Exception($"Id {id} doesn't look good");
+                    }
+                    if (mongoBannedUsers.Delete(id)) {
+                        resp = new JObject {
+                            ["success"] = true
+                        };
+                    } else {
+                        throw new Exception($"Could not delete user (possibly he isn't in banned)");
+                    }
+                } else if (Endpoint == Consts.Endpoints.GetBannedUsers) {
+                    var stuff = new JArray(mongoBannedUsers.GetBannedUsers().Select(user => user.SteamID64));
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["userlist"] = stuff
+                    };
+                } else if (Endpoint == Consts.Endpoints.PutTradeToken) {
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
-                    string[] data = context.Request.Headers.GetValues("data");
+                    string[] data = context.Request.Headers.GetValues("data") ?? new string[0];
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    TokenCache[usernames[0]] = data[0];
+                    resp = new JObject {
+                        ["success"] = true
+                    };
+                } else if (Endpoint == Consts.Endpoints.PutCurrentInventory) {
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string[] data = context.Request.Headers.GetValues("data") ?? new string[0];
                     if (data.Length != 1) {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurSizes[usernames[0]] = int.Parse(data[0]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.MongoFind) {
-                    if (context.Request.QueryString["query"] == null) {
-                        throw new Exception($"You have to provide query to mongo");
-                    }
-                    string query = context.Request.QueryString["query"];
-                    int limit = context.Request.QueryString["limit"] == null ? -1 : int.Parse(context.Request.QueryString["limit"]);
-                    int skip =  context.Request.QueryString["skip"] == null  ? -1 : int.Parse(context.Request.QueryString["skip"]);
+                    string query = context.Request.QueryString["query"] ?? "{}";
+                    int limit = int.Parse(context.Request.QueryString["limit"] ?? "-1");
+                    int skip = int.Parse(context.Request.QueryString["skip"] ?? "-1");
                     //TODO(noobgam): add other tables
-                    MongoLogCollection mongoLogs = new MongoLogCollection();
                     var filtered = mongoLogs.Find(query, limit, skip);
                     var cursor = filtered.ToCursor();
                     JArray logs = new JArray();
@@ -188,12 +229,13 @@ namespace MarketBot.Server {
                         ["extrainfo"] = logs
                     };
                 } else if (Endpoint == Consts.Endpoints.PingPong) {
-                    string[] usernames = context.Request.Headers.GetValues("botname");
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
                     }
+                    logger.Info($"{usernames[0]} ping");
                     LastPing[usernames[0]] = DateTime.Now;
-                    
+
                     resp = new JObject {
                         ["success"] = true,
                         ["ping"] = "pong",
@@ -233,6 +275,9 @@ namespace MarketBot.Server {
                     string[] stuff = data[0].Split(':');
                     CurTradable[usernames[0]] = double.Parse(stuff[0]);
                     CurUntracked[usernames[0]] = int.Parse(stuff[1]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.PutMedianCost) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -243,6 +288,9 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurMedian[usernames[0]] = double.Parse(data[0]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -253,8 +301,16 @@ namespace MarketBot.Server {
                         throw new Exception($"You have to provide 1 data, {data.Length} were provided");
                     }
                     CurMoney[usernames[0]] = int.Parse(data[0]);
+                    resp = new JObject {
+                        ["success"] = true
+                    };
+                } else if (Endpoint == Consts.Endpoints.RPS) {
+                    resp = new JObject {
+                        ["success"] = true,
+                        //["rps"] = Balancer.GetNewItemsRPS()
+                    };
                 } else if (Endpoint == Consts.Endpoints.Status) {
-                    bool full  = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
+                    bool full = context.Request.QueryString["full"] == null ? false : bool.Parse(context.Request.QueryString["full"]);
                     bool table = context.Request.QueryString["table"] == null ? false : bool.Parse(context.Request.QueryString["table"]);
                     JToken extrainfo = new JObject();
                     double moneySum = 0;
@@ -305,22 +361,23 @@ namespace MarketBot.Server {
                         }
                     };
                     if (table) {
-                        resp["type"] = "table";
+                        if (RespondTable(context, resp)) {
+                            return;
+                        }
                     }
                 }
+                if (resp == null)
+                    resp = new JObject {
+                        ["success"] = false,
+                        ["error"] = "Unsupported request"
+                    };
+                Respond(context, resp);
             } catch (Exception ex) {
                 resp = new JObject {
                     ["success"] = false,
                     ["error"] = ex.Message,
                     ["trace"] = ex.StackTrace
                 };
-
-            } finally {
-                if (resp == null)
-                    resp = new JObject {
-                        ["success"] = false,
-                        ["error"] = "Unsupported request"
-                    };
                 Respond(context, resp);
             }
         }
@@ -328,14 +385,19 @@ namespace MarketBot.Server {
         // process request and make response
 
         private void RawRespond(HttpListenerContext ctx, string resp) {
-            byte[] buffer = Encoding.UTF8.GetBytes(resp);
-            HttpListenerResponse response = ctx.Response;
+            try {
+                byte[] buffer = Encoding.UTF8.GetBytes(resp);
+                ctx.Response.Headers["Access-Control-Allow-Origin"] = "*";
+                HttpListenerResponse response = ctx.Response;
 
-            response.ContentLength64 = buffer.Length;
-            Stream output = response.OutputStream;
-            output.Write(buffer, 0, buffer.Length);
+                response.ContentLength64 = buffer.Length;
+                Stream output = response.OutputStream;
+                output.Write(buffer, 0, buffer.Length);
 
-            output.Close();
+                output.Close();
+            } catch (Exception ex) { 
+                // might help in some dumb cases.
+            }
         }        
         
         private string Row(string[] arr, string type = "th") {
@@ -352,26 +414,13 @@ namespace MarketBot.Server {
             return res;
         }
 
-        private bool RespondTable(HttpListenerContext ctx, JObject json) {
+        private bool ConvertToDomTable(JObject json, out string html) {
+            html = "";
             try {
                 int cnt = 0;
-                string html =
-                    @"<!DOCTYPE html>
-<html>
-<head>
-<meta charset=" + "\"utf-8\"/>" +
-    @"<style>
-table, th, td {
-    border: 1px solid black;
-}
-th {
-	background-color: lightblue
-}
-</style>
-</head>
-<body>";
+                SortUtils.Sort(json);
                 foreach (var table in json) {
-                    if (table.Key == "success")
+                    if (table.Key != "extrainfo" && table.Key != "moneysum")
                         continue;
                     //html += "Table " + table.Key + "</br>";
                     string header = "";
@@ -412,6 +461,38 @@ th {
                         "</table>";
                     html += header + body + footer;
                 }
+                return true;
+
+            } catch {
+                return false;
+            }
+
+        }
+
+        private bool RespondTable(HttpListenerContext ctx, JObject json) {
+            try {
+                string html =
+                    @"<!DOCTYPE html>
+<html>
+<head>
+<meta charset=" + "\"utf-8\"/>" +
+    @"<style>
+table, th, td {
+    border: 1px solid black;
+}
+th {
+	background-color: lightblue
+}
+</style>" +
+//"<script>" + SteamBot.Properties.Resources.chartUpdateScript + "</script>" + 
+@"</head>
+<body>";
+                //html += "<script src=\"https://canvasjs.com/assets/script/canvasjs.min.js\"></script>";
+                if (!ConvertToDomTable(json, out string body)) {
+                    return false;
+                }
+                //html += SteamBot.Properties.Resources.chartdiv;
+                html += body;
                 html += @"</body>
 </html>";
                 RawRespond(ctx, html);
@@ -424,6 +505,7 @@ th {
 
         private void Respond(HttpListenerContext ctx, JObject json) {
             if (json["error"] == null) {
+                //ctx.Response.StatusCode = 200;
                 if (json["type"] != null && (string)json["type"] == "table") {
                     if (RespondTable(ctx, json))
                         return;
@@ -431,6 +513,8 @@ th {
                         json["respond_error"] = "response could not be processed as table";
                     }
                 }
+            } else {
+                //ctx.Response.StatusCode = 500;
             }
             //TODO(noobgam): prettify if User-Agent is defined
             string resp = json.ToString(
@@ -450,10 +534,8 @@ th {
         protected virtual void Dispose(bool disposing) {
             if (!disposed) {
                 if (disposing) {
-                    if (server.IsListening)
-                        server.Stop();
+                    server.Close();
                 }
-
                 disposed = true;
             }
         }

@@ -39,3 +39,7 @@ packages
 /.vs/config/applicationhost.config
 /Archive
 /JSON Library
+/.vs/slnx.sqlite
+/.vs/ProjectSettings.json
+/.vs/VSWorkspaceState.json
+/.vs/*

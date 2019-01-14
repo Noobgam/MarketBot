@@ -99,6 +99,13 @@ namespace SteamBot
         public string ApiKey { get; set; }
 
         /// <summary>
+        /// Gets or sets bot juggler endpoint.
+        /// </summary>
+        /// <value>
+        /// </value>
+        public string JugglerEndpoint { get; set; }
+
+        /// <summary>
         /// Gets or sets the main log file name.
         /// </summary>
         public string MainLog { get; set; }
@@ -152,6 +159,7 @@ namespace SteamBot
             public string ApiKey { get; set; }
             public string MarketApiKey { get; set; }
             public string TradeToken { get; set; } //dont have time to find it in steambot for now.
+            public bool SetGamePlayed { get; set; }
             public string DisplayName { get; set; }
             public string ChatResponse { get; set; }
             public string LogFile { get; set; }
