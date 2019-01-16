@@ -1,6 +1,7 @@
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using CSGOTM;
 using NDesk.Options;
 using Server;
@@ -22,6 +23,7 @@ namespace SteamBot
         private static int botIndex = -1;
         private static BotManager manager;
         private static bool isclosing = false;
+        private static EventWaitHandle waitHandle = new AutoResetEvent(false);
 
         [STAThread]
         public static void Main(string[] args)
@@ -175,7 +177,6 @@ namespace SteamBot
                 }
 
                 Console.WriteLine("Type help for bot manager commands. ");
-                Console.Write("botmgr > ");
 
                 var bmi = new BotManagerInterpreter(manager);
 
@@ -184,9 +185,14 @@ namespace SteamBot
                 {
                     Console.Write("botmgr > ");
                     string inputText = Console.ReadLine();
-                    
+                    if (inputText == null) {
+                        waitHandle.WaitOne();
+                        return;
+                    }
+
                     if (!String.IsNullOrEmpty(inputText))
                         bmi.CommandInterpreter(inputText);
+
 
                 } while (!isclosing);
             }
@@ -209,6 +215,7 @@ namespace SteamBot
                         manager.StopBots();
                     }
                     isclosing = true;
+                    waitHandle.Set();
                     break;
             }
             
