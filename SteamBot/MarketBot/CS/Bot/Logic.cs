@@ -16,6 +16,7 @@ using Utility;
 using SteamBot.MarketBot.CS.Bot;
 using SteamBot.MarketBot.Utility.MongoApi;
 using MongoDB.Driver;
+using System.Diagnostics;
 
 namespace CSGOTM {
     public class Logic {
@@ -40,8 +41,10 @@ namespace CSGOTM {
             parent = bot;
             PREFIXPATH = Path.Combine("CS", botName);
             UNSTICKEREDPATH = Path.Combine(PREFIXPATH, "emptystickered.txt");
-            DATABASEPATH = Path.Combine(PREFIXPATH, "database.txt");
-            DATABASETEMPPATH = Path.Combine(PREFIXPATH, "databaseTemp.txt");
+
+            NEWDATABASEPATH = Path.Combine(PREFIXPATH, "newdatabase.txt");
+            NEWDATABASETEMPPATH = Path.Combine(PREFIXPATH, "newdatabaseTemp.txt");
+
             DATABASEJSONPATH = Path.Combine(PREFIXPATH, "database.json");
             BLACKLISTPATH = Path.Combine(PREFIXPATH, "blackList.txt");
             MONEYTPATH = Path.Combine(PREFIXPATH, "money.txt");
@@ -63,6 +66,7 @@ namespace CSGOTM {
             LoadNonStickeredBase();
             FulfillBlackList();
             LoadDataBase();
+            SaveDataBase();
             RefreshConfig();
             Tasking.Run((Action)ParsingCycle, botName);
             Tasking.Run((Action)SaveDataBaseCycle, botName);
@@ -280,7 +284,7 @@ namespace CSGOTM {
                         if (price != -1 && price < 30000) {
                             _DatabaseLock.EnterReadLock();
                             took = true;
-                            if (dataBase[item.i_market_name].GetMedian() * MAXFROMMEDIAN - price > 30) {
+                            if (newDataBase[item.i_market_name].GetMedian() * MAXFROMMEDIAN - price > 30) {
                                 Protocol.SetOrder(item.i_classid, item.i_instanceid, ++price);
                             }
                         }
@@ -335,7 +339,7 @@ namespace CSGOTM {
                     price = prices[2] - 30;
                 }
                 _DatabaseLock.EnterReadLock();
-                if (dataBase.TryGetValue(name, out SalesHistory saleHistory) && (price > 2 * saleHistory.GetMedian() || price == -1)) {
+                if (newDataBase.TryGetValue(name, out BasicSalesHistory saleHistory) && (price > 2 * saleHistory.GetMedian() || price == -1)) {
                     price = 2 * saleHistory.GetMedian();
                 }
                 _DatabaseLock.ExitReadLock();
@@ -344,7 +348,7 @@ namespace CSGOTM {
             }
             CurrentItemsLock.ExitReadLock();
             _DatabaseLock.EnterReadLock();
-            if (dataBase.TryGetValue(name, out SalesHistory salesHistory)) {
+            if (newDataBase.TryGetValue(name, out BasicSalesHistory salesHistory)) {
                 _DatabaseLock.ExitReadLock();
                 return salesHistory.GetMedian();
             }
@@ -383,7 +387,7 @@ namespace CSGOTM {
             } else {
                 _DatabaseLock.EnterReadLock();
                 int price = -1;
-                if (dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory))
+                if (newDataBase.TryGetValue(item.i_market_name, out BasicSalesHistory salesHistory))
                     price = salesHistory.GetMedian();
                 _DatabaseLock.ExitReadLock();
                 return price;
@@ -522,13 +526,13 @@ namespace CSGOTM {
             _DatabaseLock.EnterWriteLock();
             try {
                 foreach (MongoHistoryItem item in items) {
-                    if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory temp)) {
-                        temp = new SalesHistory();
-                        dataBase.Add(item.i_market_name, temp);
+                    if (!newDataBase.TryGetValue(item.i_market_name, out BasicSalesHistory temp)) {
+                        temp = new BasicSalesHistory();
+                        newDataBase.Add(item.i_market_name, temp);
                     }
                     temp.Add(item);
                 }
-                foreach (var kv in dataBase) {
+                foreach (var kv in newDataBase) {
                     kv.Value.Recalculate();
                 }
             } 
@@ -538,34 +542,32 @@ namespace CSGOTM {
         }
 
         public void LoadDataBase() {
-            if (!File.Exists(DATABASEPATH) && !File.Exists(DATABASETEMPPATH)) {
-                return;
-            }
             try {
                 _DatabaseLock.EnterWriteLock();
-                dataBase = BinarySerialization.ReadFromBinaryFile<Dictionary<string, SalesHistory>>(DATABASEPATH);
-                if (File.Exists(DATABASETEMPPATH))
-                    File.Delete(DATABASETEMPPATH);
-                Log.Success("Loaded new DB. Total item count: " + dataBase.Count);
+                newDataBase = BinarySerialization.NS.Deserialize<Dictionary<string, BasicSalesHistory>>(NEWDATABASEPATH);
+                if (File.Exists(NEWDATABASETEMPPATH))
+                    File.Delete(NEWDATABASETEMPPATH);
+                Log.Success("Loaded new DB. Total item count: " + newDataBase.Count);
                 _DatabaseLock.ExitWriteLock();
             } catch (Exception ex) {
                 Log.Error("Some error occured. Message: " + ex.Message + "\nTrace: " + ex.StackTrace);
-                if (File.Exists(DATABASEPATH))
-                    File.Delete(DATABASEPATH);
-                if (File.Exists(DATABASETEMPPATH))
-                    File.Move(DATABASETEMPPATH, DATABASEPATH);
+                if (File.Exists(NEWDATABASEPATH))
+                    File.Delete(NEWDATABASEPATH);
+                if (File.Exists(NEWDATABASETEMPPATH))
+                    File.Move(NEWDATABASETEMPPATH, NEWDATABASEPATH);
                 _DatabaseLock.ExitWriteLock();
                 LoadDataBase();
             }
         }
 
         public void SaveDataBase() {
-            if (File.Exists(DATABASEPATH))
-                File.Copy(DATABASEPATH, DATABASETEMPPATH, true);
-            Log.Info($"Size of db is {dataBase.Count}");
+            if (File.Exists(NEWDATABASEPATH))
+                File.Copy(NEWDATABASEPATH, NEWDATABASETEMPPATH, true);
+            Log.Info($"Size of db is {newDataBase.Count}");
             _DatabaseLock.EnterReadLock();
-            BinarySerialization.WriteToBinaryFile(DATABASEPATH, dataBase);
+            BinarySerialization.NS.Serialize(NEWDATABASEPATH, newDataBase);
             _DatabaseLock.ExitReadLock();
+
         }
 
 #if CAREFUL
@@ -705,8 +707,47 @@ namespace CSGOTM {
         }
 
         [Serializable]
+        public class BasicSalesHistory {
+            private List<BasicHistoryItem> sales = new List<BasicHistoryItem>();
+            private int median;
+            [NonSerialized]
+            private bool fresh = true;
+
+            public BasicSalesHistory() { }
+            public BasicSalesHistory(SalesHistory sales) {
+                median = sales.GetMedian();
+                this.sales = sales.sales.Select(sale => new BasicHistoryItem(sale)).ToList();
+            }
+
+            public int GetCnt() {
+                return sales.Count;
+            }
+
+            public void Recalculate() {
+                int[] a = new int[sales.Count];
+                for (int i = 0; i < sales.Count; i++)
+                    a[i] = sales[i].price;
+                Array.Sort(a);
+                median = a[sales.Count / 2];
+                fresh = true;
+            }
+
+            public int GetMedian() {
+                if (!fresh) {
+                    Recalculate();
+                }
+                return median;
+            }
+
+            public void Add(NewHistoryItem item) {
+                median = item.price;
+                fresh = false;
+            }
+        }
+
+        [Serializable]
         public class SalesHistory {
-            private List<NewHistoryItem> sales = new List<NewHistoryItem>();
+            public List<NewHistoryItem> sales = new List<NewHistoryItem>();
             private int median;
             private int cnt;
             [NonSerialized]
@@ -771,9 +812,9 @@ namespace CSGOTM {
             //Console.WriteLine(item.i_market_name);
             _DatabaseLock.EnterWriteLock();
             try {
-                if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
-                    salesHistory = new SalesHistory();
-                    dataBase.Add(item.i_market_name, salesHistory);
+                if (!newDataBase.TryGetValue(item.i_market_name, out BasicSalesHistory salesHistory)) {
+                    salesHistory = new BasicSalesHistory();
+                    newDataBase.Add(item.i_market_name, salesHistory);
                 }
                 salesHistory.Add(item);
                 salesHistory.Recalculate();
@@ -809,7 +850,7 @@ namespace CSGOTM {
             _DatabaseLock.EnterReadLock();
             CurrentItemsLock.EnterReadLock();
             try { 
-                if (!dataBase.TryGetValue(item.i_market_name, out SalesHistory salesHistory)) {
+                if (!newDataBase.TryGetValue(item.i_market_name, out BasicSalesHistory salesHistory)) {
                     return false;
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
@@ -855,11 +896,12 @@ namespace CSGOTM {
         private HashSet<Tuple<long, long>> unstickeredCache = new HashSet<Tuple<long, long>>();
 
         private string UNSTICKEREDPATH;
-        private string DATABASEPATH;
-        private string DATABASETEMPPATH;
         private string DATABASEJSONPATH;
         private string BLACKLISTPATH;
         private string MONEYTPATH;
+        
+        private string NEWDATABASEPATH;
+        private string NEWDATABASETEMPPATH;
 
         private ConcurrentQueue<Inventory.SteamItem> toBeSold = new ConcurrentQueue<Inventory.SteamItem>();
         private ConcurrentQueue<TMTrade> refreshPrice = new ConcurrentQueue<TMTrade>();
@@ -868,7 +910,7 @@ namespace CSGOTM {
         private Queue<NewHistoryItem> needOrder = new Queue<NewHistoryItem>();
         private Queue<NewHistoryItem> needOrderUnstickered = new Queue<NewHistoryItem>();
         private HashSet<string> blackList = new HashSet<string>();
-        public Dictionary<string, SalesHistory> dataBase = new Dictionary<string, SalesHistory>();
+        public Dictionary<string, BasicSalesHistory> newDataBase = new Dictionary<string, BasicSalesHistory>();
 
         private Dictionary<string, List<int>> currentItems = new Dictionary<string, List<int>>();
 

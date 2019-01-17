@@ -263,6 +263,34 @@ namespace CSGOTM {
     }
 
     [Serializable]
+    public class BasicHistoryItem {
+        public int price; //price is measured in kopeykas
+        public BasicHistoryItem() { }
+        public BasicHistoryItem(string data) {
+            string[] arr = data.Substring(1, data.Length - 2).Trim('[', ']').Split(new string[] { "\\\"" }, StringSplitOptions.RemoveEmptyEntries);
+            //cid, iid, hashname
+            for (int i = 0; i < arr.Length; ++i) {
+                arr[i] = Encode.DecodeEncodedNonAsciiCharacters(arr[i]);
+            }
+            if (arr.Length == 15) {
+                long.Parse(arr[0]);
+                long.Parse(arr[2]);
+                price = int.Parse(arr[8]);
+                if (arr[14] != "RUB") {
+                    throw new ArgumentException($"Currencies other than rub are not supported {data}");
+                }
+                return;
+            } else {
+                throw new ArgumentException($"Can't construct newhistory item from {data}");
+            }
+            //cid - iid
+        }
+        public BasicHistoryItem(NewHistoryItem rhs) {
+            price = rhs.price;
+        }
+    }
+
+    [Serializable]
     public class NewHistoryItem {
         public long i_classid;
         public long i_instanceid;
@@ -428,6 +456,39 @@ public static class BinarySerialization {
             }
         }
         return default(T);
+    }
+
+    public static class NS {
+        public static void Serialize<T>(string filePath, T objectToWrite, bool append = false) {
+            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
+            fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
+            if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
+                rwlock.EnterWriteLock();
+                try {
+                    using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
+                        Serializer.Serialize(stream, objectToWrite);
+                    }
+                } finally {
+                    rwlock.ExitWriteLock();
+                }
+            }
+        }
+
+        public static T Deserialize<T>(string filePath) {
+            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
+            fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
+            if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
+                rwlock.EnterReadLock();
+                try {
+                    using (Stream stream = File.Open(filePath, FileMode.Open)) {
+                        return (T)Serializer.Deserialize(stream);
+                    }
+                } finally {
+                    rwlock.ExitReadLock();
+                }
+            }
+            return default(T);
+        }
     }
 }
 

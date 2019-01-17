@@ -99,7 +99,7 @@ namespace CSGOTM {
                             //???
                             continue;
                         }
-                        if (logic.dataBase.TryGetValue(runame, out Logic.SalesHistory sales)) {
+                        if (logic.newDataBase.TryGetValue(runame, out Logic.BasicSalesHistory sales)) {
                             medianprice += sales.GetMedian();
                             if (item.Value.tradable) {
                                 tradeprice += sales.GetMedian();
