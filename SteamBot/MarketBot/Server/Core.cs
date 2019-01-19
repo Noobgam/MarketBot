@@ -119,7 +119,7 @@ namespace Server {
             var context = o as HttpListenerContext;
             JObject resp = null;
             try {
-                logger.Info($"[Request {++requestsServed}] {context.Request.UserHostAddress} - {context.Request.Url.AbsolutePath}");
+                logger.Info($"[Request {++requestsServed}] {context.Request.RemoteEndPoint.ToString()} - {context.Request.Url.AbsolutePath}");
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
                     var Forced = coreConfig.Bots.Where(x => x.Force);
