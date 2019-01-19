@@ -85,7 +85,7 @@ namespace CSGOTM {
                     double totalprice = 0;
                     double tradeprice = 0;
                     int untracked = 0;
-                    logic._DatabaseLock.EnterReadLock();
+                    logic.__database__.EnterReadLock();
                     double medianprice = 0;
                     foreach (var item in inv.descriptions) {
                         string quality;
@@ -99,14 +99,14 @@ namespace CSGOTM {
                             //???
                             continue;
                         }
-                        if (logic.dataBase.TryGetValue(runame, out Logic.SalesHistory sales)) {
+                        if (logic.__database__.newDataBase.TryGetValue(runame, out Logic.BasicSalesHistory sales)) {
                             medianprice += sales.GetMedian();
                             if (item.Value.tradable) {
                                 tradeprice += sales.GetMedian();
                             }
                         }
                     }
-                    logic._DatabaseLock.ExitReadLock();
+                    logic.__database__.ExitReadLock();
                     LocalRequest.PutInventoryCost(config.Username, totalprice);
                     LocalRequest.PutTradableCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, tradeprice / 100), untracked);
                     LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice / 100));

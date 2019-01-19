@@ -1,6 +1,9 @@
+//#define CORE
+
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
+using System.Threading;
 using CSGOTM;
 using NDesk.Options;
 using Server;
@@ -22,6 +25,7 @@ namespace SteamBot
         private static int botIndex = -1;
         private static BotManager manager;
         private static bool isclosing = false;
+        private static EventWaitHandle waitHandle = new AutoResetEvent(false);
 
         [STAThread]
         public static void Main(string[] args)
@@ -147,7 +151,7 @@ namespace SteamBot
             {
                 if (manager.ConfigObject.UseSeparateProcesses)
                     SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
-                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "localhost";
+                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://localhost:4345";
                 Tasking.Run(manager.Nanny);
 
                 if (manager.ConfigObject.AutoStartAllBots)
@@ -175,7 +179,6 @@ namespace SteamBot
                 }
 
                 Console.WriteLine("Type help for bot manager commands. ");
-                Console.Write("botmgr > ");
 
                 var bmi = new BotManagerInterpreter(manager);
 
@@ -184,9 +187,14 @@ namespace SteamBot
                 {
                     Console.Write("botmgr > ");
                     string inputText = Console.ReadLine();
-                    
+                    if (inputText == null) {
+                        waitHandle.WaitOne();
+                        return;
+                    }
+
                     if (!String.IsNullOrEmpty(inputText))
                         bmi.CommandInterpreter(inputText);
+
 
                 } while (!isclosing);
             }
@@ -209,6 +217,7 @@ namespace SteamBot
                         manager.StopBots();
                     }
                     isclosing = true;
+                    waitHandle.Set();
                     break;
             }
             

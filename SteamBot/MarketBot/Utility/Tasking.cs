@@ -45,10 +45,23 @@ namespace Utility {
             tokenSource2.Cancel();
             try {
                 Task.WaitAll(waitTask, delayTask);
+            } catch (Exception e) {
+                taskLog.Info($"{e}");
             } finally {
                 tokenSource2.Dispose();
             }
             return temp == waitTask;
+        }
+
+        public static void Run(Action runnable, CancellationToken ct, string botName = "EXTRA") {
+            taskLog.Info(botName, $"[{runnable.Method}] started");
+            Task.Run(() => {
+                try {
+                    runnable();
+                } catch (Exception e) {
+                    taskLog.Crash($"Message: {e.Message} \n {e.StackTrace}");
+                }
+            }, ct).ContinueWith(tsk => taskLog.Info(botName, $"[{runnable.Method}] ended"));
         }
 
         public static void Run(Action runnable, string botName = "EXTRA") {
