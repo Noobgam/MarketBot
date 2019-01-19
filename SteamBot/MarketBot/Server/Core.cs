@@ -318,6 +318,7 @@ namespace Server {
                     resp = new JObject {
                         ["success"] = true
                     };
+
                 } else if (Endpoint == Consts.Endpoints.PutMoney) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
