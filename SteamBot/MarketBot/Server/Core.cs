@@ -265,14 +265,22 @@ namespace Server {
                 } else if (Endpoint == Consts.Endpoints.GetConfig) {
                     BotConfig chosen = null;
                     foreach (BotConfig bot in coreConfig.Bots) {
-                        if (LastPing.TryGetValue(bot.Username, out DateTime dt)) {
-                            if (DateTime.Now.Subtract(dt).TotalSeconds > 120) {
+                        if (ipCache[bot.Username] == context.Request.RemoteEndPoint.ToString()) {
+                            chosen = bot;
+                            break;
+                        }
+                    }
+                    if (chosen == null) {
+                        foreach (BotConfig bot in coreConfig.Bots) {
+                            if (LastPing.TryGetValue(bot.Username, out DateTime dt)) {
+                                if (DateTime.Now.Subtract(dt).TotalSeconds > 120) {
+                                    chosen = bot;
+                                    break;
+                                }
+                            } else {
                                 chosen = bot;
                                 break;
                             }
-                        } else {
-                            chosen = bot;
-                            break;
                         }
                     }
                     if (chosen == null) {
@@ -315,6 +323,7 @@ namespace Server {
                     }
                     logger.Info($"{usernames[0]} ping");
                     LastPing[usernames[0]] = DateTime.Now;
+                    ipCache[usernames[0]] = context.Request.RemoteEndPoint.ToString();
 
                     resp = new JObject {
                         ["success"] = true,
