@@ -40,6 +40,31 @@ namespace SteamBot
 
         public Configuration ConfigObject { get; private set; }
 
+        public bool ParseConfiguration() {
+            useSeparateProcesses = ConfigObject.UseSeparateProcesses;
+
+            mainLog = new Log(ConfigObject.MainLog, null, Log.LogLevel.Debug, Log.LogLevel.Debug);
+            mongoLog = new NewMarketLogger();
+
+            for (int i = 0; i < ConfigObject.Bots.Length; i++) {
+                Configuration.BotInfo info = ConfigObject.Bots[i];
+                if (ConfigObject.AutoStartAllBots || info.AutoStart) {
+                    mainLog.Info("Launching Bot " + info.DisplayName + "...");
+                }
+
+                var v = new RunningBot(useSeparateProcesses, i, ConfigObject);
+                botProcs.Add(v);
+            }
+
+            return true;
+        }
+
+        public bool LoadConfigurationFromData(string data) {
+
+            ConfigObject = JsonConvert.DeserializeObject<Configuration>(data);
+            return ParseConfiguration();
+        }
+
         /// <summary>
         /// Loads a configuration file to use when creating bots.
         /// </summary>
@@ -61,25 +86,7 @@ namespace SteamBot
 
             if (ConfigObject == null)
                 return false;
-
-            useSeparateProcesses = ConfigObject.UseSeparateProcesses;
-
-            mainLog = new Log(ConfigObject.MainLog, null, Log.LogLevel.Debug, Log.LogLevel.Debug);
-            mongoLog = new NewMarketLogger();
-
-            for (int i = 0; i < ConfigObject.Bots.Length; i++)
-            {
-                Configuration.BotInfo info = ConfigObject.Bots[i];
-                if (ConfigObject.AutoStartAllBots || info.AutoStart)
-                {
-                    mainLog.Info("Launching Bot " + info.DisplayName + "...");
-                }
-
-                var v = new RunningBot(useSeparateProcesses, i, ConfigObject);
-                botProcs.Add(v);
-            }
-
-            return true;
+            return ParseConfiguration();
         }
 
         public void Nanny() {

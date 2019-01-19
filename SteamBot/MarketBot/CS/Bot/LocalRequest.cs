@@ -45,6 +45,10 @@ namespace CSGOTM {
             return (string)(((JObject)RawGet(Consts.Endpoints.GetSalesDatabase))["data"]);
         }
 
+        public static string GetConfig() {
+            return (string)(((JObject)RawGet(Consts.Endpoints.GetConfig))["data"]);
+        }
+
         public static string GetEmptyStickeredDatabase() {
             return (string)(((JObject)RawGet(Consts.Endpoints.GetEmptyStickeredDatabase))["data"]);
         }

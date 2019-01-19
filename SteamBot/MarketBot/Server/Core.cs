@@ -32,6 +32,8 @@ namespace Server {
         private ConcurrentDictionary<string, DateTime> LastPing = new ConcurrentDictionary<string, DateTime>();
         private MongoLogCollection mongoLogs = new MongoLogCollection();
         private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
+        private Dictionary<string, string> ipCache;
+        private int requestsServed = 0;
 
         public Core() {
             try {
@@ -43,6 +45,7 @@ namespace Server {
                 CurMedian = new Dictionary<string, double>();
                 CurUntracked = new Dictionary<string, int>();
                 CurMoney = new Dictionary<string, int>();
+                ipCache = new Dictionary<string, string>();
                 server.Prefixes.Add(Consts.Endpoints.prefix);
                 VK.Init();
 
@@ -116,6 +119,7 @@ namespace Server {
             var context = o as HttpListenerContext;
             JObject resp = null;
             try {
+                logger.Info($"[Request {++requestsServed}] {context.Request.UserHostName} - {context.Request.Url.AbsolutePath}");
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
                     var Forced = coreConfig.Bots.Where(x => x.Force);

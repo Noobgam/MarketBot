@@ -1,4 +1,4 @@
-//#define CORE
+#define CORE
 
 using System;
 using System.IO;
@@ -139,7 +139,15 @@ namespace SteamBot
             manager = new BotManager();
             bool loadedOk = false;
             if (!File.Exists("settings.json")) {
-
+                try {
+                    loadedOk = manager.LoadConfigurationFromData(LocalRequest.GetConfig());
+                } catch (Exception e) {
+                    Console.WriteLine(
+                        "Config file is missing and all instances are working.");
+                    Console.Write("Press Enter to exit...");
+                    Console.ReadLine();
+                    return;
+                }
             } else {
                 loadedOk = manager.LoadConfiguration("settings.json");
             }
@@ -150,6 +158,7 @@ namespace SteamBot
                     "Configuration file Does not exist or is corrupt. Please rename 'settings-template.json' to 'settings.json' and modify the settings to match your environment");
                 Console.Write("Press Enter to exit...");
                 Console.ReadLine();
+                return;
             }
             else
             {

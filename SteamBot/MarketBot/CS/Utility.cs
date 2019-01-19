@@ -36,7 +36,7 @@ namespace CSGOTM {
             public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/8aa9b32b6b147b69f2ffc2057f75652e/raw/full_config.json";
             public const string BotConfig = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
             public static string prefix = "http://+:4345/";
-            public static string juggler = "http://172.31.38.89:4345";
+            public static string juggler = "http://steambot.noobgam.me:4345";
             public static string TMSocket = "ws://wsn.dota2.net/wsn/";
             #region GET
             public const string GetBestToken = "/getbesttoken/";
