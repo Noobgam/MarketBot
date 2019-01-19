@@ -32,24 +32,40 @@ namespace Server {
         private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
 
         public Core() {
-            server = new HttpListener();
-            logger = new NewMarketLogger("Core");
-            CurSizes = new Dictionary<string, int>();
-            CurInventory = new Dictionary<string, double>();
-            CurTradable = new Dictionary<string, double>();
-            CurMedian = new Dictionary<string, double>();
-            CurUntracked = new Dictionary<string, int>();
-            CurMoney = new Dictionary<string, int>();
-            server.Prefixes.Add(Consts.Endpoints.prefix);
+            try {
+                server = new HttpListener();
+                logger = new NewMarketLogger("Core");
+                CurSizes = new Dictionary<string, int>();
+                CurInventory = new Dictionary<string, double>();
+                CurTradable = new Dictionary<string, double>();
+                CurMedian = new Dictionary<string, double>();
+                CurUntracked = new Dictionary<string, int>();
+                CurMoney = new Dictionary<string, int>();
+                server.Prefixes.Add(Consts.Endpoints.prefix);
+                VK.Init();
 
-            logger.Nothing("Starting!");
-            VK.Init();
-            coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Utility.Request.Get(Consts.Endpoints.ServerConfig));
-            server.Start();
-            logger.Nothing("Started!");
-            Task.Run((Action)Listen);
-            Task.Run((Action)BackgroundCheck);
-            //Task.Run((Action)DBHitProvider);
+                unstickeredCache = new EmptyStickeredDatabase();
+                unstickeredCache.LoadFromArray(File.ReadAllLines(Path.Combine("assets", "emptystickered.txt")));
+
+                logger.Nothing("Starting!");
+                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                server.Start();
+                logger.Nothing("Started!");
+                Task.Run((Action)Listen);
+                Task.Run((Action)BackgroundCheck);
+                Task.Run((Action)UnstickeredDumper);
+                //Task.Run((Action)DBHitProvider);
+            } catch (Exception ex) {
+                logger.Crash($"Message: {ex.Message}. Trace: {ex.StackTrace}");
+            }
+        }
+
+        private void UnstickeredDumper() {
+            while (!disposed) {
+                Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
+                string[] lines = unstickeredCache.Dump();
+                File.WriteAllLines(Path.Combine("assets", "emptystickered.txt"), lines);
+            }
         }
 
         private void BackgroundCheck() {
@@ -91,7 +107,7 @@ namespace Server {
         private Dictionary<string, double> CurMedian;
         private Dictionary<string, int> CurUntracked;
         private Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>> salesHistorySizes = new Dictionary<string, ConcurrentQueue<Pair<DateTime, int>>>();
-
+        private EmptyStickeredDatabase unstickeredCache;
 
         private void Process(object o) {
             var context = o as HttpListenerContext;
@@ -211,6 +227,17 @@ namespace Server {
                     resp = new JObject {
                         ["success"] = true
                     };
+                } else if (Endpoint == Consts.Endpoints.PutEmptyStickered) {
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
+                    string[] data = context.Request.Headers.GetValues("data") ?? new string[0];
+                    if (data.Length != 1) {
+                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
+                    }
+                    string[] splitter = data[0].Split('_');
+                    unstickeredCache.Add(long.Parse(splitter[0]), long.Parse(splitter[1]));
+                    resp = new JObject {
+                        ["success"] = true
+                    };
                 } else if (Endpoint == Consts.Endpoints.MongoFind) {
                     string query = context.Request.QueryString["query"] ?? "{}";
                     int limit = int.Parse(context.Request.QueryString["limit"] ?? "-1");
@@ -303,6 +330,25 @@ namespace Server {
                     CurMoney[usernames[0]] = int.Parse(data[0]);
                     resp = new JObject {
                         ["success"] = true
+                    };
+                } else if (Endpoint == Consts.Endpoints.GetSalesDatabase) {
+                    byte[] bytes = File.ReadAllBytes(Path.Combine("assets", "newDatabase"));
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["data"] = StringUtils.ToBase64(bytes)
+                    };
+                } else if (Endpoint == Consts.Endpoints.GetEmptyStickeredDatabase) {
+                    string[] lines = unstickeredCache.Dump();
+                    byte[] bytes = BinarySerialization.NS.Serialize(lines, true);
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["data"] = StringUtils.ToBase64(bytes)
+                    };
+                } else if (Endpoint == Consts.Endpoints.GetSalesDatabase) {
+                    byte[] bytes = BinarySerialization.NS.Serialize(unstickeredCache);
+                    resp = new JObject {
+                        ["success"] = true,
+                        ["data"] = StringUtils.ToBase64(bytes)
                     };
                 } else if (Endpoint == Consts.Endpoints.RPS) {
                     resp = new JObject {

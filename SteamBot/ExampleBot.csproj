@@ -179,6 +179,7 @@
   <ItemGroup>
     <Compile Include="MarketBot\CS\Balancer.cs" />
     <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
+    <Compile Include="MarketBot\CS\Bot\Database.cs" />
     <Compile Include="MarketBot\CS\Bot\LocalRequest.cs" />
     <Compile Include="MarketBot\CS\Bot\NewMarketLogger.cs" />
     <Compile Include="MarketBot\CS\Experiment.cs" />

@@ -6,7 +6,9 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
+using System.Text;
 using System.Threading;
 
 namespace CSGOTM {
@@ -45,10 +47,13 @@ namespace CSGOTM {
             public const string BanUser = "/ban/";
             public const string UnBanUser = "/unban/";
             public const string GetBannedUsers = "/getbannedusers/";
+            public const string GetSalesDatabase = "/getsalesdatabase/";
+            public const string GetEmptyStickeredDatabase = "/getemptystickereddatabase/";
             #endregion
 
             #region PUT
             public const string PutCurrentInventory = "/putInventory/";
+            public const string PutEmptyStickered = "/putemptystickered/";
             public const string PutMoney = "/putMoney/";
             public const string PutInventoryCost = "/putInventoryCost/";
             public const string PutMedianCost = "/putMedianCost/";
@@ -459,14 +464,20 @@ public static class BinarySerialization {
     }
 
     public static class NS {
-        public static void Serialize<T>(string filePath, T objectToWrite, bool append = false) {
+        public static void Serialize<T>(string filePath, T objectToWrite, bool gzip = false) {
             NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
             fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
             if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
                 rwlock.EnterWriteLock();
                 try {
-                    using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
-                        Serializer.Serialize(stream, objectToWrite);
+                    using (Stream stream = File.Open(filePath, FileMode.Create)) {
+                        if (gzip) {
+                            using (GZipStream gzipSteam = new GZipStream(stream, CompressionMode.Compress)) {
+                                Serializer.Serialize(gzipSteam, objectToWrite);
+                            }
+                        } else {
+                            Serializer.Serialize(stream, objectToWrite);
+                        }
                     }
                 } finally {
                     rwlock.ExitWriteLock();
@@ -474,13 +485,37 @@ public static class BinarySerialization {
             }
         }
 
-        public static T Deserialize<T>(string filePath) {
+        public static byte[] Serialize<T>(T objectToWrite, bool gzip = false) {
+            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
+            try {
+                using (var stream = new MemoryStream()) {
+                    if (gzip) {
+                        using (GZipStream gzipSteam = new GZipStream(stream, CompressionMode.Compress)) {
+                            Serializer.Serialize(gzipSteam, objectToWrite);
+                        }
+                    } else {
+                        Serializer.Serialize(stream, objectToWrite);
+                    }
+                    return stream.ToArray();
+                }                
+            } catch {
+                return null;
+            }
+        }
+
+        public static T Deserialize<T>(string filePath, bool gzip = false) {
             NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
             fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
             if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
                 rwlock.EnterReadLock();
                 try {
                     using (Stream stream = File.Open(filePath, FileMode.Open)) {
+
+                        if (gzip) {
+                            using (GZipStream gzipSteam = new GZipStream(stream, CompressionMode.Decompress)) {
+                                return (T)Serializer.Deserialize(gzipSteam);
+                            }
+                        }
                         return (T)Serializer.Deserialize(stream);
                     }
                 } finally {
@@ -488,6 +523,22 @@ public static class BinarySerialization {
                 }
             }
             return default(T);
+        }
+
+        public static T Deserialize<T>(byte[] arr, bool gzip = false) {
+            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
+            try {
+                using (MemoryStream memoryStream = new MemoryStream(arr)) {
+                    if (gzip) {
+                        using (GZipStream gzipSteam = new GZipStream(memoryStream, CompressionMode.Decompress)) {
+                            return (T)Serializer.Deserialize(gzipSteam);
+                        }
+                    }
+                    return (T)Serializer.Deserialize(memoryStream);
+                }
+            } catch {
+                return default(T);
+            }
         }
     }
 }
@@ -516,6 +567,21 @@ public static class JsonSerialization {
         } finally {
             if (reader != null)
                 reader.Close();
+        }
+    }
+}
+
+public static class StringUtils {
+    public static string ToBase64(byte[] array) {
+        return Convert.ToBase64String(array);
+    }
+
+    public static byte[] FromBase64(string text) {
+        try {
+            byte[] textAsBytes = Convert.FromBase64String(text);
+            return textAsBytes;
+        } catch (Exception) {
+            return null;
         }
     }
 }

@@ -1,3 +1,5 @@
+//#define CORE
+
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -149,7 +151,7 @@ namespace SteamBot
             {
                 if (manager.ConfigObject.UseSeparateProcesses)
                     SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
-                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "localhost";
+                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://localhost:4345";
                 Tasking.Run(manager.Nanny);
 
                 if (manager.ConfigObject.AutoStartAllBots)

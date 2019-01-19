@@ -9,8 +9,13 @@ namespace CSGOTM {
         private static void VoidRawGet(string endpoint, WebHeaderCollection headers) {
             Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers);
         }
+
         private static JToken RawGet(string endpoint, WebHeaderCollection headers) {
             return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers));
+        }
+
+        private static JToken RawGet(string endpoint) {
+            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint));
         }
 
         public static JToken RawGet(string endpoint, string botname) {
@@ -32,8 +37,20 @@ namespace CSGOTM {
             return (JObject)RawGet(Consts.Endpoints.GetBestToken, botname);
         }
 
+        public static string GetDatabase() {
+            return (string)(((JObject)RawGet(Consts.Endpoints.GetSalesDatabase))["data"]);
+        }
+
+        public static string GetEmptyStickeredDatabase() {
+            return (string)(((JObject)RawGet(Consts.Endpoints.GetEmptyStickeredDatabase))["data"]);
+        }
+
         public static void PutInventory(string botname, GenericInventory inv) {
             RawPut(Consts.Endpoints.PutCurrentInventory, botname, inv.items.Count.ToString());
+        }
+
+        public static void PutEmptyStickered(string botname, long cid, long iid) {
+            RawPut(Consts.Endpoints.PutEmptyStickered, botname, cid + "_" + iid);
         }
 
         public static void PutMoney(string botname, int money) {
