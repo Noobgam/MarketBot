@@ -19,6 +19,8 @@ using System.Globalization;
 using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
+using SteamBot;
+using static SteamBot.Configuration;
 
 namespace Server {
     public class Core : IDisposable {
@@ -69,24 +71,25 @@ namespace Server {
         }
 
         private void BackgroundCheck() {
-            Thread.Sleep(15000);
+            Thread.Sleep(60000);
             while (!disposed) {
                 try {
-                    foreach (BotConfig bot in coreConfig.botList) {
-                        if (LastPing.TryGetValue(bot.Name, out DateTime dt)) {
+                    foreach (BotConfig bot in coreConfig.Bots) {
+                        if (LastPing.TryGetValue(bot.Username, out DateTime dt)) {
                             DateTime temp = DateTime.Now;
                             if (temp.Subtract(dt).TotalSeconds > 120) {
-                                logger.Warn($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
-                                VK.Alert($"Бот {bot.Name} давно не пинговал, видимо, он умер.");
+                                logger.Warn($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
+                                VK.Alert($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
                             }
                         } else {
-                            logger.Warn($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
-                            VK.Alert($"Бот {bot.Name} не пингуется, хотя прописан в конфиге.");
+                            logger.Warn($"Бот {bot.Username} не пингуется, хотя прописан в конфиге.");
+                            VK.Alert($"Бот {bot.Username} не пингуется, хотя прописан в конфиге.");
                         }
                     }
                 } catch {
                 }
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
+                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
             }
         }
 
@@ -115,13 +118,13 @@ namespace Server {
             try {
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
-                    var Forced = coreConfig.botList.Where(x => x.Force);
+                    var Forced = coreConfig.Bots.Where(x => x.Force);
                     if (Forced.Any()) {
                         BotConfig forcedBot = Forced.First();
                         resp = new JObject {
                             ["success"] = true,
-                            ["token"] = TokenCache[forcedBot.Name],
-                            ["botname"] = forcedBot.Name,
+                            ["token"] = TokenCache[forcedBot.Username],
+                            ["botname"] = forcedBot.Username,
                         };
                     } else {
                         var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD);
@@ -129,7 +132,7 @@ namespace Server {
                             throw new Exception("All bots are overflowing!");
                         }
                         KeyValuePair<string, int> kv = Filtered.OrderBy(
-                            t => t.Value / coreConfig.botList.First(x => x.Name == t.Key).Weight
+                            t => t.Value / coreConfig.Bots.First(x => x.Username == t.Key).Weight
                             ).FirstOrDefault();
                         if (kv.Key == null) {
                             throw new Exception("Don't know about bot inventory sizes");
@@ -227,6 +230,23 @@ namespace Server {
                     resp = new JObject {
                         ["success"] = true
                     };
+                } else if (Endpoint == Consts.Endpoints.GetAuthFile) {
+                    string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
+                    if (usernames.Length != 1) {
+                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
+                    }
+                    string authPath = Path.Combine("authfiles", usernames[0] + ".auth");
+                    if (File.Exists(authPath)) {
+                        resp = new JObject {
+                            ["success"] = true,
+                            ["data"] = File.ReadAllText(authPath)
+                        };
+                    } else {
+                        resp = new JObject {
+                            ["success"] = false,
+                            ["error"] = "File not found"
+                        };
+                    }
                 } else if (Endpoint == Consts.Endpoints.PutEmptyStickered) {
                     string[] usernames = context.Request.Headers.GetValues("botname") ?? new string[0];
                     string[] data = context.Request.Headers.GetValues("data") ?? new string[0];
@@ -238,6 +258,35 @@ namespace Server {
                     resp = new JObject {
                         ["success"] = true
                     };
+                } else if (Endpoint == Consts.Endpoints.GetConfig) {
+                    BotConfig chosen = null;
+                    foreach (BotConfig bot in coreConfig.Bots) {
+                        if (LastPing.TryGetValue(bot.Username, out DateTime dt)) {
+                            if (DateTime.Now.Subtract(dt).TotalSeconds > 120) {
+                                chosen = bot;
+                                break;
+                            }
+                        } else {
+                            chosen = bot;
+                            break;
+                        }
+                    }
+                    if (chosen == null) {
+                        resp = new JObject {
+                            ["success"] = false,
+                            ["error"] = "No free instance available"
+                        };
+                    } else {
+                        Configuration cfg = JsonConvert.DeserializeObject<Configuration>(JsonConvert.SerializeObject(coreConfig));
+                        
+                        cfg.Bots = new BotInfo[]{
+                            JsonConvert.DeserializeObject<BotInfo>(JsonConvert.SerializeObject(chosen))
+                        };
+                        resp = new JObject {
+                            ["success"] = true,
+                            ["config"] = JObject.FromObject(cfg)
+                        };
+                    }
                 } else if (Endpoint == Consts.Endpoints.MongoFind) {
                     string query = context.Request.QueryString["query"] ?? "{}";
                     int limit = int.Parse(context.Request.QueryString["limit"] ?? "-1");

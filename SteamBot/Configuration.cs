@@ -7,11 +7,12 @@ using System.Text;
 using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+using SteamKit2;
 
 namespace SteamBot
 {
-    public class Configuration
-    {
+    [Serializable]
+    public class Configuration : IEquatable<Configuration> {
         private class JsonToSteamID : JsonConverter
         {
             static Regex Steam2Regex = new Regex(
@@ -51,33 +52,10 @@ namespace SteamBot
 
             Configuration config =  JsonConvert.DeserializeObject<Configuration>(json);
 
-            config.Admins = config.Admins ?? new SteamKit2.SteamID[0];
-
-            // merge bot-specific admins with global admins
-            foreach (BotInfo bot in config.Bots)
-            {
-                if (bot.Admins == null)
-                    bot.Admins = config.Admins;
-                else
-                    bot.Admins = bot.Admins.Concat(config.Admins);
-            }
-
             return config;
         }
 
         #region Top-level config properties
-        
-        /// <summary>
-        /// Gets or sets the admins.
-        /// </summary>
-        /// <value>
-        /// An array of Steam Profile IDs (64 bit IDs) of the users that are an 
-        /// Admin of your bot(s). Each Profile ID should be a string in quotes 
-        /// and separated by a comma. These admins are global to all bots 
-        /// listed in the Bots array.
-        /// </value>
-        [JsonConverter(typeof(JsonToSteamID))]
-        public IEnumerable<SteamKit2.SteamID> Admins { get; set; }
 
         /// <summary>
         /// Gets or sets the bots array.
@@ -152,6 +130,32 @@ namespace SteamBot
             return sb.ToString();
         }
 
+        public override bool Equals(object obj) {
+            return Equals(obj as Configuration);
+        }
+
+        public bool Equals(Configuration other) {
+            return other != null &&
+                   EqualityComparer<BotInfo[]>.Default.Equals(Bots, other.Bots) &&
+                   ApiKey == other.ApiKey &&
+                   JugglerEndpoint == other.JugglerEndpoint &&
+                   MainLog == other.MainLog &&
+                   UseSeparateProcesses == other.UseSeparateProcesses &&
+                   AutoStartAllBots == other.AutoStartAllBots;
+        }
+
+        public override int GetHashCode() {
+            var hashCode = -1694638471;
+            hashCode = hashCode * -1521134295 + EqualityComparer<BotInfo[]>.Default.GetHashCode(Bots);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(ApiKey);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(JugglerEndpoint);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(MainLog);
+            hashCode = hashCode * -1521134295 + UseSeparateProcesses.GetHashCode();
+            hashCode = hashCode * -1521134295 + AutoStartAllBots.GetHashCode();
+            return hashCode;
+        }
+
+        [Serializable]
         public class BotInfo
         {
             public string Username { get; set; }
@@ -171,8 +175,6 @@ namespace SteamBot
             public int TradeOfferPollingIntervalSecs { get; set; }
             public string ConsoleLogLevel { get; set; }
             public string FileLogLevel { get; set; }
-            [JsonConverter(typeof(JsonToSteamID))]
-            public IEnumerable<SteamKit2.SteamID> Admins { get; set; }
             public string SchemaLang { get; set; }
 
             // Depreciated configuration options
@@ -206,6 +208,14 @@ namespace SteamBot
 
                 return sb.ToString();
             }
+        }
+
+        public static bool operator ==(Configuration configuration1, Configuration configuration2) {
+            return EqualityComparer<Configuration>.Default.Equals(configuration1, configuration2);
+        }
+
+        public static bool operator !=(Configuration configuration1, Configuration configuration2) {
+            return !(configuration1 == configuration2);
         }
     }
 }

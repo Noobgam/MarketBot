@@ -1,46 +1,47 @@
 ﻿using Newtonsoft.Json;
+using SteamBot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using static SteamBot.Configuration;
 
 namespace Server {
+
     [Serializable]
-    struct CoreConfig {
-        [JsonProperty("bots")]
-        public readonly List<BotConfig> botList;
+    class CoreConfig : Configuration {
+        public new BotConfig[] Bots { get; set; }
     }
 
     [Serializable]
-    struct BotConfig : IEquatable<BotConfig> {
-        [JsonProperty("name")]
-        public readonly string Name;
+    class BotConfig : BotInfo, IEquatable<BotConfig> {
 
-        [JsonProperty("weight")]
         public readonly double Weight;
 
-        [JsonProperty("force")]
         public readonly bool Force;
 
         public override bool Equals(object obj) {
-            return obj is BotConfig && Equals((BotConfig)obj);
+            return Equals(obj as BotConfig);
         }
 
         public bool Equals(BotConfig other) {
-            return Name == other.Name &&
-                   Weight == other.Weight;
+            return other != null &&
+                   base.Equals(other) &&
+                   Weight == other.Weight &&
+                   Force == other.Force;
         }
 
         public override int GetHashCode() {
-            var hashCode = -1185841457;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Name);
+            var hashCode = -2117736981;
+            hashCode = hashCode * -1521134295 + base.GetHashCode();
             hashCode = hashCode * -1521134295 + Weight.GetHashCode();
+            hashCode = hashCode * -1521134295 + Force.GetHashCode();
             return hashCode;
         }
 
         public static bool operator ==(BotConfig config1, BotConfig config2) {
-            return config1.Equals(config2);
+            return EqualityComparer<BotConfig>.Default.Equals(config1, config2);
         }
 
         public static bool operator !=(BotConfig config1, BotConfig config2) {

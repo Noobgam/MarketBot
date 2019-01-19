@@ -137,8 +137,12 @@ namespace SteamBot
             Console.Title = "Bot Manager";
 
             manager = new BotManager();
+            bool loadedOk = false;
+            if (!File.Exists("settings.json")) {
 
-            var loadedOk = manager.LoadConfiguration("settings.json");
+            } else {
+                loadedOk = manager.LoadConfiguration("settings.json");
+            }
 
             if (!loadedOk)
             {
@@ -151,7 +155,7 @@ namespace SteamBot
             {
                 if (manager.ConfigObject.UseSeparateProcesses)
                     SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
-                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://localhost:4345";
+                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://steambot.noobgam.me:4345";
                 Tasking.Run(manager.Nanny);
 
                 if (manager.ConfigObject.AutoStartAllBots)

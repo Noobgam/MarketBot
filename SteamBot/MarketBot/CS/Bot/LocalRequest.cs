@@ -37,6 +37,10 @@ namespace CSGOTM {
             return (JObject)RawGet(Consts.Endpoints.GetBestToken, botname);
         }
 
+        public static string GetAuthFile(string botname) {
+            return (string)((JObject)RawGet(Consts.Endpoints.GetAuthFile, botname))["data"];
+        }
+
         public static string GetDatabase() {
             return (string)(((JObject)RawGet(Consts.Endpoints.GetSalesDatabase))["data"]);
         }

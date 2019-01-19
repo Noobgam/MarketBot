@@ -66,10 +66,6 @@ namespace SteamBot
         /// The chat response from the config file.
         /// </summary>
         public readonly string ChatResponse;
-        /// <summary>
-        /// An array of admins for bot.
-        /// </summary>
-        public readonly IEnumerable<SteamID> Admins;
         public readonly SteamClient SteamClient;
         public readonly SteamUser SteamUser;
         public readonly SteamFriends SteamFriends;
@@ -179,7 +175,6 @@ namespace SteamBot
             tradePollingInterval = config.TradePollingInterval <= 100 ? 800 : config.TradePollingInterval;
             tradeOfferPollingIntervalSecs = (config.TradeOfferPollingIntervalSecs == 0 ? 30 : config.TradeOfferPollingIntervalSecs);
             schemaLang = config.SchemaLang != null && config.SchemaLang.Length == 2 ? config.SchemaLang.ToLower() : "en";
-            Admins = config.Admins;
             ApiKey = !String.IsNullOrEmpty(config.ApiKey) ? config.ApiKey : apiKey;
             isProccess = process;
             try
@@ -528,13 +523,24 @@ namespace SteamBot
         
         string GetMobileAuthCode()
         {
-            var authFile = Path.Combine("authfiles", String.Format("{0}.auth", logOnDetails.Username));
-            if (File.Exists(authFile))
-            {
-                SteamGuardAccount = Newtonsoft.Json.JsonConvert.DeserializeObject<SteamAuth.SteamGuardAccount>(File.ReadAllText(authFile));
-                return SteamGuardAccount.GenerateSteamGuardCode();
+            try {
+                var authFile = Path.Combine("authfiles", String.Format("{0}.auth", logOnDetails.Username));
+                string authData = null;
+                if (!File.Exists(authFile)) {
+                    // download from juggler
+                    authData = CSGOTM.LocalRequest.GetAuthFile(logOnDetails.Username);
+                } else {
+                    authData = File.ReadAllText(authFile);
+                }
+                SteamGuardAccount = Newtonsoft.Json.JsonConvert.DeserializeObject<SteamAuth.SteamGuardAccount>(authData);
+                string generated = SteamGuardAccount.GenerateSteamGuardCode();
+                if (!File.Exists(authFile)) {
+                    File.WriteAllText(authFile, authData);
+                }
+                return generated;
+            } catch (Exception e) {
+                return string.Empty;
             }
-            return string.Empty;
         }
 
         /// <summary>

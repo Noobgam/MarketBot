@@ -33,7 +33,7 @@ namespace CSGOTM {
         }
 
         public static class Endpoints {
-            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/ffd2a1ea910fa7a8bc7aae666dfad1c2/raw/prod_conf.json";
+            public const string ServerConfig = "https://gist.githubusercontent.com/Noobgam/8aa9b32b6b147b69f2ffc2057f75652e/raw/full_config.json";
             public const string BotConfig = "https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/config.json";
             public static string prefix = "http://+:4345/";
             public static string juggler = "http://172.31.38.89:4345";
@@ -49,6 +49,8 @@ namespace CSGOTM {
             public const string GetBannedUsers = "/getbannedusers/";
             public const string GetSalesDatabase = "/getsalesdatabase/";
             public const string GetEmptyStickeredDatabase = "/getemptystickereddatabase/";
+            public const string GetConfig = "/getconfig/";
+            public const string GetAuthFile = "/getauthfile/";
             #endregion
 
             #region PUT
@@ -464,6 +466,10 @@ public static class BinarySerialization {
     }
 
     public static class NS {
+        public static T Clone<T>(T obj) {
+            return Deserialize<T>(Serialize(obj));
+        }
+
         public static void Serialize<T>(string filePath, T objectToWrite, bool gzip = false) {
             NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
             fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
@@ -498,7 +504,7 @@ public static class BinarySerialization {
                     }
                     return stream.ToArray();
                 }                
-            } catch {
+            } catch (Exception e) {
                 return null;
             }
         }
