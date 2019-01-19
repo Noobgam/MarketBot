@@ -13,6 +13,7 @@ using SteamBot.MarketBot.CS;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
 using SteamBot.MarketBot.Utility.VK;
+using Newtonsoft.Json.Linq;
 
 namespace SteamBot
 {
@@ -59,9 +60,8 @@ namespace SteamBot
             return true;
         }
 
-        public bool LoadConfigurationFromData(string data) {
-
-            ConfigObject = JsonConvert.DeserializeObject<Configuration>(data);
+        public bool LoadConfigurationFromData(JObject data) {
+            ConfigObject = data.ToObject<Configuration>();
             return ParseConfiguration();
         }
 
