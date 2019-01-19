@@ -539,6 +539,7 @@ namespace SteamBot
                 }
                 return generated;
             } catch (Exception e) {
+                Console.WriteLine($"Unexpected error occured. {e.Message} {e.StackTrace}");
                 return string.Empty;
             }
         }
