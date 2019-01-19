@@ -523,6 +523,9 @@ namespace SteamBot
         
         string GetMobileAuthCode()
         {
+            if (!Directory.Exists("authfiles")) {
+                Directory.CreateDirectory("authfiles");                
+            }
             try {
                 var authFile = Path.Combine("authfiles", String.Format("{0}.auth", logOnDetails.Username));
                 string authData = null;
