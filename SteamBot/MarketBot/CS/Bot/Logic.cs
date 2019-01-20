@@ -791,7 +791,7 @@ namespace CSGOTM {
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
                     if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.GetMedian()
-                        && salesHistory.GetMedian() - item.ui_price > 1000
+                        && salesHistory.GetMedian() - item.ui_price > 400
                         && salesHistory.GetCnt() >= Consts.MINSIZE) {
                         return true; //back to good ol' dayz
                     }
