@@ -38,6 +38,7 @@ namespace Utility {
 
         public static string Get(string uri, WebHeaderCollection headers) {
             try {
+                Log.Info($"Executing {uri} with headers {headers}");
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
                 request.Proxy = null;
                 request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;

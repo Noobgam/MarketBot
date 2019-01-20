@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json.Linq;
+using SteamBot.MarketBot.CS.Bot;
 using SteamTrade;
 using System;
 using System.Collections.Specialized;

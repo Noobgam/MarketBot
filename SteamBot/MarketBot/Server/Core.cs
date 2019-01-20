@@ -35,18 +35,22 @@ namespace Server {
         private Dictionary<string, string> ipCache;
         private int requestsServed = 0;
 
+        public void Init() {
+            CurSizes = new Dictionary<string, int>();
+            CurInventory = new Dictionary<string, double>();
+            CurTradable = new Dictionary<string, double>();
+            CurMedian = new Dictionary<string, double>();
+            CurUntracked = new Dictionary<string, int>();
+            CurMoney = new Dictionary<string, int>();
+            ipCache = new Dictionary<string, string>();
+        }
+
         public Core() {
             try {
                 server = new HttpListener();
                 logger = new NewMarketLogger("Core");
-                CurSizes = new Dictionary<string, int>();
-                CurInventory = new Dictionary<string, double>();
-                CurTradable = new Dictionary<string, double>();
-                CurMedian = new Dictionary<string, double>();
-                CurUntracked = new Dictionary<string, int>();
-                CurMoney = new Dictionary<string, int>();
-                ipCache = new Dictionary<string, string>();
                 server.Prefixes.Add(Consts.Endpoints.prefix);
+                Init();
                 VK.Init();
 
                 unstickeredCache = new EmptyStickeredDatabase();
