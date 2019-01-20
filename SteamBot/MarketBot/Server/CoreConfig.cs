@@ -17,9 +17,9 @@ namespace Server {
     [Serializable]
     class BotConfig : BotInfo, IEquatable<BotConfig> {
 
-        public readonly double Weight;
+        public double Weight;
 
-        public readonly bool Force;
+        public bool Force;
 
         public override bool Equals(object obj) {
             return Equals(obj as BotConfig);
