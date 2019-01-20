@@ -265,7 +265,7 @@ namespace Server {
                 } else if (Endpoint == Consts.Endpoints.GetConfig) {
                     BotConfig chosen = null;
                     foreach (BotConfig bot in coreConfig.Bots) {
-                        if (ipCache[bot.Username] == context.Request.RemoteEndPoint.ToString()) {
+                        if (ipCache.TryGetValue(bot.Username, out string ip) && ip == context.Request.RemoteEndPoint.ToString()) {
                             chosen = bot;
                             break;
                         }
