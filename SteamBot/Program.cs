@@ -28,7 +28,7 @@ namespace SteamBot
         [STAThread]
         public static void Main(string[] args)
         {
-#if !CORE
+#if CORE
             Core core = new Core();
             while (true) {
                 string input = Console.ReadLine();
