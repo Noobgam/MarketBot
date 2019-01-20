@@ -980,7 +980,11 @@ namespace CSGOTM {
 
         public void PingPongLocal() {
             while (parent.IsRunning()) {
-                LocalRequest.Ping(parent.config.Username);
+                try {
+                    LocalRequest.Ping(parent.config.Username);
+                } catch (Exception e) {
+                    Log.Warn($"Juggler ping failed {e.Message} - {e.StackTrace}");
+                }
                 Tasking.WaitForFalseOrTimeout(parent.IsRunning, 5000).Wait();
             }
         }
