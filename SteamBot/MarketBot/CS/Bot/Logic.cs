@@ -62,6 +62,7 @@ namespace CSGOTM {
             FulfillBlackList();
             __emptystickered__.Load();
             __database__.Load();
+            Tasking.Run(parent.InventoryFetcher, botName);
             RefreshConfig();
             Tasking.Run((Action)ParsingCycle, botName);
             Tasking.Run((Action)SaveDataBaseCycle, botName);

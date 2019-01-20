@@ -29,7 +29,11 @@ namespace SteamBot
         public static void Main(string[] args)
         {
 #if CORE
-            Core core = new Core();
+            int port = 4345;
+            if (args.Length > 0) {
+                port = int.Parse(args[0]);
+            }
+            Core core = new Core(port);
             while (true) {
                 string input = Console.ReadLine();
                 if (input == "refresh") {

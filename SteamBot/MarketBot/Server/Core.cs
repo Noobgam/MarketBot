@@ -45,11 +45,11 @@ namespace Server {
             ipCache = new Dictionary<string, string>();
         }
 
-        public Core() {
+        public Core(int port = 4345) {
             try {
                 server = new HttpListener();
                 logger = new NewMarketLogger("Core");
-                server.Prefixes.Add(Consts.Endpoints.prefix);
+                server.Prefixes.Add($"http://+:{port}/");
                 Init();
                 VK.Init();
 

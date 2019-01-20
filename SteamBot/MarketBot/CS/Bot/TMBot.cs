@@ -48,7 +48,6 @@ namespace CSGOTM {
 
             ReadyToRun = true;
             Tasking.Run(Restarter, botName);
-            Tasking.Run(InventoryFetcher, botName);
         }
 
         private bool Alert(string message) {
@@ -72,7 +71,7 @@ namespace CSGOTM {
             }
         }
 
-        private void InventoryFetcher() {
+        public void InventoryFetcher() {
             while (!WaitingForRestart) {
               
                 GenericInventory inv = new GenericInventory(bot.SteamWeb);
