@@ -62,6 +62,10 @@ namespace SteamBot
 
         public bool LoadConfigurationFromData(JObject data) {
             ConfigObject = data.ToObject<Configuration>();
+            if (!File.Exists("settings.json")) {
+                File.WriteAllText("settings.json", JsonConvert.SerializeObject(ConfigObject));
+            }
+            
             return ParseConfiguration();
         }
 
