@@ -146,6 +146,7 @@ namespace SteamBot
 
         public Configuration.BotInfo botConfig;
         public CSGOTM.TMBot MarketBot;
+        public BitSkins.BitSkinsBot BitsBot;
         private bool RestartFlag = false;
 
         public bool WantToRestart()
@@ -280,11 +281,26 @@ namespace SteamBot
             if (!IsRunning) {
                 IsRunning = true;
                 Log.Info("Connecting...");
-                if (MarketBot == null) {
-                    MarketBot = new CSGOTM.TMBot(this, botConfig);
+                if (!botConfig.TMDisabled) {
+                    if (MarketBot == null) {
+                        MarketBot = new CSGOTM.TMBot(this, botConfig);
+                    } else {
+                        MarketBot.Init();
+                    }
                 } else {
-                    MarketBot.Init();
+                    Log.Warn("TM is disabled");
                 }
+
+                if (!botConfig.BitSkinsDisabled) {
+                    if (BitsBot == null) {
+                        BitsBot = new BitSkins.BitSkinsBot(this, botConfig);
+                    } else {
+                        MarketBot.Init();
+                    }
+                } else {
+                    Log.Warn("Bits is disabled");
+                }
+
                 if (!botThread.IsBusy)
                     botThread.RunWorkerAsync();
                 SteamClient.Connect();
@@ -982,7 +998,7 @@ namespace SteamBot
                         tradeOfferManager.HandleNextPendingTradeOfferUpdate();
                     }
 
-                    Thread.Sleep(1);
+                    Thread.Sleep(5);
                 }
                 catch (WebException e)
                 {
@@ -1387,6 +1403,7 @@ namespace SteamBot
             {
                 if (callback.Notifications.Count > 0) {
                     Log.Info("New trade appeared");
+                    tradeOfferManager.EnqueueUpdatedOffers();
                 }
                 //various types of comment notifications on profile/activity feed etc
                 //Log.Info("received CommentNotificationCallback");

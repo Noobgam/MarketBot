@@ -177,6 +177,14 @@ namespace SteamBot
             public string FileLogLevel { get; set; }
             public string SchemaLang { get; set; }
 
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+            [DefaultValue(false)]
+            public bool TMDisabled { get; set; }
+
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+            [DefaultValue(true)]
+            public bool BitSkinsDisabled { get; set; }
+
             // Depreciated configuration options
             public string LogLevel { get; set; }
 
