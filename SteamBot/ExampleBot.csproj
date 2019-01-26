@@ -184,6 +184,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="BitSkinsBot\Protocol\PusherSocket.cs" />
+    <Compile Include="BitSkinsBot\Utility.cs" />
     <Compile Include="MarketBot\CS\Balancer.cs" />
     <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
     <Compile Include="MarketBot\CS\Bot\Database.cs" />
@@ -194,7 +195,7 @@
     <Compile Include="MarketBot\CS\Bot\Protocol.cs" />
     <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
     <Compile Include="MarketBot\CS\SteamDataBase.cs" />
-    <Compile Include="MarketBot\CS\Utility.cs" />
+    <Compile Include="MarketBot\Utility.cs" />
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
     <Compile Include="Utility\Encode.cs" />
@@ -210,6 +211,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Utility\Tasking.cs" />
+    <Compile Include="Utility\UtilityClasses.cs" />
     <Compile Include="Utility\VK\VK.cs" />
     <Compile Include="Notifications.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />

@@ -8,5 +8,8 @@ using System.Threading.Tasks;
 namespace BitSkinsBot {
     public class PusherSocket {
         Pusher pusher;
+        void Subscribe() {
+
+        }
     }
 }
