@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using static CSGOTM.Consts;
 
-namespace SteamBot.MarketBot.Utility.MongoApi {
+namespace Utility.MongoApi {
     public class MongoLogCollection : GenericMongoDB<NewMarketLogger.LogMessage> {
         public override string GetCollectionName() {
             return "logs";

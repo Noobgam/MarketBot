@@ -15,15 +15,14 @@ using Newtonsoft.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
-using SteamBot.MarketBot.Utility;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Utility;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.VK;
-using SteamBot.MarketBot.Utility.MongoApi;
+using Utility.VK;
+using Utility.MongoApi;
 
 namespace CSGOTM {
     public class Protocol {

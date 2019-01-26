@@ -1,7 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SteamBot.MarketBot.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,6 +9,7 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Utility;
 
 namespace CSGOTM {
     public static class Consts {

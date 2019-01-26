@@ -1,5 +1,4 @@
 ﻿using Newtonsoft.Json.Linq;
-using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,7 +34,7 @@ namespace Utility {
                 }
                 return true;
             } catch (Exception e) {
-                VK.Alert($"Could not update Economy cache. Last used id is {lastId}");
+                VK.VK.Alert($"Could not update Economy cache. Last used id is {lastId}");
                 return false;
             }
 

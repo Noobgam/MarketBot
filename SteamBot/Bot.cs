@@ -15,7 +15,7 @@ using SteamKit2.Internal;
 using SteamTrade.TradeOffer;
 using System.Globalization;
 using System.Text.RegularExpressions;
-using SteamBot.MarketBot.Utility.VK;
+using Utility.VK;
 
 namespace SteamBot
 {

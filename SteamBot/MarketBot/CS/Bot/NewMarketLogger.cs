@@ -1,13 +1,13 @@
 ﻿using CSGOTM;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SteamBot.MarketBot.Utility.MongoApi;
-using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Utility.MongoApi;
+using Utility.VK;
 using static CSGOTM.TMBot;
 using static SteamBot.Log;
 

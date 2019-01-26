@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace SteamBot.MarketBot.Utility.MongoApi {
+namespace Utility.MongoApi {
     public abstract class GenericMongoDB<Data> {
 
         //Interface

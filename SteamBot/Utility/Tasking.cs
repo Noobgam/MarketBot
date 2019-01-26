@@ -1,6 +1,5 @@
 ﻿using SteamBot;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;

@@ -14,9 +14,9 @@ using SteamBot.MarketBot.CS;
 using SteamTrade;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.MongoApi;
 using MongoDB.Driver;
 using System.Diagnostics;
+using Utility.MongoApi;
 
 namespace CSGOTM {
     public class Logic {

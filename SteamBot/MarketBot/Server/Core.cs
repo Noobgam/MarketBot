@@ -10,17 +10,17 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using SteamBot.MarketBot.Utility.VK;
 using Utility;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Web;
 using System.Globalization;
-using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
 using SteamBot;
 using static SteamBot.Configuration;
+using Utility.MongoApi;
+using Utility.VK;
 
 namespace Server {
     public class Core : IDisposable {

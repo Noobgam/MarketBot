@@ -12,8 +12,8 @@ using System.Net;
 using SteamBot.MarketBot.CS;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.VK;
 using Newtonsoft.Json.Linq;
+using Utility.VK;
 
 namespace SteamBot
 {

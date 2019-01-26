@@ -85,6 +85,9 @@
     <Reference Include="protobuf-net, Version=2.4.0.0, Culture=neutral, PublicKeyToken=257b51d87d2e4d67, processorArchitecture=MSIL">
       <HintPath>..\packages\protobuf-net.2.4.0\lib\net40\protobuf-net.dll</HintPath>
     </Reference>
+    <Reference Include="PusherClient, Version=0.5.1.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\PusherClient.0.5.1\lib\net40\PusherClient.dll</HintPath>
+    </Reference>
     <Reference Include="SteamAuth, Version=3.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\SteamAuth.3.0.0\lib\net45\SteamAuth.dll</HintPath>
     </Reference>
@@ -175,8 +178,12 @@
     <Reference Include="websocket-sharp, Version=1.0.2.32519, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
       <HintPath>..\packages\WebSocketSharp-NonPreRelease.1.0.0\lib\net35\websocket-sharp.dll</HintPath>
     </Reference>
+    <Reference Include="WebSocket4Net, Version=0.14.1.0, Culture=neutral, PublicKeyToken=eb4e154b696bf72a, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebSocket4Net.0.14.1\lib\net45\WebSocket4Net.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitSkinsBot\Protocol\PusherSocket.cs" />
     <Compile Include="MarketBot\CS\Balancer.cs" />
     <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
     <Compile Include="MarketBot\CS\Bot\Database.cs" />
@@ -190,20 +197,20 @@
     <Compile Include="MarketBot\CS\Utility.cs" />
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
-    <Compile Include="MarketBot\Utility\Encode.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\GenericMongoDB.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoHistoryCSGO.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoBannedUsers.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoLogCollection.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoOperationHistory.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoUnstickeredCSGO.cs" />
-    <Compile Include="MarketBot\Utility\Request.cs" />
-    <Compile Include="MarketBot\Utility\Item.cs" />
-    <Compile Include="MarketBot\Utility\Economy.cs" />
+    <Compile Include="Utility\Encode.cs" />
+    <Compile Include="Utility\MongoApi\GenericMongoDB.cs" />
+    <Compile Include="Utility\MongoApi\MongoHistoryCSGO.cs" />
+    <Compile Include="Utility\MongoApi\MongoBannedUsers.cs" />
+    <Compile Include="Utility\MongoApi\MongoLogCollection.cs" />
+    <Compile Include="Utility\MongoApi\MongoOperationHistory.cs" />
+    <Compile Include="Utility\MongoApi\MongoUnstickeredCSGO.cs" />
+    <Compile Include="Utility\Request.cs" />
+    <Compile Include="Utility\Item.cs" />
+    <Compile Include="Utility\Economy.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MarketBot\Utility\Tasking.cs" />
-    <Compile Include="MarketBot\Utility\VK\VK.cs" />
+    <Compile Include="Utility\Tasking.cs" />
+    <Compile Include="Utility\VK\VK.cs" />
     <Compile Include="Notifications.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />
     <Compile Include="TF2GC\Crafting.cs" />
