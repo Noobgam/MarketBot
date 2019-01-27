@@ -77,20 +77,21 @@ namespace Server {
             }
         }
 
+        private bool PingedRecently(string name) {
+            if (LastPing.TryGetValue(name, out DateTime dt)) {
+                return DateTime.Now.Subtract(dt).TotalSeconds < 120;
+            }
+            return false;
+        }
+
         private void BackgroundCheck() {
             Thread.Sleep(60000);
             while (!disposed) {
                 try {
                     foreach (BotConfig bot in coreConfig.Bots) {
-                        if (LastPing.TryGetValue(bot.Username, out DateTime dt)) {
-                            DateTime temp = DateTime.Now;
-                            if (temp.Subtract(dt).TotalSeconds > 120) {
-                                logger.Warn($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
-                                VK.Alert($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
-                            }
-                        } else {
-                            logger.Warn($"Бот {bot.Username} не пингуется, хотя прописан в конфиге.");
-                            VK.Alert($"Бот {bot.Username} не пингуется, хотя прописан в конфиге.");
+                        if (!PingedRecently(bot.Username)) {
+                            logger.Warn($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
+                            VK.Alert($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
                         }
                     }
                 } catch {
@@ -126,7 +127,7 @@ namespace Server {
                 logger.Info($"[Request {++requestsServed}] {context.Request.RemoteEndPoint.ToString()} - {context.Request.Url.AbsolutePath}");
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
-                    var Forced = coreConfig.Bots.Where(x => x.Force);
+                    var Forced = coreConfig.Bots.Where(x => x.Force && PingedRecently(x.Username));
                     if (Forced.Any()) {
                         BotConfig forcedBot = Forced.First();
                         resp = new JObject {
@@ -135,7 +136,7 @@ namespace Server {
                             ["botname"] = forcedBot.Username,
                         };
                     } else {
-                        var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD);
+                        var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD && PingedRecently(t.Key));
                         if (!Filtered.Any()) {
                             throw new Exception("All bots are overflowing!");
                         }
