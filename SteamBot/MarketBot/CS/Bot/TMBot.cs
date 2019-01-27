@@ -20,7 +20,7 @@ namespace CSGOTM {
             this.bot = bot;
             this.config = new BotConfig(config);
             botName = config.Username;
-            LocalRequest.PutTradeToken(botName, config.TradeToken);
+            //LocalRequest.PutTradeToken(botName, config.TradeToken);
             Init();
         }
 

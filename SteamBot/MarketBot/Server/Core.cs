@@ -57,7 +57,7 @@ namespace Server {
                 unstickeredCache.LoadFromArray(File.ReadAllLines(Path.Combine("assets", "emptystickered.txt")));
 
                 logger.Nothing("Starting!");
-                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                ReloadConfig();
                 server.Start();
                 logger.Nothing("Started!");
                 Task.Run((Action)Listen);
@@ -74,6 +74,19 @@ namespace Server {
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
                 string[] lines = unstickeredCache.Dump();
                 File.WriteAllLines(Path.Combine("assets", "emptystickered.txt"), lines);
+            }
+        }
+
+        public bool ReloadConfig() {
+            try {
+                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                foreach (var bot in coreConfig.Bots) {
+                    TokenCache[bot.Username] = bot.TradeToken;
+                }
+                return true;
+            } catch {
+                logger.Crash("Could not reload config");
+                return false;
             }
         }
 
@@ -97,7 +110,7 @@ namespace Server {
                 } catch {
                 }
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
-                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                ReloadConfig();
             }
         }
 
