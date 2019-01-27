@@ -462,12 +462,6 @@ namespace Server {
                             extrainfo[kvp.Key] = new JObject();
                         extrainfo[kvp.Key]["median_sum"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
                     }
-                    foreach (var kvp in CurInventory) {
-                        if (extrainfo[kvp.Key] == null)
-                            extrainfo[kvp.Key] = new JObject();
-                        extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
-                        usd_inv_sum += kvp.Value;
-                    }
                     double usd_trade_sum = 0;
                     foreach (var kvp in CurTradable) {
                         if (full) {
@@ -483,7 +477,6 @@ namespace Server {
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
                             ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),
-                            ["INVUSD"] = usd_inv_sum.ToString("C", new CultureInfo("en-US")),
                             ["TRADE"] = usd_trade_sum.ToString("C", new CultureInfo("en-US"))
                         }
                     };
