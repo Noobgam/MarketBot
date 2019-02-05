@@ -10,7 +10,7 @@ using VkNet;
 using VkNet.Enums.Filters;
 using VkNet.Model;
 
-namespace SteamBot.MarketBot.Utility.VK {
+namespace Utility.VK {
     public static class VK {
         public static void Init() {
         }

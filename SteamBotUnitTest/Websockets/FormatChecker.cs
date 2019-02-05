@@ -1,7 +1,6 @@
 ﻿using CSGOTM;
 using Newtonsoft.Json.Linq;
 using NUnit.Framework;
-using SteamBot.MarketBot.Utility;
 using System;
 using System.Collections.Generic;
 using System.Globalization;

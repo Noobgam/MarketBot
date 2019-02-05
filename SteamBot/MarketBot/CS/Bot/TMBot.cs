@@ -1,7 +1,6 @@
 ﻿using SteamBot;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.VK;
 using SteamTrade;
 using SuperSocket.ClientEngine;
 using System;
@@ -11,6 +10,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Utility;
+using Utility.VK;
 
 namespace CSGOTM {
     public class TMBot : IDisposable {
@@ -20,6 +20,7 @@ namespace CSGOTM {
             this.bot = bot;
             this.config = new BotConfig(config);
             botName = config.Username;
+            //LocalRequest.PutTradeToken(botName, config.TradeToken);
             Init();
         }
 

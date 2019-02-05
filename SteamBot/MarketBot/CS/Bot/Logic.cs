@@ -14,9 +14,9 @@ using SteamBot.MarketBot.CS;
 using SteamTrade;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.MongoApi;
 using MongoDB.Driver;
 using System.Diagnostics;
+using Utility.MongoApi;
 
 namespace CSGOTM {
     public class Logic {
@@ -806,7 +806,7 @@ namespace CSGOTM {
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
                     if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.GetMedian()
-                        && salesHistory.GetMedian() - item.ui_price > 400
+                        && salesHistory.GetMedian() - item.ui_price > 1000
                         && salesHistory.GetCnt() >= Consts.MINSIZE) {
                         return true; //back to good ol' dayz
                     }
