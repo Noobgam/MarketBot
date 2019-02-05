@@ -866,6 +866,10 @@ namespace CSGOTM {
             }
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
+            if (Logic.obsolete_bot && CurrentToken == "")
+            {
+                return false;
+            }
             string response = await ExecuteApiRequestAsync(url, ApiMethod.Buy, ApiLogLevel.LogAll);
             if (response == null) {
                 return false;
@@ -924,6 +928,10 @@ namespace CSGOTM {
             }
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
+            if (Logic.obsolete_bot && CurrentToken == "")
+            {
+                return false;
+            }
             string response = ExecuteApiRequest(url, ApiMethod.Buy, ApiLogLevel.LogAll);
             if (response == null) {
                 return false;
@@ -1044,11 +1052,16 @@ namespace CSGOTM {
         private Dictionary<string, int> orders = new Dictionary<string, int>();
 
         public bool SetOrder(long classid, long instanceid, int price) {
-            try {
+            try
+            {
+                if (Logic.obsolete_bot)
+                {
+                    return false;
+                }
 #if CAREFUL
             return false;
 #else
-                string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+                    string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
                 if (money < price) {
                     Log.Info("No money to set order, call to url was optimized :" + uri);
                     return false;

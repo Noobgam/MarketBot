@@ -34,6 +34,7 @@ namespace CSGOTM {
         public int cachedTradableCount = 0;
         private int stopsell = -1;
         public bool stopbuy = false;
+        public bool obsolete_bot = false;
 
         public Logic(TMBot bot) {
             botName = bot.config.Username;
@@ -82,6 +83,20 @@ namespace CSGOTM {
             if (!data.TryGetValue(botName, out JToken token)) {
                 Log.Error("Gist config contains no bot definition.");
             } else {
+                if (token["obsolete_bot"].Type == JTokenType.Boolean && (bool)token["obsolete_bot"])
+                {
+                    if (obsolete_bot != (bool)token["obsolete_bot"])
+                    {
+                        obsolete_bot = (bool)token["obsolete_bot"];
+                        if (obsolete_bot)
+                        {
+                            Log.Info("Bot became obsolete.");
+                        } else
+                        {
+                            Log.Warn("Bot became non-obsolete");
+                        }
+                    }
+                }
                 if (token["stopsell"].Type != JTokenType.Integer)
                     Log.Error("Have no idea when to stop selling");
                 else {
