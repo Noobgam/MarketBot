@@ -80,10 +80,11 @@ namespace CSGOTM {
         void RefreshConfig() {
 
             JObject data = JObject.Parse(Utility.Request.Get(Consts.Endpoints.BotConfig));
-            if (!data.TryGetValue(botName, out JToken token)) {
+            if (!data.TryGetValue(botName, out JToken Jtoken)) {
                 Log.Error("Gist config contains no bot definition.");
             } else {
-                if (token["obsolete_bot"].Type == JTokenType.Boolean && (bool)token["obsolete_bot"])
+                JObject token = Jtoken as JObject;
+                if (token.ContainsKey("obsolete_bot") && token["obsolete_bot"].Type == JTokenType.Boolean && (bool)token["obsolete_bot"])
                 {
                     if (obsolete_bot != (bool)token["obsolete_bot"])
                     {
