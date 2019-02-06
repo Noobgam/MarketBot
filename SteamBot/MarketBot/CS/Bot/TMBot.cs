@@ -82,7 +82,6 @@ namespace CSGOTM {
                     logic.cachedInventory = inv;
                     logic.cachedTradableCount = counter;
                     LocalRequest.PutInventory(config.Username, inv);
-                    double totalprice = 0;
                     double tradeprice = 0;
                     int untracked = 0;
                     logic.__database__.EnterReadLock();
@@ -107,7 +106,6 @@ namespace CSGOTM {
                         }
                     }
                     logic.__database__.ExitReadLock();
-                    LocalRequest.PutInventoryCost(config.Username, totalprice);
                     LocalRequest.PutTradableCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, tradeprice / 100), untracked);
                     LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice / 100));
                 }

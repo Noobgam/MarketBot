@@ -204,6 +204,9 @@
     <Compile Include="MarketBot\CS\Bot\Protocol.cs" />
     <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
     <Compile Include="MarketBot\CS\SteamDataBase.cs" />
+    <Compile Include="MarketBot\Server\ApiEndpoint.cs" />
+    <Compile Include="MarketBot\Server\CoreContainer.cs" />
+    <Compile Include="MarketBot\Server\NewCore.cs" />
     <Compile Include="MarketBot\Utility.cs" />
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />

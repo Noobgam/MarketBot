@@ -348,6 +348,7 @@ namespace Server {
                         ["ping"] = "pong",
                     };
                 } else if (Endpoint == Consts.Endpoints.SalesHistorySize) {
+                    // deprecated
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
@@ -360,16 +361,6 @@ namespace Server {
                         salesHistorySizes[usernames[0]] = new ConcurrentQueue<Pair<DateTime, int>>();
                     }
                     salesHistorySizes[usernames[0]].Enqueue(new Pair<DateTime, int>(DateTime.Now, int.Parse(data[0])));
-                } else if (Endpoint == Consts.Endpoints.PutInventoryCost) {
-                    string[] usernames = context.Request.Headers.GetValues("botname");
-                    if (usernames.Length != 1) {
-                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
-                    }
-                    string[] data = context.Request.Headers.GetValues("data");
-                    if (data.Length != 1) {
-                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
-                    }
-                    CurInventory[usernames[0]] = double.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.PutTradableCost) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
