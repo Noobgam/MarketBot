@@ -116,6 +116,18 @@ namespace Server
             }
         }
 
+        [ApiEndpoint(Consts.Endpoints.GetEmptyStickeredDatabase)]
+        public JObject GetEmptyStickeredDatabase()
+        {
+            string[] lines = unstickeredCache.Dump();
+            byte[] bytes = BinarySerialization.NS.Serialize(lines, true);
+            return new JObject
+            {
+                ["success"] = true,
+                ["data"] = StringUtils.ToBase64(bytes)
+            };
+        }
+
         [ApiEndpoint(Consts.Endpoints.GetBestToken)]
         public JObject GetBestToken()
         {
