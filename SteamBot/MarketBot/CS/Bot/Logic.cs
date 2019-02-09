@@ -262,7 +262,7 @@ namespace CSGOTM {
                     unstickeredRefresh.Clear();
                     for (int i = 1; i <= trades.Length; i++) {
                         var cur = trades[trades.Length - i];
-                        if (!hasStickers(cur.i_classid, cur.i_instanceid)) {
+                        if (!hasStickers(cur)) {
                             unstickeredRefresh.Enqueue(cur);
                         }
                         if (i <= 7 && cur.ui_status == "1") {
@@ -373,7 +373,7 @@ namespace CSGOTM {
         /// </summary>
         /// <returns></returns>
         int GetMySellPrice(Inventory.SteamItem item) {
-            if (!hasStickers(item.i_classid, item.i_instanceid))
+            if (!hasStickers(item))
                 return GetMyUnstickeredSellPrice(item);
 
             if (ManipulatedItems.TryGetValue(item.i_classid + "_" + item.i_instanceid, out int ret)) {
@@ -741,15 +741,34 @@ namespace CSGOTM {
             }
         }
 
-        bool hasStickers(string classId, string instanceId) {
-            return !__emptystickered__.NoStickers(classId, instanceId);
+        bool isSouvenir(string s) {
+            string lowerName = s.ToLower();
+            return lowerName.Contains("souvenir") || lowerName.Contains("сувенир");
+        }
+
+        bool hasStickers(Inventory.SteamItem item) {
+            if (isSouvenir(item.i_market_name) || isSouvenir(item.i_market_hash_name))
+                return false;
+            return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
+        }
+
+        bool hasStickers(TMTrade trade) {
+            if (isSouvenir(trade.i_market_name) || isSouvenir(trade.i_market_hash_name))
+                return false;
+            return !__emptystickered__.NoStickers(trade.i_classid, trade.i_instanceid);
         }
 
         bool hasStickers(NewItem item) {
+
+            // souvenir NewItems are not considered unstickered, I still want to buy them.
+            //if (isSouvenir(item.i_market_name))
+            //    return false;
             return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
         }
 
         bool hasStickers(NewHistoryItem item) {
+            if (isSouvenir(item.i_market_name))
+                return false;
             return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
         }
 
