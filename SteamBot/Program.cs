@@ -1,3 +1,5 @@
+#define CORE
+
 using System;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -34,11 +36,12 @@ namespace SteamBot
             if (args.Length > 0) {
                 port = int.Parse(args[0]);
             }
-            Core core = new Core(port);
+            NewCore core = new NewCore(port);
+            core.Initialize();
             while (true) {
                 string input = Console.ReadLine();
                 if (input == "refresh") {
-                    core.Init();
+                    core.Initialize();
                 }
                 if (input == "exit")
                     return;
