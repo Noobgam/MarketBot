@@ -759,10 +759,8 @@ namespace CSGOTM {
         }
 
         bool hasStickers(NewItem item) {
-
-            // souvenir NewItems are not considered unstickered, I still want to buy them.
-            //if (isSouvenir(item.i_market_name))
-            //    return false;
+            if (isSouvenir(item.i_market_name))
+                return false;
             return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
         }
 
