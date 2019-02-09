@@ -10,6 +10,32 @@ using System.Threading.Tasks;
 
 namespace Utility {
 
+    public static class Environment {
+        public class Scope {
+            public readonly bool isCore;
+
+            public Scope(bool isCore) {
+                this.isCore = isCore;
+            }
+        };
+
+        private static Scope scope = null;
+
+        public static Scope GetScope() {
+            if (scope == null) {
+                throw new ArgumentException("Scope not initialized.");
+            }
+            return scope;
+        }
+
+        public static void InitializeScope(bool isCore) {
+            if (scope != null) {
+                throw new ArgumentException("Cannot initialize scope twice.");
+            }
+            scope = new Scope(isCore);
+        }
+    }
+
     public static class BinarySerialization {
         static ConcurrentDictionary<string, ReaderWriterLockSlim> fileLock = new ConcurrentDictionary<string, ReaderWriterLockSlim>();
         public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false) {

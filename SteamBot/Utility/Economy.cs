@@ -16,7 +16,21 @@ namespace Utility {
         }
         static private Random R = new Random();
 
+        public static JObject GetDataApiLayer() {
+            string[] apiKeys = { "01e1f0a1c3a65ded676e69cc09dea8bc",
+                                 "618104c6516893d35cb5cc33e92b345c",
+                                 "9de598203ec40accd8ef57e5bb6c6987", };
+            lastId = R.Next(apiKeys.Length);
+            string api = apiKeys[lastId];
+            return JObject.Parse(Request.Get($"http://apilayer.net/api/live?access_key={api}&currencies=RUB&source=USD&format=1"));            
+        }
+
         public static JObject GetData() {
+            if (Environment.GetScope().isCore) {
+                return GetDataApiLayer();
+            } else {
+
+            }
             string[] apiKeys = { "01e1f0a1c3a65ded676e69cc09dea8bc",
                                  "618104c6516893d35cb5cc33e92b345c",
                                  "9de598203ec40accd8ef57e5bb6c6987", };
@@ -24,6 +38,7 @@ namespace Utility {
             string api = apiKeys[lastId];
             return JObject.Parse(Request.Get($"http://apilayer.net/api/live?access_key={api}&currencies=RUB&source=USD&format=1"));
         }
+
 
         public static bool UpdateCache() {
             try {

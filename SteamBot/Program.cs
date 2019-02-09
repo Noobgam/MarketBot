@@ -29,6 +29,7 @@ namespace SteamBot
         public static void Main(string[] args)
         {
 #if CORE
+            Utility.Environment.InitializeScope(true);
             int port = 4345;
             if (args.Length > 0) {
                 port = int.Parse(args[0]);
@@ -43,7 +44,7 @@ namespace SteamBot
                     return;
             }
 #else
-
+            Utility.Environment.InitializeScope(false);
             opts.Parse(args);
 
             if (showHelp)
