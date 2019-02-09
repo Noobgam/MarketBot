@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using CSGOTM;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,14 +30,8 @@ namespace Utility {
             if (Environment.GetScope().isCore) {
                 return GetDataApiLayer();
             } else {
-
+                return LocalRequest.GetEconomy();
             }
-            string[] apiKeys = { "01e1f0a1c3a65ded676e69cc09dea8bc",
-                                 "618104c6516893d35cb5cc33e92b345c",
-                                 "9de598203ec40accd8ef57e5bb6c6987", };
-            lastId = R.Next(apiKeys.Length);
-            string api = apiKeys[lastId];
-            return JObject.Parse(Request.Get($"http://apilayer.net/api/live?access_key={api}&currencies=RUB&source=USD&format=1"));
         }
 
 
@@ -63,11 +58,17 @@ namespace Utility {
         /// <param name="amount">Amount of currency to convert from.</param>
         /// <returns>Converted value of new currency.</returns>
         public static double ConvertCurrency(Currency from, Currency to, double amount) {
+            if (from == to) {
+                return 1;
+            }
             if (DateTime.Now.Subtract(LastCache).TotalMinutes > 18) {
                 UpdateCache();
             }
             if (from == Currency.RUB && to == Currency.USD) {
                 return amount / CachedRatio;
+            }
+            if (from == Currency.USD && to == Currency.RUB) {
+                return amount * CachedRatio;
             }
             throw new NotImplementedException("Unable to convert this stuff");
         }

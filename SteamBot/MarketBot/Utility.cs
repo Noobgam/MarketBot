@@ -44,6 +44,7 @@ namespace CSGOTM {
             public const string Status = "/status/";
             public const string RPS = "/rps/";
             public const string MongoFind = "/mongo/find/";
+            public const string GetCurrency = "/economy/";
             public const string BanUser = "/ban/";
             public const string UnBanUser = "/unban/";
             public const string GetBannedUsers = "/getbannedusers/";

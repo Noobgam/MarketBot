@@ -176,6 +176,16 @@ namespace Server
 
         }
 
+        [ApiEndpoint(Consts.Endpoints.GetCurrency)]
+        public JObject GetCurrency() {
+            return new JObject {
+                ["success"] = true,
+                ["quotes"] = new JObject {
+                    ["USDRUB"] = Economy.ConvertCurrency(Economy.Currency.USD, Economy.Currency.RUB, 1)
+                }
+            };
+        }
+
         [ApiEndpoint(Consts.Endpoints.BanUser)]
         public JObject BanUser([PathParam] long id)
         {
