@@ -446,7 +446,6 @@ namespace Server {
                         }
                         moneySum += myMoney;
                     }
-                    double usd_inv_sum = 0;
                     foreach (var kvp in CurMedian) {
                         if (kvp.Value == 0) continue;
                         if (extrainfo[kvp.Key] == null)

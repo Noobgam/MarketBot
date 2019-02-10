@@ -15,7 +15,7 @@ namespace BitSkins {
         }
 
         private void OnMessageStub(dynamic message) {
-            message = message;
+            Console.WriteLine("Stub: " + message);
         }
 
         static void Error(object sender, PusherException ex) {
@@ -25,8 +25,12 @@ namespace BitSkins {
         public PusherSocket() {
             pusher = new Pusher("c0eef4118084f8164bec65e6253bf195", Consts.Pusher.Options);
             pusher.ConnectionStateChanged += ConnectionStateChanged;
-
+            pusher.Connected += Connected;
             pusher.Connect();
+        }
+
+        private void Connected(object sender) {
+            connected = true;
         }
 
         public void SubscribeListed(Action<dynamic> callback) {
