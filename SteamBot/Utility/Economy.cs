@@ -27,7 +27,7 @@ namespace Utility {
         }
 
         public static JObject GetData() {
-            if (Environment.GetScope().isCore) {
+            if (Common.Utility.Environment.GetScope().isCore) {
                 return GetDataApiLayer();
             } else {
                 return LocalRequest.GetEconomy();

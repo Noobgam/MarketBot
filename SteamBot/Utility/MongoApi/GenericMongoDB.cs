@@ -17,8 +17,12 @@ namespace Utility.MongoApi {
         protected IMongoDatabase db;
         protected IMongoCollection<Data> collection;
 
-        protected GenericMongoDB() {
-            mongoClient = new MongoClient();
+        protected GenericMongoDB(string host="localhost", int port=27017) {
+            MongoClientSettings settings = new MongoClientSettings {
+                Server = new MongoServerAddress(host, port)
+            };
+            mongoClient = new MongoClient(settings);
+
             db = mongoClient.GetDatabase(GetDBName());
             collection = db.GetCollection<Data>(GetCollectionName());
         }

@@ -20,6 +20,17 @@ namespace Utility {
             }
         }
 
+        public static string RawGet(string uri) {
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.Proxy = null;
+            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream)) {
+                return reader.ReadToEnd();
+            }
+        }
+
         public static string Get(string uri) {
             try {
                 HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
@@ -33,6 +44,19 @@ namespace Utility {
             } catch (Exception) {
                 Log.Error($"Error happened during GET {uri}");
                 return "";
+            }
+        }
+
+        public static string RawGet(string uri, WebHeaderCollection headers) {
+            Log.Info($"Executing {uri} with headers {headers}");
+            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(uri);
+            request.Proxy = null;
+            request.AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate;
+            request.Headers = headers;
+            using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
+            using (Stream stream = response.GetResponseStream())
+            using (StreamReader reader = new StreamReader(stream)) {
+                return reader.ReadToEnd();
             }
         }
 

@@ -1,4 +1,5 @@
-﻿using CSGOTM;
+﻿using Common.Utility;
+using CSGOTM;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using SteamBot;
@@ -35,6 +36,7 @@ namespace Server
         private NewMarketLogger logger = new NewMarketLogger("CoreContainer");
         private MongoBannedUsers mongoBannedUsers = new MongoBannedUsers();
         private Dictionary<string, string> ipCache = new Dictionary<string, string>();
+        private CoreProtocol coreProtocol = new CoreProtocol();
 
         public CoreContainer()
         {
@@ -46,8 +48,7 @@ namespace Server
             try
             {
                 unstickeredCache.LoadFromArray(File.ReadAllLines(Path.Combine("assets", "emptystickered.txt")));
-            } catch
-            {
+            } catch {
 
             }
             ReloadConfig();
@@ -123,6 +124,15 @@ namespace Server
             byte[] bytes = BinarySerialization.NS.Serialize(lines, true);
             return new JObject
             {
+                ["success"] = true,
+                ["data"] = StringUtils.ToBase64(bytes)
+            };
+        }
+
+        [ApiEndpoint(Consts.Endpoints.GetSalesDatabase)]
+        public JObject GetSalesDatabase() {
+            byte[] bytes = File.ReadAllBytes(Path.Combine("assets", "newDatabase"));
+            return new JObject {
                 ["success"] = true,
                 ["data"] = StringUtils.ToBase64(bytes)
             };

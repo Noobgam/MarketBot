@@ -29,7 +29,7 @@ namespace SteamBot
         public static void Main(string[] args)
         {
 #if CORE
-            Utility.Environment.InitializeScope(true);
+            Common.Utility.Environment.InitializeScope(true);
             int port = 4345;
             if (args.Length > 0) {
                 port = int.Parse(args[0]);
@@ -45,7 +45,7 @@ namespace SteamBot
                     return;
             }
 #else
-            Utility.Environment.InitializeScope(false);
+            Common.Utility.Environment.InitializeScope(false);
             opts.Parse(args);
 
             if (showHelp)
@@ -171,7 +171,7 @@ namespace SteamBot
             {
                 if (manager.ConfigObject.UseSeparateProcesses)
                     SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
-                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://steambot.noobgam.me:4345";
+                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://steambot.noobgam.me";
                 Tasking.Run(manager.Nanny);
 
                 if (manager.ConfigObject.AutoStartAllBots)

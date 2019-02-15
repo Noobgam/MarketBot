@@ -211,11 +211,13 @@
     <Compile Include="MarketBot\CS\SteamDataBase.cs" />
     <Compile Include="MarketBot\Server\ApiEndpoint.cs" />
     <Compile Include="MarketBot\Server\CoreContainer.cs" />
+    <Compile Include="MarketBot\Server\CoreProtocol.cs" />
     <Compile Include="MarketBot\Server\NewCore.cs" />
     <Compile Include="MarketBot\Utility.cs" />
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
     <Compile Include="Utility\Encode.cs" />
+    <Compile Include="Utility\MongoApi\GenericJugglerMongoDB.cs" />
     <Compile Include="Utility\MongoApi\GenericMongoDB.cs" />
     <Compile Include="Utility\MongoApi\MongoHistoryCSGO.cs" />
     <Compile Include="Utility\MongoApi\MongoBannedUsers.cs" />

@@ -21,6 +21,7 @@ using SteamBot;
 using static SteamBot.Configuration;
 using Utility.MongoApi;
 using Utility.VK;
+using Common.Utility;
 
 namespace Server {
     public class Core : IDisposable {

@@ -7,16 +7,33 @@ using System.Net;
 
 namespace CSGOTM {
     public static class LocalRequest {
+        private static NewMarketLogger Log = new NewMarketLogger("LocalRequest");
+
         private static void VoidRawGet(string endpoint, WebHeaderCollection headers) {
-            Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers);
+            try {
+                Utility.Request.RawGet(Consts.Endpoints.juggler + endpoint, headers);
+            } catch (Exception ex) {
+                Log.Crash($"Local request failed. {ex.Message}");
+                return;
+            }
         }
 
         private static JToken RawGet(string endpoint, WebHeaderCollection headers) {
-            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers));
+            try {
+                return JToken.Parse(Utility.Request.RawGet(Consts.Endpoints.juggler + endpoint, headers));
+            } catch (Exception ex) {
+                Log.Crash($"Local request failed. {ex.Message}");
+                return null;
+            }
         }
 
         private static JToken RawGet(string endpoint) {
-            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint));
+            try {
+                return JToken.Parse(Utility.Request.RawGet(Consts.Endpoints.juggler + endpoint));
+            } catch (Exception ex) {
+                Log.Crash($"Local request failed. {ex.Message}");
+                return null;
+            }
         }
 
         public static JToken RawGet(string endpoint, string botname) {

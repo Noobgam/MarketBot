@@ -8,7 +8,7 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Utility {
+namespace Common.Utility {
 
     public static class Environment {
         public class Scope {
