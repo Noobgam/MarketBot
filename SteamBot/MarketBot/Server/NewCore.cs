@@ -137,18 +137,7 @@ namespace Server
                         }
                         return ParseParam(val, param.ParameterType);
                     }).ToArray();
-                    if (PathParams.Count() == 0)
-                    {
-                        Respond(
-                            context,
-                            (JObject)method.Invoke(container, new object[] { }));
-                    }
-                    else
-                    {
-                        Respond(
-                            context,
-                            (JObject)method.Invoke(container, ParsedParams));
-                    }
+                    Respond(context, method, container, ParsedParams);
                     return;
                 }
             }
@@ -183,6 +172,28 @@ namespace Server
             {
                 sw.Stop();
                 logger.Info($"[Request {requestid}] took {sw.ElapsedMilliseconds}ms");
+            }
+        }
+
+        private void Respond(HttpListenerContext context, System.Reflection.MethodInfo method, object container, object[] ParsedParams) {
+            try {
+                Respond(context, (JObject)method.Invoke(container, ParsedParams));
+            } catch (System.Reflection.TargetInvocationException ex) {
+                var aex = ex.InnerException as ArgumentException;
+                var eex = ex.InnerException as Exception;
+                if (aex != null) {
+                    Respond(context, new JObject {
+                        ["success"] = false,
+                        ["error"] = aex.Message
+                    });
+                } else {
+                    Respond(context, new JObject {
+                        ["success"] = false,
+                        ["exception"] = eex.Message
+                    });
+                }
+            } catch (Exception ex) {
+                logger.Crash($"Respond threw an exception. {ex.Message}. Trace: {ex.StackTrace}");
             }
         }
 
