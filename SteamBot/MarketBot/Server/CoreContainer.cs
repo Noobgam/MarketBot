@@ -157,14 +157,14 @@ namespace Server
                 var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD && PingedRecently(t.Key));
                 if (!Filtered.Any())
                 {
-                    throw new Exception("All bots are overflowing!");
+                    throw new ArgumentException("All bots are overflowing!");
                 }
                 KeyValuePair<string, int> kv = Filtered.OrderBy(
                     t => t.Value / coreConfig.Bots.First(x => x.Username == t.Key).Weight
                     ).FirstOrDefault();
                 if (kv.Key == null)
                 {
-                    throw new Exception("Don't know about bot inventory sizes");
+                    throw new ArgumentException("Don't know about bot inventory sizes");
                 }
 
                 JToken extrainfo = new JObject();
@@ -208,7 +208,7 @@ namespace Server
             }
             else
             {
-                throw new Exception($"Could not add user (possibly he is present)");
+                throw new ArgumentException($"Could not add user (possibly he is present)");
             }
         }
 
@@ -224,7 +224,7 @@ namespace Server
             }
             else
             {
-                throw new Exception($"Could not delete user (possibly he isn't in banned)");
+                throw new ArgumentException($"Could not delete user (possibly he isn't in banned)");
             }
         }
 
@@ -368,11 +368,7 @@ namespace Server
             }
             if (chosen == null)
             {
-                return new JObject
-                {
-                    ["success"] = false,
-                    ["error"] = "No free instance available"
-                };
+                throw new ArgumentException("No free instance available");
             }
             else
             {
