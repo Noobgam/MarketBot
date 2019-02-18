@@ -10,6 +10,7 @@ using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Utility.VK;
 
 namespace Server
 {
@@ -37,6 +38,7 @@ namespace Server
             logger.Info("Initializing core");
             InitializeEndpoints();
             httpListener.Start();
+            VK.Init();
             logger.Success("Started serving");
             tokenSource = new CancellationTokenSource();
             ct = tokenSource.Token;
