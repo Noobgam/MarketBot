@@ -145,6 +145,10 @@ namespace SteamBot
 
             manager = new BotManager();
             bool loadedOk = false;
+            bool primetime = LocalRequest.IsPrimeTime();
+            if (!primetime) {
+                return;
+            }
             if (!File.Exists("settings.json")) {
                 try {
                     loadedOk = manager.LoadConfigurationFromData(LocalRequest.GetConfig());

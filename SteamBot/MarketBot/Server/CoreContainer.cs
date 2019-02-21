@@ -453,5 +453,14 @@ namespace Server
                 }
             };
         }
+        
+        [ApiEndpoint(Consts.Endpoints.Primetime)]
+        public JObject Primetime() {
+            DateTime dt = TimeZoneInfo.ConvertTime(DateTime.UtcNow, TimeZoneInfo.FindSystemTimeZoneById("Russian Standard Time"));
+            return new JObject {
+                ["success"] = true,
+                ["primetime"] = dt.Hour >= 10 && dt.Hour <= 23
+            };
+        }
     }
 }

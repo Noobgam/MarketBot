@@ -75,6 +75,11 @@ namespace CSGOTM {
             return (string)(((JObject)RawGet(Consts.Endpoints.GetEmptyStickeredDatabase))["data"]);
         }
 
+        public static bool IsPrimeTime() {
+            var temp = (JObject)RawGet(Consts.Endpoints.Primetime);
+            return (bool)(temp["primetime"]);
+        }
+
         public static void PutInventory(string botname, GenericInventory inv) {
             RawPut(Consts.Endpoints.PutCurrentInventory, botname, inv.items.Count.ToString());
         }

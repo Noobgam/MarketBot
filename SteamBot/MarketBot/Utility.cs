@@ -52,6 +52,7 @@ namespace CSGOTM {
             public const string GetEmptyStickeredDatabase = "/getemptystickereddatabase/";
             public const string GetConfig = "/getconfig/";
             public const string GetAuthFile = "/getauthfile/";
+            public const string Primetime = "/primetime/";
             #endregion
 
             #region PUT
