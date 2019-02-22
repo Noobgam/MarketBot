@@ -191,7 +191,8 @@ namespace Server
                 } else {
                     Respond(context, new JObject {
                         ["success"] = false,
-                        ["exception"] = eex.Message
+                        ["exception"] = eex.Message,
+                        ["trace"] = eex.Message
                     });
                 }
             } catch (Exception ex) {
