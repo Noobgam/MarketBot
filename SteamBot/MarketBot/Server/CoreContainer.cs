@@ -154,7 +154,10 @@ namespace Server
             }
             else
             {
-                var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD && PingedRecently(t.Key));
+                var Filtered = CurSizes.Where(
+                    t => t.Value < Consts.CRITICALTHRESHHOLD 
+                    && PingedRecently(t.Key)
+                    && coreConfig.Bots.Any(botConfig => botConfig.Username == t.Key));
                 if (!Filtered.Any())
                 {
                     throw new ArgumentException("All bots are overflowing!");
