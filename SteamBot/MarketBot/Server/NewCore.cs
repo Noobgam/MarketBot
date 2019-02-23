@@ -192,7 +192,7 @@ namespace Server
                     Respond(context, new JObject {
                         ["success"] = false,
                         ["exception"] = eex.Message,
-                        ["trace"] = eex.Message
+                        ["trace"] = eex.StackTrace
                     });
                 }
             } catch (Exception ex) {
