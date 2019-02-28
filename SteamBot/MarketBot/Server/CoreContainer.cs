@@ -93,8 +93,10 @@ namespace Server
             return false;
         }
 
-        private void BackgroundCheck()
-        {
+        private void BackgroundCheck() {
+#if DEBUG
+            logger.Warn("Background pinger is disabled in debug mode.");
+#else
             Thread.Sleep(60000);
             while (true)
             {
@@ -115,6 +117,7 @@ namespace Server
                 Thread.Sleep(60000);
                 ReloadConfig();
             }
+#endif
         }
 
         [ApiEndpoint(Consts.Endpoints.GetEmptyStickeredDatabase)]
@@ -419,7 +422,7 @@ namespace Server
                 {
                     if (extrainfo[kvp.Key] == null)
                         extrainfo[kvp.Key] = new JObject();
-                    extrainfo[kvp.Key]["curmoney"] = myMoney.ToString("C", new CultureInfo("en-US"));
+                    extrainfo[kvp.Key]["curmoney"] = myMoney.ToString("C", new CultureInfo("ru-RU"));
                 }
                 moneySum += myMoney;
             }
@@ -447,7 +450,7 @@ namespace Server
                 ["extrainfo"] = extrainfo,
                 ["moneysum"] = new JObject()
                 {
-                    ["RUB"] = moneySum,
+                    ["RUB"] = moneySum.ToString("C", new CultureInfo("ru-RU")),
                     ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),
                     ["TRADE"] = usd_trade_sum.ToString("C", new CultureInfo("en-US"))
                 }

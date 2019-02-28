@@ -234,6 +234,7 @@ namespace Server
             {
 
             }
+            ctx.Response.Headers["content-type"] = "application/json; charset=UTF-8";
             byte[] buffer = Encoding.UTF8.GetBytes(resp);
             if (acceptEncoding.Contains("gzip"))
             {
