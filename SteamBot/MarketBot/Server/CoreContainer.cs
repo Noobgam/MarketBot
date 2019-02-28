@@ -93,6 +93,14 @@ namespace Server
             return false;
         }
 
+        private bool IsPrimetime()
+        {
+            //https://github.com/mono/mono/issues/6368
+            // mono does not support TimeZone.
+            DateTime dt = DateTime.UtcNow.AddHours(3);
+            return dt.Hour >= 10 && dt.Hour <= 23;
+        }
+
         private void BackgroundCheck() {
 #if DEBUG
             logger.Warn("Background pinger is disabled in debug mode.");
@@ -104,7 +112,7 @@ namespace Server
                 {
                     foreach (BotConfig bot in coreConfig.Bots)
                     {
-                        if (!PingedRecently(bot.Username))
+                        if (!PingedRecently(bot.Username) && IsPrimetime())
                         {
                             logger.Warn($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
                             VK.Alert($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
@@ -157,7 +165,10 @@ namespace Server
             }
             else
             {
-                var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD && PingedRecently(t.Key));
+                var Filtered = CurSizes.Where(
+                    t => t.Value < Consts.CRITICALTHRESHHOLD 
+                    && PingedRecently(t.Key)
+                    && coreConfig.Bots.Any(botConfig => botConfig.Username == t.Key));
                 if (!Filtered.Any())
                 {
                     throw new ArgumentException("All bots are overflowing!");
@@ -459,12 +470,9 @@ namespace Server
         
         [ApiEndpoint(Consts.Endpoints.Primetime)]
         public JObject Primetime() {
-            //https://github.com/mono/mono/issues/6368
-            // mono does not support TimeZone.
-            DateTime dt = DateTime.UtcNow.AddHours(3);
             return new JObject {
                 ["success"] = true,
-                ["primetime"] = dt.Hour >= 10 && dt.Hour <= 23
+                ["primetime"] = IsPrimetime()
             };
         }
     }
