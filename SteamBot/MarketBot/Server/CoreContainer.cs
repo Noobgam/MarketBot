@@ -321,10 +321,9 @@ namespace Server
             string authPath = Path.Combine("authfiles", botname + ".auth");
             if (File.Exists(authPath))
             {
-                return new JObject
-                {
+                return new JObject {
                     ["success"] = true,
-                    ["data"] = File.ReadAllText(authPath)
+                    ["data"] = File.ReadAllText(authPath).Trim()
                 };
             }
             else
