@@ -85,29 +85,32 @@ namespace CSGOTM {
                     double tradeprice = 0;
                     int untracked = 0;
                     logic.__database__.EnterReadLock();
-                    double medianprice = 0;
-                    foreach (var item in inv.descriptions) {
-                        string quality;
-                        string runame;
-                        try {
-                            quality = item.Value.market_hash_name.Split(new char[] { '(', ')' })[1];
-                            runame = item.Value.name + " (" + ConvertQualityToRussian(quality) + ")";
-                        } 
-                        catch {
-                            runame = item.Value.name;
-                            //???
-                            continue;
-                        }
-                        if (logic.__database__.newDataBase.TryGetValue(runame, out Logic.BasicSalesHistory sales)) {
-                            medianprice += sales.GetMedian();
-                            if (item.Value.tradable) {
-                                tradeprice += sales.GetMedian();
+                    try {
+                        double medianprice = 0;
+                        foreach (var item in inv.descriptions) {
+                            string quality;
+                            string runame;
+                            try {
+                                quality = item.Value.market_hash_name.Split(new char[] { '(', ')' })[1];
+                                runame = item.Value.name + " (" + ConvertQualityToRussian(quality) + ")";
+                            } catch {
+                                runame = item.Value.name;
+                                //???
+                                continue;
+                            }
+                            if (logic.__database__.newDataBase.TryGetValue(runame, out Logic.BasicSalesHistory sales)) {
+                                int medPrice = sales.GetMedian();
+                                medianprice += medPrice;
+                                if (item.Value.tradable) {
+                                    tradeprice += medPrice;
+                                }
                             }
                         }
+                        LocalRequest.PutTradableCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, tradeprice / 100), untracked);
+                        LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice / 100));
+                    } finally {
+                        logic.__database__.ExitReadLock();
                     }
-                    logic.__database__.ExitReadLock();
-                    LocalRequest.PutTradableCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, tradeprice / 100), untracked);
-                    LocalRequest.PutMedianCost(config.Username, Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, medianprice / 100));
                 }
                 LocalRequest.PutMoney(config.Username, protocol.GetMoney());
                 if (counter != 0)
