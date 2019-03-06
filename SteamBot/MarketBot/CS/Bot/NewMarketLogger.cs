@@ -78,7 +78,7 @@ namespace SteamBot.MarketBot.CS.Bot {
                 Name = botname,
                 Type = _LogLevel(level).ToUpper(),
                 Message = formatParams.Any() ? String.Format(line, formatParams) : line,
-                TimeStamp = new BsonTimestamp((int)instant.Subtract(epoch).TotalSeconds)
+                TimeStamp = new BsonTimestamp((long)instant.Subtract(epoch).TotalSeconds)
             };
         }
 

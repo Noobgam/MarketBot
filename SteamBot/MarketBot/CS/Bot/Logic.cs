@@ -712,7 +712,7 @@ namespace CSGOTM {
             }
 
             public void Recalculate() {
-                int[] a = new int[cnt];
+                int[] a = new int[Math.Min(cnt, sales.Count)];
                 for (int i = 0; i < cnt; i++)
                     a[i] = sales[i].price;
                 Array.Sort(a);
@@ -728,7 +728,6 @@ namespace CSGOTM {
             }
 
             public SalesHistory() {
-                cnt = 0;
             }
 
             public SalesHistory(NewHistoryItem item) : this() {
@@ -737,7 +736,6 @@ namespace CSGOTM {
 
             public void Add(NewHistoryItem item) {
                 sales.Add(item);
-                cnt += 1;
                 median = item.price;
                 fresh = false;
             }
