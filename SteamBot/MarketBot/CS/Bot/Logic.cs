@@ -678,11 +678,16 @@ namespace CSGOTM {
             }
 
             public void Recalculate() {
-                int[] a = new int[sales.Count];
-                for (int i = 0; i < sales.Count; i++)
-                    a[i] = sales[i].price;
-                Array.Sort(a);
-                median = a[sales.Count / 2];
+                int cnt = sales.Count;
+                if (cnt != 0) {
+                    int[] a = new int[cnt];
+                    for (int i = 0; i < cnt; i++)
+                        a[i] = sales[i].price;
+                    Array.Sort(a);
+                    median = a[cnt / 2];
+                } else {
+                    median = 0;
+                }
                 fresh = true;
             }
 
