@@ -252,6 +252,9 @@ namespace CSGOTM {
                     if (price > 9000 && curPrice < price * UNSTICKERED_ORDER && !blackList.Contains(top.i_market_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
+                    if (needOrderUnstickered.Count < Consts.MINORDERQUEUESIZE) {
+                        needOrderUnstickered.Enqueue(top);
+                    }
                     needOrderUnstickered.Dequeue();
                 }
             }
