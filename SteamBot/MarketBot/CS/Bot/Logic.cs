@@ -712,7 +712,8 @@ namespace CSGOTM {
             }
 
             public void Recalculate() {
-                int[] a = new int[Math.Min(cnt, sales.Count)];
+                cnt = Math.Min(cnt, sales.Count);
+                int[] a = new int[cnt];
                 for (int i = 0; i < cnt; i++)
                     a[i] = sales[i].price;
                 Array.Sort(a);

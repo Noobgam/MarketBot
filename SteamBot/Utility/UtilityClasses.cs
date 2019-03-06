@@ -68,7 +68,7 @@ namespace Common.Utility {
             }
             return default(T);
         }
-
+    
         public static class NS {
             public static T Clone<T>(T obj) {
                 return Deserialize<T>(Serialize(obj));
