@@ -278,8 +278,12 @@ namespace CSGOTM {
             if (!SetToken(token)) {
                 Log.Crash("Steam trade token could not be set");
             }
-            if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
-                Log.Crash("Steam api key could not be set");
+            if (parent.bot.botConfig.SetSteamApiKey) {
+                if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
+                    Log.Crash("Steam api key could not be set");
+                }
+            } else {
+                Log.Warn("SetSteamApiKey is disabled. Bot will not be able to sell items");
             }
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);

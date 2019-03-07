@@ -185,6 +185,10 @@ namespace SteamBot
             [DefaultValue(true)]
             public bool BitSkinsDisabled { get; set; }
 
+            [JsonProperty(DefaultValueHandling = DefaultValueHandling.Populate)]
+            [DefaultValue(false)]
+            public bool SetSteamApiKey { get; set; }
+
             // Depreciated configuration options
             public string LogLevel { get; set; }
 
