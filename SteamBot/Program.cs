@@ -30,9 +30,9 @@ namespace SteamBot
         [STAThread]
         public static void Main(string[] args)
         {
-#if CODEFORCES
+#if !CODEFORCES
             int done = 0;
-            for (int i = 0; i < 20; ++i) {
+            for (int i = 0; i < 200; ++i) {
                 Task.Run(() => {
                     try {
                         FakeFactory.CreateFake();
@@ -41,7 +41,7 @@ namespace SteamBot
                     }
                 });
             }
-            while (done < 20) {
+            while (done < 200) {
                 Thread.Sleep(10000);
             }
             return;
