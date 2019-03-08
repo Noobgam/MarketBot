@@ -2,9 +2,11 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using CSGOTM;
 using NDesk.Options;
 using Server;
+using SteamBot.Utility.MongoApi;
 using Utility;
 
 namespace SteamBot
@@ -28,6 +30,22 @@ namespace SteamBot
         [STAThread]
         public static void Main(string[] args)
         {
+#if CODEFORCES
+            int done = 0;
+            for (int i = 0; i < 20; ++i) {
+                Task.Run(() => {
+                    try {
+                        FakeFactory.CreateFake();
+                    } finally {
+                        ++done;
+                    }
+                });
+            }
+            while (done < 20) {
+                Thread.Sleep(10000);
+            }
+            return;
+#endif
 #if CORE
             Common.Utility.Environment.InitializeScope(true);
             int port = 4345;

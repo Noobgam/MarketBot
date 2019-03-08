@@ -186,6 +186,9 @@
     <Reference Include="VkNet, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\VkNet.1.40.0\lib\net45\VkNet.dll</HintPath>
     </Reference>
+    <Reference Include="WebDriver, Version=3.141.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Selenium.WebDriver.3.141.0\lib\net45\WebDriver.dll</HintPath>
+    </Reference>
     <Reference Include="websocket-sharp, Version=1.0.2.32519, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
       <HintPath>..\packages\WebSocketSharp-NonPreRelease.1.0.0\lib\net35\websocket-sharp.dll</HintPath>
     </Reference>
@@ -210,6 +213,7 @@
     <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
     <Compile Include="MarketBot\CS\SteamDataBase.cs" />
     <Compile Include="MarketBot\Server\ApiEndpoint.cs" />
+    <Compile Include="MarketBot\Server\CodeforcesContainer.cs" />
     <Compile Include="MarketBot\Server\CoreContainer.cs" />
     <Compile Include="MarketBot\Server\CoreProtocol.cs" />
     <Compile Include="MarketBot\Server\NewCore.cs" />
@@ -217,6 +221,7 @@
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
     <Compile Include="Utility\Encode.cs" />
+    <Compile Include="Utility\MongoApi\FakeMongoDB.cs" />
     <Compile Include="Utility\MongoApi\GenericJugglerMongoDB.cs" />
     <Compile Include="Utility\MongoApi\GenericMongoDB.cs" />
     <Compile Include="Utility\MongoApi\MongoHistoryCSGO.cs" />
