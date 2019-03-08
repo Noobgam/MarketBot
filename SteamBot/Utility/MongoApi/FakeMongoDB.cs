@@ -39,14 +39,14 @@ namespace SteamBot.Utility.MongoApi {
     }
 
     public class FakeFactory {
-        private static string RAPID_API = "b478fc7612mshc13ce45cf500611p187369jsn407c14d2589a";
-        private static string RAPID_API_DOMAINS_ENDPOINT = "https://privatix-temp-mail-v1.p.rapidapi.com/request/domains/";
-        private static string RAPID_API_EMAILS_ENDPOINt = "https://privatix-temp-mail-v1.p.rapidapi.com/request/mail/id/{0}/";
+        public static string RAPID_API = "b478fc7612mshc13ce45cf500611p187369jsn407c14d2589a";
+        public static string RAPID_API_DOMAINS_ENDPOINT = "https://privatix-temp-mail-v1.p.rapidapi.com/request/domains/";
+        public static string RAPID_API_EMAILS_ENDPOINt = "https://privatix-temp-mail-v1.p.rapidapi.com/request/mail/id/{0}/";
         private static string NICKNAME_GENERATOR_ENDPOINT = "http://foulomatic.hnldesign.nl/";
         private static string REGISTER_ENDPOINT = "https://codeforces.com/register";
         private static string KAN_COMMENTS = "https://codeforces.com/comments/with/KAN";
         private static string CHECK_ENDPOINT = "https://google.com";
-        private static string _DOMAINS_CACHE = null;
+        public static string _DOMAINS_CACHE = null;
         private const int HandleMIN = 3;
         private const int HandleMAX = 24;
         private static readonly Random R = new Random();
@@ -85,13 +85,7 @@ namespace SteamBot.Utility.MongoApi {
             try {
 
                 string password = GenerateString();
-                lock (RAPID_API_DOMAINS_ENDPOINT) {
-                    if (_DOMAINS_CACHE == null) {
-                        _DOMAINS_CACHE = Request.Get(RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
-                            ["X-RapidAPI-Key"] = RAPID_API
-                        });
-                    }
-                };
+
                 string response = _DOMAINS_CACHE;
                 JArray resp = JArray.Parse(response);
                 string domain = (string)resp[R.Next(resp.Count)];
