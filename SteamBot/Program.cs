@@ -51,8 +51,8 @@ namespace SteamBot
 #else
             Common.Utility.Environment.InitializeScope(false);
 #if CODEFORCES
-            const int AMOUNT = 50;
-            const int BATCH_SIZE = 2;
+            const int AMOUNT = 200;
+            const int BATCH_SIZE = 3;
             bool[] done = new bool[AMOUNT];
             int left = AMOUNT;
             FakeFactory._DOMAINS_CACHE = Request.Get(FakeFactory.RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
