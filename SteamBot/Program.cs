@@ -30,22 +30,6 @@ namespace SteamBot
         [STAThread]
         public static void Main(string[] args)
         {
-#if CODEFORCES
-            int done = 0;
-            for (int i = 0; i < 200; ++i) {
-                Task.Run(() => {
-                    try {
-                        FakeFactory.CreateFake();
-                    } finally {
-                        ++done;
-                    }
-                });
-            }
-            while (done < 200) {
-                Thread.Sleep(10000);
-            }
-            return;
-#endif
 #if CORE
             Common.Utility.Environment.InitializeScope(true);
             int port = 4345;
@@ -64,6 +48,22 @@ namespace SteamBot
             }
 #else
             Common.Utility.Environment.InitializeScope(false);
+#if CODEFORCES
+            int done = 0;
+            for (int i = 0; i < 50; ++i) {
+                Task.Run(() => {
+                    try {
+                        FakeFactory.CreateFake();
+                    } finally {
+                        ++done;
+                    }
+                });
+            }
+            while (done < 200) {
+                Thread.Sleep(10000);
+            }
+            return;
+#endif
             opts.Parse(args);
 
             if (showHelp)

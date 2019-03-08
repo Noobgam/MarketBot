@@ -22,7 +22,11 @@ namespace Utility.MongoApi {
                 Server = new MongoServerAddress(host, port)
             };
             mongoClient = new MongoClient(settings);
-
+            //mongoClient.ListDatabaseNamesAsync().Result.MoveNextAsync();
+            //if (mongoClient.Cluster.Description.State != MongoDB.Driver.Core.Clusters.ClusterState.Connected) {
+            //    Console.WriteLine($"Could not connect to mongodb at {host}:{port}");
+            //    throw new ArgumentException();
+            //}
             db = mongoClient.GetDatabase(GetDBName());
             collection = db.GetCollection<Data>(GetCollectionName());
         }

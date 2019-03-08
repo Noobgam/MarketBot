@@ -81,24 +81,18 @@ namespace SteamBot.Utility.MongoApi {
             return res;
         }
 
-        private static string GetDomains() {
-            lock(RAPID_API_DOMAINS_ENDPOINT) {
-                if (_DOMAINS_CACHE != null) {
-                    return _DOMAINS_CACHE;
-                }
-                WebHeaderCollection headers = new WebHeaderCollection {
-                    ["X-RapidAPI-Key"] = RAPID_API
-                };
-                _DOMAINS_CACHE = Request.Get(RAPID_API_DOMAINS_ENDPOINT, headers);
-            }
-            return _DOMAINS_CACHE;
-        }
-
         public static Fake CreateFake() { 
             try {
 
                 string password = GenerateString();
-                string response = GetDomains();
+                lock (RAPID_API_DOMAINS_ENDPOINT) {
+                    if (_DOMAINS_CACHE == null) {
+                        _DOMAINS_CACHE = Request.Get(RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
+                            ["X-RapidAPI-Key"] = RAPID_API
+                        });
+                    }
+                };
+                string response = _DOMAINS_CACHE;
                 JArray resp = JArray.Parse(response);
                 string domain = (string)resp[R.Next(resp.Count)];
                 string email = GenerateString(15).ToLower() + domain;
