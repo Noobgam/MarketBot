@@ -89,7 +89,7 @@ namespace SteamBot.Utility.MongoApi {
             //p.StartInfo.RedirectStandardError = true;
             //p.StartInfo.RedirectStandardInput = true;
             p.StartInfo.FileName = @"c:\Program Files\nodejs\node.exe";
-            p.StartInfo.Arguments = @"proxy-login-automator\proxy-login-automator.js" + $" -local_port {port} -remote_host zproxy.lum-superproxy.io -remote_port 22225 -usr lum-customer-hl_501e0a34-zone-zone1-session-rand{port} -pwd 8adphgdmqvvl";
+            p.StartInfo.Arguments = @"proxy-login-automator\proxy-login-automator.js" + $" -local_port {port} -remote_host zproxy.lum-superproxy.io -remote_port 22225 -usr lum-customer-hl_501e0a34-zone-zone1-country-us-session-rand{port} -pwd 8adphgdmqvvl";
             p.Start();
             return p;
         }
