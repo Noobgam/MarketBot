@@ -50,22 +50,16 @@ namespace SteamBot
 #else
             Common.Utility.Environment.InitializeScope(false);
 #if CODEFORCES
-            int done = 0;
+            int left = 20;
             FakeFactory._DOMAINS_CACHE = Request.Get(FakeFactory.RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
                 ["X-RapidAPI-Key"] = FakeFactory.RAPID_API
             });
-            for (int i = 0; i < 10; ++i) {
-
-                Task.Run(() => {
-                    try {
-                        FakeFactory.CreateFake();
-                    } finally {
-                        ++done;
-                    }
-                });
-            }
-            while (done < 200) {
-                Thread.Sleep(10000);
+            while (left > 0) {
+                try {
+                    FakeFactory.CreateFake();
+                } finally {
+                    --left;
+                }
             }
             return;
 #endif
