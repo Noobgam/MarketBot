@@ -4,6 +4,7 @@ using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Remote;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -81,7 +82,20 @@ namespace SteamBot.Utility.MongoApi {
             return res;
         }
 
+        private static Process AllocateProxy(int port) {
+            Process p = new Process();
+            p.StartInfo.UseShellExecute = false;
+            //p.StartInfo.RedirectStandardOutput = true;
+            //p.StartInfo.RedirectStandardError = true;
+            //p.StartInfo.RedirectStandardInput = true;
+            p.StartInfo.FileName = @"c:\Program Files\nodejs\node.exe";
+            p.StartInfo.Arguments = @"proxy-login-automator\proxy-login-automator.js" + $" -local_port {port} -remote_host zproxy.lum-superproxy.io -remote_port 22225 -usr lum-customer-hl_501e0a34-zone-zone1-session-rand{port} -pwd 8adphgdmqvvl";
+            p.Start();
+            return p;
+        }
+
         public static Fake CreateFake() {
+            Process proxy = null;
             IWebDriver _webDriver = null;
             try {
 
@@ -97,7 +111,9 @@ namespace SteamBot.Utility.MongoApi {
 
                 var options = new ChromeOptions();
 
-                options.AddArguments($"--proxy-server=localhost:1234");
+                int port = R.Next(2000, 4000);
+                proxy = AllocateProxy(port);
+                options.AddArguments($"--proxy-server=localhost:{port}");
 
                 options.Proxy = null;
 
@@ -127,7 +143,6 @@ namespace SteamBot.Utility.MongoApi {
                 _webDriver.Navigate().GoToUrl(REGISTER_ENDPOINT);
 
                 Thread.Sleep(2500);
-
                 jsDriver.ExecuteScript($"document.getElementsByName('handle')[0].value = '{handle}';");
                 jsDriver.ExecuteScript($"document.getElementsByName('email')[0].value = '{email}';");
                 jsDriver.ExecuteScript($"document.getElementsByName('password')[0].value = '{password}';");
@@ -186,8 +201,19 @@ namespace SteamBot.Utility.MongoApi {
                 _webDriver.Close();
                 return res;
             } catch (Exception e) {
-                if (_webDriver != null) {
-                    _webDriver.Close();
+                try {
+                    if (_webDriver != null) {
+                        _webDriver.Close();
+                    }
+                } catch (Exception e2) { 
+
+                }
+                try {
+                    if (proxy != null) {
+                        proxy.Kill();
+                    }
+                } catch (Exception e3) {
+
                 }
                 return null;
             }

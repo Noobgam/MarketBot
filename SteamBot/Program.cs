@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
 using System.Net;
 using System.Runtime.InteropServices;
@@ -50,16 +51,40 @@ namespace SteamBot
 #else
             Common.Utility.Environment.InitializeScope(false);
 #if CODEFORCES
-            int left = 20;
+            const int AMOUNT = 50;
+            const int BATCH_SIZE = 5;
+            bool[] done = new bool[AMOUNT];
+            int left = AMOUNT;
             FakeFactory._DOMAINS_CACHE = Request.Get(FakeFactory.RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
                 ["X-RapidAPI-Key"] = FakeFactory.RAPID_API
             });
-            while (left > 0) {
-                try {
-                    FakeFactory.CreateFake();
-                } finally {
-                    --left;
+            for (int i = 0; i < AMOUNT; ++i) {
+                int id = i;
+                if (id < BATCH_SIZE) {
+                    Task.Run(() => {
+                        try {
+                            FakeFactory.CreateFake();
+                        } finally {
+                            --left;
+                            done[id] = true;
+                        }
+                    });
+                } else {
+                    Task.Run(() => {
+                        try {
+                            while (!done[id - BATCH_SIZE]) {
+                                Thread.Sleep(3000);
+                            }
+                            FakeFactory.CreateFake();
+                        } finally {
+                            --left;
+                            done[id] = true;
+                        }
+                    });
                 }
+            }
+            while (left > 0) {
+                Thread.Sleep(1500);
             }
             return;
 #endif
