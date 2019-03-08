@@ -46,6 +46,7 @@ namespace SteamBot.Utility.MongoApi {
         private static string REGISTER_ENDPOINT = "https://codeforces.com/register";
         private static string KAN_COMMENTS = "https://codeforces.com/comments/with/KAN";
         private static string CHECK_ENDPOINT = "https://google.com";
+        private static string _DOMAINS_CACHE = null;
         private const int HandleMIN = 3;
         private const int HandleMAX = 24;
         private static readonly Random R = new Random();
@@ -80,13 +81,24 @@ namespace SteamBot.Utility.MongoApi {
             return res;
         }
 
+        private static string GetDomains() {
+            lock(RAPID_API_DOMAINS_ENDPOINT) {
+                if (_DOMAINS_CACHE != null) {
+                    return _DOMAINS_CACHE;
+                }
+                WebHeaderCollection headers = new WebHeaderCollection {
+                    ["X-RapidAPI-Key"] = RAPID_API
+                };
+                _DOMAINS_CACHE = Request.Get(RAPID_API_DOMAINS_ENDPOINT, headers);
+            }
+            return _DOMAINS_CACHE;
+        }
+
         public static Fake CreateFake() { 
             try {
 
                 string password = GenerateString();
-                WebHeaderCollection headers = new WebHeaderCollection();
-                headers["X-RapidAPI-Key"] = RAPID_API;
-                string response = Request.Get(RAPID_API_DOMAINS_ENDPOINT, headers);
+                string response = GetDomains();
                 JArray resp = JArray.Parse(response);
                 string domain = (string)resp[R.Next(resp.Count)];
                 string email = GenerateString(15).ToLower() + domain;
@@ -138,6 +150,9 @@ namespace SteamBot.Utility.MongoApi {
                 for (int retriesLeft = 2; retriesLeft >= 0; --retriesLeft) {
                     Thread.Sleep(2500);
                     try {
+                        WebHeaderCollection headers = new WebHeaderCollection {
+                            ["X-RapidAPI-Key"] = RAPID_API
+                        };
                         JArray messages = JArray.Parse(Request.Get(string.Format(RAPID_API_EMAILS_ENDPOINt, md5), headers));
                         mail_text = (string)messages[0]["mail_text_only"];
                         break;
