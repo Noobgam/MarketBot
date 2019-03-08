@@ -81,7 +81,8 @@ namespace SteamBot.Utility.MongoApi {
             return res;
         }
 
-        public static Fake CreateFake() { 
+        public static Fake CreateFake() {
+            IWebDriver _webDriver = null;
             try {
 
                 string password = GenerateString();
@@ -105,7 +106,7 @@ namespace SteamBot.Utility.MongoApi {
 
                 string args = $"--user-agent={userAgent}$PC${{}}";
                 options.AddArgument(args);
-                IWebDriver _webDriver = new ChromeDriver(cService, options);
+                _webDriver = new ChromeDriver(cService, options);
                 IJavaScriptExecutor jsDriver = (IJavaScriptExecutor)_webDriver;
                 _webDriver.Navigate().GoToUrl(NICKNAME_GENERATOR_ENDPOINT);
                 string handle = "";
@@ -185,6 +186,9 @@ namespace SteamBot.Utility.MongoApi {
                 _webDriver.Close();
                 return res;
             } catch (Exception e) {
+                if (_webDriver != null) {
+                    _webDriver.Close();
+                }
                 return null;
             }
         }
