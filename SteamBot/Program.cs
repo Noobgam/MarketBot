@@ -50,11 +50,11 @@ namespace SteamBot
             }
 #else
             Common.Utility.Environment.InitializeScope(false);
-#if CODEFORCES
+#if !CODEFORCES
             NewCore core = new NewCore(80);
             core.Initialize();
             const int AMOUNT = 200;
-            const int BATCH_SIZE = 3;
+            const int BATCH_SIZE = 4;
             bool[] done = new bool[AMOUNT];
             Task[] busy = new Task[AMOUNT];
             int left = AMOUNT;
