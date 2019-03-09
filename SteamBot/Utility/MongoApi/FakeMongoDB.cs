@@ -219,8 +219,8 @@ namespace SteamBot.Utility.MongoApi {
                     //like a specific comment
                     _webDriver.Navigate().GoToUrl("https://codeforces.com/blog/entry/65404?#comment-494127");
                     string commentId = "494127";
-                    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[1].parentElement).find('.vote-for-comment')[0].click()");
-                    Thread.Sleep(1000);
+                    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[1].parentElement).find('.vote-for-comment')[1].click()");
+                    Thread.Sleep(1500);
                 }
                 //_webDriver.Navigate().GoToUrl(KAN_COMMENTS);
                 //dynamic elements = jsDriver.ExecuteScript("return document.getElementsByClassName('info');");
