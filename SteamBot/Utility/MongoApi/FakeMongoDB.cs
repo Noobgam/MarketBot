@@ -152,7 +152,7 @@ namespace SteamBot.Utility.MongoApi {
                 string md5 = GetMd5Hash(email);
                 string mail_text = null;
                 for (int retriesLeft = 2; retriesLeft >= 0; --retriesLeft) {
-                    Thread.Sleep(2500);
+                    Thread.Sleep(2500 * (3 - retriesLeft));
                     try {
                         WebHeaderCollection headers = new WebHeaderCollection {
                             ["X-RapidAPI-Key"] = RAPID_API
@@ -165,6 +165,20 @@ namespace SteamBot.Utility.MongoApi {
                     }
                 }
                 if (mail_text == null) {
+                    try {
+                        if (_webDriver != null) {
+                            _webDriver.Close();
+                        }
+                    } catch (Exception e2) {
+
+                    }
+                    try {
+                        if (proxy != null) {
+                            proxy.Kill();
+                        }
+                    } catch (Exception e3) {
+
+                    }
                     return null;
                 }
                 // example pattern to match: https://codeforces.com/register/confirm/0c0972cb33c1658f2725d13167ac82072c2d3e66
@@ -182,14 +196,7 @@ namespace SteamBot.Utility.MongoApi {
                 jsDriver.ExecuteScript($"document.getElementsByName('source')[0].value = 'Karen';");
                 jsDriver.ExecuteScript($"document.getElementsByClassName('submit')[0].click();");
 
-                _webDriver.Navigate().GoToUrl(KAN_COMMENTS);
-                dynamic elements = jsDriver.ExecuteScript("return document.getElementsByClassName('info');");
-                List<string> commentLinks = new List<string>();
-                foreach (var el in elements) {
-                    if (el is RemoteWebElement remoteWebElement) {
-                        commentLinks.Add(remoteWebElement.FindElementByXPath("div/a[2]").GetAttribute("href"));
-                    }
-                }
+
                 {
                     //like a specific comment
                     _webDriver.Navigate().GoToUrl("https://codeforces.com/blog/entry/63346?#comment-497914");
@@ -197,13 +204,21 @@ namespace SteamBot.Utility.MongoApi {
                     jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[0].parentElement).find('.vote-for-comment')[0].click()");
                     Thread.Sleep(1000);
                 }
-                foreach (var commentLink in commentLinks) {
-                    _webDriver.Navigate().GoToUrl(commentLink);
-                    string[] parts = commentLink.Split('-');
-                    string commentId = parts[parts.Length - 1];
-                    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[0].parentElement).find('.vote-for-comment')[1].click()");
-                    Thread.Sleep(1000);
-                 }
+                //_webDriver.Navigate().GoToUrl(KAN_COMMENTS);
+                //dynamic elements = jsDriver.ExecuteScript("return document.getElementsByClassName('info');");
+                //List<string> commentLinks = new List<string>();
+                //foreach (var el in elements) {
+                //    if (el is RemoteWebElement remoteWebElement) {
+                //        commentLinks.Add(remoteWebElement.FindElementByXPath("div/a[2]").GetAttribute("href"));
+                //    }
+                //}
+                //foreach (var commentLink in commentLinks) {
+                //    _webDriver.Navigate().GoToUrl(commentLink);
+                //    string[] parts = commentLink.Split('-');
+                //    string commentId = parts[parts.Length - 1];
+                //    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[0].parentElement).find('.vote-for-comment')[1].click()");
+                //    Thread.Sleep(1000);
+                // }
 
                 _webDriver.Close();
                 return res;
