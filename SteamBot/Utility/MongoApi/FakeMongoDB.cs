@@ -1,4 +1,8 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using MongoDB.Bson;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 using OpenQA.Selenium;
 using OpenQA.Selenium.Chrome;
 using OpenQA.Selenium.Remote;
@@ -17,7 +21,12 @@ using Utility;
 using Utility.MongoApi;
 
 namespace SteamBot.Utility.MongoApi {
+    [Serializable]
     public class Fake {
+        [BsonId]
+        [JsonIgnore]
+        public ObjectId ID { get; set; }
+
         public string name;
         public string password;
         public string registrationEmail;
@@ -36,6 +45,15 @@ namespace SteamBot.Utility.MongoApi {
 
         public override string GetDBName() {
             return "codeforces_main";
+        }
+
+        public Fake FindAny() {
+            return collection.FindSync(FilterDefinition<Fake>.Empty).FirstOrDefault();
+        }
+
+        public Fake FindByHandle(string handle) {
+            var filter = new BsonDocument("name", handle);
+            return collection.FindSync(filter).FirstOrDefault();
         }
     }
 
@@ -199,9 +217,9 @@ namespace SteamBot.Utility.MongoApi {
 
                 {
                     //like a specific comment
-                    _webDriver.Navigate().GoToUrl("https://codeforces.com/blog/entry/63346?#comment-497914");
-                    string commentId = "497914";
-                    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[0].parentElement).find('.vote-for-comment')[0].click()");
+                    _webDriver.Navigate().GoToUrl("https://codeforces.com/blog/entry/65404?#comment-494127");
+                    string commentId = "494127";
+                    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[1].parentElement).find('.vote-for-comment')[0].click()");
                     Thread.Sleep(1000);
                 }
                 //_webDriver.Navigate().GoToUrl(KAN_COMMENTS);

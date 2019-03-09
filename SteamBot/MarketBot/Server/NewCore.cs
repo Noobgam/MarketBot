@@ -62,7 +62,8 @@ namespace Server
             {
                 try
                 {
-                    ThreadPool.QueueUserWorkItem(Process, httpListener.GetContext());
+                    var ctx = httpListener.GetContext();
+                    ThreadPool.QueueUserWorkItem(Process, ctx);
                 }
                 catch (Exception e)
                 {

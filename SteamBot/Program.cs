@@ -51,41 +51,46 @@ namespace SteamBot
 #else
             Common.Utility.Environment.InitializeScope(false);
 #if CODEFORCES
+            NewCore core = new NewCore(4345);
+            core.Initialize();
             const int AMOUNT = 200;
             const int BATCH_SIZE = 3;
             bool[] done = new bool[AMOUNT];
+            Task[] busy = new Task[AMOUNT];
             int left = AMOUNT;
+            int Busy = 0;
             FakeFactory._DOMAINS_CACHE = Request.Get(FakeFactory.RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
                 ["X-RapidAPI-Key"] = FakeFactory.RAPID_API
             });
             for (int i = 0; i < AMOUNT; ++i) {
-                int id = i;
-                if (id < BATCH_SIZE) {
-                    Task.Run(() => {
-                        try {
-                            FakeFactory.CreateFake();
-                        } finally {
-                            --left;
-                            done[id] = true;
-                        }
-                    });
-                } else {
-                    Task.Run(() => {
-                        try {
-                            while (!done[id - BATCH_SIZE]) {
-                                Thread.Sleep(3000);
-                            }
-                            FakeFactory.CreateFake();
-                        } finally {
-                            --left;
-                            done[id] = true;
-                        }
-                    });
-                }
+                busy[i] = null;
             }
             while (left > 0) {
+                
+                if (Busy < BATCH_SIZE && Busy < left) {
+                    for (int i = 0; i < AMOUNT; ++i) {
+                        if (!done[i] && busy[i] == null) {
+                            int id = i;
+                            ++Busy;
+                            busy[id] =
+                                Task.Run(() => {
+                                    try {
+                                        FakeFactory.CreateFake();
+                                    } finally {
+                                        --left;
+                                        --Busy;
+                                        done[id] = true;
+                                    }
+                                });
+                        }
+                        if (!(Busy < BATCH_SIZE && Busy < left)) {
+                            break;
+                        }
+                    }
+                }
                 Thread.Sleep(1500);
             }
+
             return;
 #endif
             opts.Parse(args);
