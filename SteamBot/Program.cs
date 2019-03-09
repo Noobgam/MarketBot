@@ -50,7 +50,7 @@ namespace SteamBot
             }
 #else
             Common.Utility.Environment.InitializeScope(false);
-#if !CODEFORCES
+#if CODEFORCES
             NewCore core = new NewCore(80);
             core.Initialize();
             const int AMOUNT = 200;
