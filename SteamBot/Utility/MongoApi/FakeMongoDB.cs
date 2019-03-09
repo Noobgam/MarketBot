@@ -190,6 +190,13 @@ namespace SteamBot.Utility.MongoApi {
                         commentLinks.Add(remoteWebElement.FindElementByXPath("div/a[2]").GetAttribute("href"));
                     }
                 }
+                {
+                    //like a specific comment
+                    _webDriver.Navigate().GoToUrl("https://codeforces.com/blog/entry/63346?#comment-497914");
+                    string commentId = "497914";
+                    jsDriver.ExecuteScript($"$(document.getElementsByClassName('comment-content-{commentId}')[0].parentElement).find('.vote-for-comment')[0].click()");
+                    Thread.Sleep(1000);
+                }
                 foreach (var commentLink in commentLinks) {
                     _webDriver.Navigate().GoToUrl(commentLink);
                     string[] parts = commentLink.Split('-');
