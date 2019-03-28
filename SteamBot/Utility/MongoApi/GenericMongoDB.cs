@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace SteamBot.MarketBot.Utility.MongoApi {
+namespace Utility.MongoApi {
     public abstract class GenericMongoDB<Data> {
 
         //Interface
@@ -17,8 +17,16 @@ namespace SteamBot.MarketBot.Utility.MongoApi {
         protected IMongoDatabase db;
         protected IMongoCollection<Data> collection;
 
-        protected GenericMongoDB() {
-            mongoClient = new MongoClient();
+        protected GenericMongoDB(string host="localhost", int port=27017) {
+            MongoClientSettings settings = new MongoClientSettings {
+                Server = new MongoServerAddress(host, port)
+            };
+            mongoClient = new MongoClient(settings);
+            //mongoClient.ListDatabaseNamesAsync().Result.MoveNextAsync();
+            //if (mongoClient.Cluster.Description.State != MongoDB.Driver.Core.Clusters.ClusterState.Connected) {
+            //    Console.WriteLine($"Could not connect to mongodb at {host}:{port}");
+            //    throw new ArgumentException();
+            //}
             db = mongoClient.GetDatabase(GetDBName());
             collection = db.GetCollection<Data>(GetCollectionName());
         }

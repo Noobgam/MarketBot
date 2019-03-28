@@ -11,7 +11,6 @@ namespace CSGOTM {
             Api = steamConfig.MarketApiKey;
             Username = steamConfig.Username;
             DisplayName = steamConfig.DisplayName;
-            LocalRequest.PutTradeToken(Username, steamConfig.TradeToken);
         }
 
         public string Api;

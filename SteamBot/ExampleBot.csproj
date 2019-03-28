@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">x86</Platform>
@@ -14,6 +14,8 @@
     <TargetFrameworkVersion>v4.5.2</TargetFrameworkVersion>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <TargetFrameworkProfile />
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <DebugSymbols>True</DebugSymbols>
@@ -42,6 +44,9 @@
   <PropertyGroup>
     <StartupObject />
   </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
   <ItemGroup>
     <Reference Include="DnsClient, Version=1.2.0.0, Culture=neutral, PublicKeyToken=4574bb5573c51424, processorArchitecture=MSIL">
       <HintPath>..\packages\DnsClient.1.2.0\lib\net45\DnsClient.dll</HintPath>
@@ -64,17 +69,26 @@
     <Reference Include="Microsoft.Extensions.Logging.Abstractions, Version=2.1.0.0, Culture=neutral, PublicKeyToken=8df3f1eee85cc956, processorArchitecture=MSIL">
       <HintPath>..\packages\NetFx.Extensions.Logging.Abstractions.2.1.1\lib\net451\Microsoft.Extensions.Logging.Abstractions.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Threading.Tasks, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Threading.Tasks.Extensions, Version=1.0.12.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Threading.Tasks.Extensions.Desktop, Version=1.0.168.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
+      <HintPath>..\packages\Microsoft.Bcl.Async.1.0.168\lib\net40\Microsoft.Threading.Tasks.Extensions.Desktop.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Win32.Registry, Version=4.1.1.0, Culture=neutral, PublicKeyToken=b03f5f7f11d50a3a, processorArchitecture=MSIL">
       <HintPath>..\packages\Microsoft.Win32.Registry.4.5.0\lib\net461\Microsoft.Win32.Registry.dll</HintPath>
     </Reference>
-    <Reference Include="MongoDB.Bson, Version=2.7.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MongoDB.Bson.2.7.2\lib\net45\MongoDB.Bson.dll</HintPath>
+    <Reference Include="MongoDB.Bson, Version=2.7.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MongoDB.Bson.2.7.3\lib\net45\MongoDB.Bson.dll</HintPath>
     </Reference>
-    <Reference Include="MongoDB.Driver, Version=2.7.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MongoDB.Driver.2.7.2\lib\net45\MongoDB.Driver.dll</HintPath>
+    <Reference Include="MongoDB.Driver, Version=2.7.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MongoDB.Driver.2.7.3\lib\net45\MongoDB.Driver.dll</HintPath>
     </Reference>
-    <Reference Include="MongoDB.Driver.Core, Version=2.7.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\MongoDB.Driver.Core.2.7.2\lib\net45\MongoDB.Driver.Core.dll</HintPath>
+    <Reference Include="MongoDB.Driver.Core, Version=2.7.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\MongoDB.Driver.Core.2.7.3\lib\net45\MongoDB.Driver.Core.dll</HintPath>
     </Reference>
     <Reference Include="NetSerializer, Version=4.1.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\NetSerializer.4.1.0\lib\net45\NetSerializer.dll</HintPath>
@@ -172,11 +186,22 @@
     <Reference Include="VkNet, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\VkNet.1.40.0\lib\net45\VkNet.dll</HintPath>
     </Reference>
+    <Reference Include="WebDriver, Version=3.141.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Selenium.WebDriver.3.141.0\lib\net45\WebDriver.dll</HintPath>
+    </Reference>
     <Reference Include="websocket-sharp, Version=1.0.2.32519, Culture=neutral, PublicKeyToken=5660b08a1845a91e, processorArchitecture=MSIL">
       <HintPath>..\packages\WebSocketSharp-NonPreRelease.1.0.0\lib\net35\websocket-sharp.dll</HintPath>
     </Reference>
+    <Reference Include="WebSocket4Net, Version=0.15.2.11, Culture=neutral, PublicKeyToken=eb4e154b696bf72a, processorArchitecture=MSIL">
+      <HintPath>..\packages\WebSocket4Net.0.15.2\lib\net45\WebSocket4Net.dll</HintPath>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BitSkinsBot\Bot\BitSkinsBot.cs" />
+    <Compile Include="BitSkinsBot\Bot\BotConfig.cs" />
+    <Compile Include="BitSkinsBot\Protocol\Protocol.cs" />
+    <Compile Include="BitSkinsBot\Protocol\PusherSocket.cs" />
+    <Compile Include="BitSkinsBot\Utility.cs" />
     <Compile Include="MarketBot\CS\Balancer.cs" />
     <Compile Include="MarketBot\CS\Bot\BotConfig.cs" />
     <Compile Include="MarketBot\CS\Bot\Database.cs" />
@@ -187,23 +212,31 @@
     <Compile Include="MarketBot\CS\Bot\Protocol.cs" />
     <Compile Include="MarketBot\CS\Bot\TMBot.cs" />
     <Compile Include="MarketBot\CS\SteamDataBase.cs" />
-    <Compile Include="MarketBot\CS\Utility.cs" />
+    <Compile Include="MarketBot\Server\ApiEndpoint.cs" />
+    <Compile Include="MarketBot\Server\CodeforcesContainer.cs" />
+    <Compile Include="MarketBot\Server\CoreContainer.cs" />
+    <Compile Include="MarketBot\Server\CoreProtocol.cs" />
+    <Compile Include="MarketBot\Server\NewCore.cs" />
+    <Compile Include="MarketBot\Utility.cs" />
     <Compile Include="MarketBot\Server\Core.cs" />
     <Compile Include="MarketBot\Server\CoreConfig.cs" />
-    <Compile Include="MarketBot\Utility\Encode.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\GenericMongoDB.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoHistoryCSGO.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoBannedUsers.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoLogCollection.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoOperationHistory.cs" />
-    <Compile Include="MarketBot\Utility\MongoApi\MongoUnstickeredCSGO.cs" />
-    <Compile Include="MarketBot\Utility\Request.cs" />
-    <Compile Include="MarketBot\Utility\Item.cs" />
-    <Compile Include="MarketBot\Utility\Economy.cs" />
+    <Compile Include="Utility\Encode.cs" />
+    <Compile Include="Utility\MongoApi\FakeMongoDB.cs" />
+    <Compile Include="Utility\MongoApi\GenericJugglerMongoDB.cs" />
+    <Compile Include="Utility\MongoApi\GenericMongoDB.cs" />
+    <Compile Include="Utility\MongoApi\MongoHistoryCSGO.cs" />
+    <Compile Include="Utility\MongoApi\MongoBannedUsers.cs" />
+    <Compile Include="Utility\MongoApi\MongoLogCollection.cs" />
+    <Compile Include="Utility\MongoApi\MongoOperationHistory.cs" />
+    <Compile Include="Utility\MongoApi\MongoUnstickeredCSGO.cs" />
+    <Compile Include="Utility\Request.cs" />
+    <Compile Include="Utility\Item.cs" />
+    <Compile Include="Utility\Economy.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="MarketBot\Utility\Tasking.cs" />
-    <Compile Include="MarketBot\Utility\VK\VK.cs" />
+    <Compile Include="Utility\Tasking.cs" />
+    <Compile Include="Utility\UtilityClasses.cs" />
+    <Compile Include="Utility\VK\VK.cs" />
     <Compile Include="Notifications.cs" />
     <Compile Include="SteamGroups\CMsgInviteUserToGroup.cs" />
     <Compile Include="TF2GC\Crafting.cs" />
@@ -227,6 +260,10 @@
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
+    <ProjectReference Include="..\PusherClient\PusherClient.csproj">
+      <Project>{9e30e755-c00e-4bf7-b56b-8f2d836fba60}</Project>
+      <Name>PusherClient</Name>
+    </ProjectReference>
     <ProjectReference Include="..\SteamTrade\SteamTrade.csproj">
       <Project>{6CEC0333-81EB-40EE-85D1-941363626FC7}</Project>
       <Name>SteamTrade</Name>
@@ -245,4 +282,11 @@
     <Folder Include="Properties\" />
   </ItemGroup>
   <Import Project="$(SolutionDir)\.nuget\NuGet.targets" Condition="Exists('$(SolutionDir)\.nuget\NuGet.targets')" />
+  <Import Project="..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets" Condition="Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Bcl.Build.1.0.21\build\Microsoft.Bcl.Build.targets'))" />
+  </Target>
 </Project>

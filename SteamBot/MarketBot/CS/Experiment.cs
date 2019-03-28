@@ -36,6 +36,14 @@ namespace SteamBot.MarketBot.CS {
                    WantToBuy == formula.WantToBuy;
         }
 
+        public override string ToString() {
+            return base.ToString();
+        }
+
+        public override int GetHashCode() {
+            return base.GetHashCode();
+        }
+
         public static bool operator ==(NewBuyFormula formula1, NewBuyFormula formula2) {
             return EqualityComparer<NewBuyFormula>.Default.Equals(formula1, formula2);
         }
@@ -59,6 +67,14 @@ namespace SteamBot.MarketBot.CS {
             var multiplier = obj as SellMultiplier;
             return multiplier != null &&
                    Multiplier == multiplier.Multiplier;
+        }
+
+        public override string ToString() {
+            return base.ToString();
+        }
+
+        public override int GetHashCode() {
+            return base.GetHashCode();
         }
 
         public static bool operator ==(SellMultiplier multiplier1, SellMultiplier multiplier2) {

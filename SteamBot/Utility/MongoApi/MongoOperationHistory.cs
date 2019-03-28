@@ -8,7 +8,7 @@ using CSGOTM;
 using MongoDB.Bson;
 using static CSGOTM.Consts;
 
-namespace SteamBot.MarketBot.Utility.MongoApi {
+namespace Utility.MongoApi {
     public class MongoOperationHistory : GenericMongoDB<MongoHistoricalOperation> {
         readonly string botname;
 

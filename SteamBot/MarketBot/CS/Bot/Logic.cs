@@ -14,9 +14,9 @@ using SteamBot.MarketBot.CS;
 using SteamTrade;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.MongoApi;
 using MongoDB.Driver;
 using System.Diagnostics;
+using Utility.MongoApi;
 
 namespace CSGOTM {
     public class Logic {
@@ -34,6 +34,7 @@ namespace CSGOTM {
         public int cachedTradableCount = 0;
         private int stopsell = -1;
         public bool stopbuy = false;
+        public bool obsolete_bot = false;
 
         public Logic(TMBot bot) {
             botName = bot.config.Username;
@@ -79,9 +80,24 @@ namespace CSGOTM {
         void RefreshConfig() {
 
             JObject data = JObject.Parse(Utility.Request.Get(Consts.Endpoints.BotConfig));
-            if (!data.TryGetValue(botName, out JToken token)) {
+            if (!data.TryGetValue(botName, out JToken Jtoken)) {
                 Log.Error("Gist config contains no bot definition.");
             } else {
+                JObject token = Jtoken as JObject;
+                if (token.ContainsKey("obsolete_bot") && token["obsolete_bot"].Type == JTokenType.Boolean && (bool)token["obsolete_bot"])
+                {
+                    if (obsolete_bot != (bool)token["obsolete_bot"])
+                    {
+                        obsolete_bot = (bool)token["obsolete_bot"];
+                        if (obsolete_bot)
+                        {
+                            Log.Info("Bot became obsolete.");
+                        } else
+                        {
+                            Log.Warn("Bot became non-obsolete");
+                        }
+                    }
+                }
                 if (token["stopsell"].Type != JTokenType.Integer)
                     Log.Error("Have no idea when to stop selling");
                 else {
@@ -198,10 +214,9 @@ namespace CSGOTM {
                     var info = Protocol.MassInfo(
                         new List<Tuple<string, string>> { new Tuple<string, string>(top.i_classid.ToString(), top.i_instanceid.ToString()) },
                         buy: 2, history: 1);
-                    if (info == null)
-                        continue; //unlucky
                     if (info == null || (string)info["success"] == "false") {
                         needOrderUnstickered.Dequeue();
+                        Log.Warn("MassInfo failed, could not place order.");
                         continue;
                     }
 
@@ -236,6 +251,9 @@ namespace CSGOTM {
                     if (price > 9000 && curPrice < price * UNSTICKERED_ORDER && !blackList.Contains(top.i_market_name)) {
                         Protocol.SetOrder(top.i_classid, top.i_instanceid, curPrice + 1);
                     }
+                    if (needOrderUnstickered.Count < Consts.MINORDERQUEUESIZE) {
+                        needOrderUnstickered.Enqueue(top);
+                    }
                     needOrderUnstickered.Dequeue();
                 }
             }
@@ -246,7 +264,7 @@ namespace CSGOTM {
                     unstickeredRefresh.Clear();
                     for (int i = 1; i <= trades.Length; i++) {
                         var cur = trades[trades.Length - i];
-                        if (!hasStickers(cur.i_classid, cur.i_instanceid)) {
+                        if (!hasStickers(cur)) {
                             unstickeredRefresh.Enqueue(cur);
                         }
                         if (i <= 7 && cur.ui_status == "1") {
@@ -357,7 +375,7 @@ namespace CSGOTM {
         /// </summary>
         /// <returns></returns>
         int GetMySellPrice(Inventory.SteamItem item) {
-            if (!hasStickers(item.i_classid, item.i_instanceid))
+            if (!hasStickers(item))
                 return GetMyUnstickeredSellPrice(item);
 
             if (ManipulatedItems.TryGetValue(item.i_classid + "_" + item.i_instanceid, out int ret)) {
@@ -660,11 +678,16 @@ namespace CSGOTM {
             }
 
             public void Recalculate() {
-                int[] a = new int[sales.Count];
-                for (int i = 0; i < sales.Count; i++)
-                    a[i] = sales[i].price;
-                Array.Sort(a);
-                median = a[sales.Count / 2];
+                int cnt = sales.Count;
+                if (cnt != 0) {
+                    int[] a = new int[cnt];
+                    for (int i = 0; i < cnt; i++)
+                        a[i] = sales[i].price;
+                    Array.Sort(a);
+                    median = a[cnt / 2];
+                } else {
+                    median = 0;
+                }
                 fresh = true;
             }
 
@@ -694,11 +717,16 @@ namespace CSGOTM {
             }
 
             public void Recalculate() {
-                int[] a = new int[cnt];
-                for (int i = 0; i < cnt; i++)
-                    a[i] = sales[i].price;
-                Array.Sort(a);
-                median = a[cnt / 2];
+                cnt = Math.Min(cnt, sales.Count);
+                if (cnt != 0) {
+                    int[] a = new int[cnt];
+                    for (int i = 0; i < cnt; i++)
+                        a[i] = sales[i].price;
+                    Array.Sort(a);
+                    median = a[cnt / 2];
+                } else {
+                    median = 0;
+                }
                 fresh = true;
             }
 
@@ -711,6 +739,7 @@ namespace CSGOTM {
 
             public SalesHistory() {
                 cnt = 0;
+                median = 0;
             }
 
             public SalesHistory(NewHistoryItem item) : this() {
@@ -719,21 +748,37 @@ namespace CSGOTM {
 
             public void Add(NewHistoryItem item) {
                 sales.Add(item);
-                cnt += 1;
                 median = item.price;
                 fresh = false;
             }
         }
 
-        bool hasStickers(string classId, string instanceId) {
-            return !__emptystickered__.NoStickers(classId, instanceId);
+        bool isSouvenir(string s) {
+            string lowerName = s.ToLower();
+            return lowerName.Contains("souvenir") || lowerName.Contains("сувенир");
+        }
+
+        bool hasStickers(Inventory.SteamItem item) {
+            if (isSouvenir(item.i_market_name) || isSouvenir(item.i_market_hash_name))
+                return false;
+            return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
+        }
+
+        bool hasStickers(TMTrade trade) {
+            if (isSouvenir(trade.i_market_name) || isSouvenir(trade.i_market_hash_name))
+                return false;
+            return !__emptystickered__.NoStickers(trade.i_classid, trade.i_instanceid);
         }
 
         bool hasStickers(NewItem item) {
+            if (isSouvenir(item.i_market_name))
+                return false;
             return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
         }
 
         bool hasStickers(NewHistoryItem item) {
+            if (isSouvenir(item.i_market_name))
+                return false;
             return !__emptystickered__.NoStickers(item.i_classid, item.i_instanceid);
         }
 
@@ -766,7 +811,7 @@ namespace CSGOTM {
         }
 
         public bool L1(NewItem item) {
-            return item.ui_price < 100000L && !blackList.Contains(item.i_market_name);
+            return item.ui_price < 400000L && !blackList.Contains(item.i_market_name);
         }
 
         public bool WantToBuy(NewItem item) {
@@ -791,7 +836,7 @@ namespace CSGOTM {
                 }
                 if (newBuyFormula != null && newBuyFormula.IsRunning()) {
                     if (item.ui_price < newBuyFormula.WantToBuy * salesHistory.GetMedian()
-                        && salesHistory.GetMedian() - item.ui_price > 400
+                        && salesHistory.GetMedian() - item.ui_price > 1000
                         && salesHistory.GetCnt() >= Consts.MINSIZE) {
                         return true; //back to good ol' dayz
                     }

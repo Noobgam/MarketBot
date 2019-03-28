@@ -1,4 +1,5 @@
-﻿using CSGOTM;
+﻿using Common.Utility;
+using CSGOTM;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -6,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Utility;
 using static CSGOTM.Logic;
 
 namespace SteamBot.MarketBot.CS.Bot {

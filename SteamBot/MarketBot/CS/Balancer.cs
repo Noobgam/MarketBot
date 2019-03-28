@@ -1,8 +1,5 @@
 ﻿using CSGOTM;
 using Newtonsoft.Json;
-using SteamBot.MarketBot.Utility;
-using SteamBot.MarketBot.Utility.MongoApi;
-using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +8,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Utility;
+using Utility.MongoApi;
+using Utility.VK;
 using WebSocketSharp;
 using static CSGOTM.Perfomance;
 

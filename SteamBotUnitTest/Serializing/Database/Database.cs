@@ -1,10 +1,12 @@
-﻿using NUnit.Framework;
+﻿using Common.Utility;
+using NUnit.Framework;
 using SteamBot.MarketBot.CS.Bot;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Utility;
 
 namespace SteamBotUnitTest.Serializing.Database {
     class Database {

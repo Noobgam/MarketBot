@@ -1,13 +1,13 @@
 ﻿using CSGOTM;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using SteamBot.MarketBot.Utility.MongoApi;
-using SteamBot.MarketBot.Utility.VK;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Utility.MongoApi;
+using Utility.VK;
 using static CSGOTM.TMBot;
 using static SteamBot.Log;
 
@@ -64,21 +64,19 @@ namespace SteamBot.MarketBot.CS.Bot {
 
         private LogMessage CreateRawLogMessage(LogLevel level, string botname, string line, params object[] formatParams) {
             DateTime instant = DateTime.Now;
-            if (level != LogLevel.Nothing) {
-                string formattedString = String.Format(
-                    "[{0} {1}] {2}: {3}",
-                    botname,
-                    instant.ToString("yyyy-MM-dd HH:mm:ss"),
-                    _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
-                    );
-                _OutputLineToConsole(level, formattedString);
-            }
+            string formattedString = String.Format(
+                "[{0} {1}] {2}: {3}",
+                botname,
+                instant.ToString("yyyy-MM-dd HH:mm:ss"),
+                _LogLevel(level).ToUpper(), (formatParams != null && formatParams.Any() ? String.Format(line, formatParams) : line)
+                );
+            _OutputLineToConsole(level, formattedString);
             return new LogMessage {
                 ID = new ObjectId(),
                 Name = botname,
                 Type = _LogLevel(level).ToUpper(),
                 Message = formatParams.Any() ? String.Format(line, formatParams) : line,
-                TimeStamp = new BsonTimestamp((int)instant.Subtract(epoch).TotalSeconds)
+                TimeStamp = new BsonTimestamp((long)instant.Subtract(epoch).TotalSeconds)
             };
         }
 

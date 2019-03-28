@@ -1,7 +1,6 @@
 ﻿using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using SteamBot.MarketBot.Utility;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -10,9 +9,10 @@ using System.IO.Compression;
 using System.Linq;
 using System.Text;
 using System.Threading;
+using Utility;
 
 namespace CSGOTM {
-    public static class Consts {
+    static class Consts {
         public const int MINORCYCLETIMEINTERVAL = 1000 * 60 * 10; // 10 minutes
         public const int APICOOLDOWN = 1000 * 3; // 3 seconds
         public const int SECOND = 1050; //used to restrict rps.
@@ -24,7 +24,8 @@ namespace CSGOTM {
         public const int PARSEDATABASEINTERVAL = 1000 * 60; //every minute
         public const int REFRESHINTERVAL = 1000 * 60 * 15; //every 15 minutes
         public const string MARKETENDPOINT = "https://market.csgo.com";
-        public const int MAXORDERQUEUESIZE = 150;
+        public const int MAXORDERQUEUESIZE = 200;
+        public const int MINORDERQUEUESIZE = 50;
 
         public static class Databases {
             public static class Mongo {
@@ -44,6 +45,7 @@ namespace CSGOTM {
             public const string Status = "/status/";
             public const string RPS = "/rps/";
             public const string MongoFind = "/mongo/find/";
+            public const string GetCurrency = "/economy/";
             public const string BanUser = "/ban/";
             public const string UnBanUser = "/unban/";
             public const string GetBannedUsers = "/getbannedusers/";
@@ -51,13 +53,13 @@ namespace CSGOTM {
             public const string GetEmptyStickeredDatabase = "/getemptystickereddatabase/";
             public const string GetConfig = "/getconfig/";
             public const string GetAuthFile = "/getauthfile/";
+            public const string Primetime = "/primetime/";
             #endregion
 
             #region PUT
             public const string PutCurrentInventory = "/putInventory/";
             public const string PutEmptyStickered = "/putemptystickered/";
             public const string PutMoney = "/putMoney/";
-            public const string PutInventoryCost = "/putInventoryCost/";
             public const string PutMedianCost = "/putMedianCost/";
             public const string PutTradableCost = "/putTradableCost/";
             public const string SalesHistorySize = "/saleshistorysize/";
@@ -428,166 +430,6 @@ namespace CSGOTM {
                             Sort((JObject)prop.Value[iIterator]);
                 }
             }
-        }
-    }
-}
-
-public static class BinarySerialization {
-    static ConcurrentDictionary<string, ReaderWriterLockSlim> fileLock = new ConcurrentDictionary<string, ReaderWriterLockSlim>();
-    public static void WriteToBinaryFile<T>(string filePath, T objectToWrite, bool append = false) {
-        fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
-        if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
-            rwlock.EnterWriteLock();
-            try {
-                using (Stream stream = File.Open(filePath, append ? FileMode.Append : FileMode.Create)) {
-                    var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                    binaryFormatter.Serialize(stream, objectToWrite);
-                }
-            } finally {
-                rwlock.ExitWriteLock();
-            }
-        }
-    }
-
-    public static T ReadFromBinaryFile<T>(string filePath) {
-        fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
-        if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
-            rwlock.EnterReadLock();
-            try {
-                using (Stream stream = File.Open(filePath, FileMode.Open)) {
-                    var binaryFormatter = new System.Runtime.Serialization.Formatters.Binary.BinaryFormatter();
-                    return (T)binaryFormatter.Deserialize(stream);
-                }
-            } finally {
-                rwlock.ExitReadLock();
-            }
-        }
-        return default(T);
-    }
-
-    public static class NS {
-        public static T Clone<T>(T obj) {
-            return Deserialize<T>(Serialize(obj));
-        }
-
-        public static void Serialize<T>(string filePath, T objectToWrite, bool gzip = false) {
-            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
-            fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
-            if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
-                rwlock.EnterWriteLock();
-                try {
-                    using (Stream stream = File.Open(filePath, FileMode.Create)) {
-                        if (gzip) {
-                            using (GZipStream gzipSteam = new GZipStream(stream, CompressionMode.Compress)) {
-                                Serializer.Serialize(gzipSteam, objectToWrite);
-                            }
-                        } else {
-                            Serializer.Serialize(stream, objectToWrite);
-                        }
-                    }
-                } finally {
-                    rwlock.ExitWriteLock();
-                }
-            }
-        }
-
-        public static byte[] Serialize<T>(T objectToWrite, bool gzip = false) {
-            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
-            try {
-                using (var stream = new MemoryStream()) {
-                    if (gzip) {
-                        using (GZipStream gzipSteam = new GZipStream(stream, CompressionMode.Compress)) {
-                            Serializer.Serialize(gzipSteam, objectToWrite);
-                        }
-                    } else {
-                        Serializer.Serialize(stream, objectToWrite);
-                    }
-                    return stream.ToArray();
-                }                
-            } catch (Exception e) {
-                return null;
-            }
-        }
-
-        public static T Deserialize<T>(string filePath, bool gzip = false) {
-            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
-            fileLock.TryAdd(filePath, new ReaderWriterLockSlim());
-            if (fileLock.TryGetValue(filePath, out ReaderWriterLockSlim rwlock)) {
-                rwlock.EnterReadLock();
-                try {
-                    using (Stream stream = File.Open(filePath, FileMode.Open)) {
-
-                        if (gzip) {
-                            using (GZipStream gzipSteam = new GZipStream(stream, CompressionMode.Decompress)) {
-                                return (T)Serializer.Deserialize(gzipSteam);
-                            }
-                        }
-                        return (T)Serializer.Deserialize(stream);
-                    }
-                } finally {
-                    rwlock.ExitReadLock();
-                }
-            }
-            return default(T);
-        }
-
-        public static T Deserialize<T>(byte[] arr, bool gzip = false) {
-            NetSerializer.Serializer Serializer = new NetSerializer.Serializer(new Type[] { typeof(T) });
-            try {
-                using (MemoryStream memoryStream = new MemoryStream(arr)) {
-                    if (gzip) {
-                        using (GZipStream gzipSteam = new GZipStream(memoryStream, CompressionMode.Decompress)) {
-                            return (T)Serializer.Deserialize(gzipSteam);
-                        }
-                    }
-                    return (T)Serializer.Deserialize(memoryStream);
-                }
-            } catch {
-                return default(T);
-            }
-        }
-    }
-}
-
-
-public static class JsonSerialization {
-    public static void WriteToJsonFile<T>(string filePath, T objectToWrite, bool append = false) where T : new() {
-        TextWriter writer = null;
-        try {
-            var contentsToWriteToFile =
-                Newtonsoft.Json.JsonConvert.SerializeObject(objectToWrite, Newtonsoft.Json.Formatting.Indented);
-            writer = new StreamWriter(filePath, append);
-            writer.Write(contentsToWriteToFile);
-        } finally {
-            if (writer != null)
-                writer.Close();
-        }
-    }
-
-    public static T ReadFromJsonFile<T>(string filePath) where T : new() {
-        TextReader reader = null;
-        try {
-            reader = new StreamReader(filePath);
-            var fileContents = reader.ReadToEnd();
-            return Newtonsoft.Json.JsonConvert.DeserializeObject<T>(fileContents);
-        } finally {
-            if (reader != null)
-                reader.Close();
-        }
-    }
-}
-
-public static class StringUtils {
-    public static string ToBase64(byte[] array) {
-        return Convert.ToBase64String(array);
-    }
-
-    public static byte[] FromBase64(string text) {
-        try {
-            byte[] textAsBytes = Convert.FromBase64String(text);
-            return textAsBytes;
-        } catch (Exception) {
-            return null;
         }
     }
 }

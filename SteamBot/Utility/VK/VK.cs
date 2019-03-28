@@ -10,7 +10,7 @@ using VkNet;
 using VkNet.Enums.Filters;
 using VkNet.Model;
 
-namespace SteamBot.MarketBot.Utility.VK {
+namespace Utility.VK {
     public static class VK {
         public static void Init() {
         }
@@ -69,10 +69,10 @@ namespace SteamBot.MarketBot.Utility.VK {
             try {
                 api = new VkApi();
                 api.Authorize(new ApiAuthParams {
-                    ApplicationId = 6743975,
+                    ApplicationId = 6743198,
                     Login = "Novice1998",
                     Password = "7PixelWideNoobgam",
-                    AccessToken = "45ca4499949cfd7298b31891177830589253f0639ff13d6b9be7b3559375a642e75322972556bdeeb11fd",
+                    AccessToken = "20b9b0a87c28628883ca0571df6b9b3e90bdeb13731d1161a28978d59beb2ab488ff1ae398c1cf22b5905",
                     Settings = Settings.Messages | Settings.Offline
                 });
                 longPollServerInfo = api.Messages.GetLongPollServer(true);

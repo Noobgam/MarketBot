@@ -12,8 +12,8 @@ using System.Net;
 using SteamBot.MarketBot.CS;
 using Utility;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.VK;
 using Newtonsoft.Json.Linq;
+using Utility.VK;
 
 namespace SteamBot
 {
@@ -95,7 +95,9 @@ namespace SteamBot
 
         public void Nanny() {
             Thread.Sleep(5000);
-            Balancer.Init();
+            if (ConfigObject.Bots.Any(bot => !bot.TMDisabled)) {
+                Balancer.Init();
+            }
             Dictionary<string, DateTime> lastRestart = new Dictionary<string, DateTime>();
             TimeSpan restartInterval = new TimeSpan(0, 2, 0);
             while (!disposed)

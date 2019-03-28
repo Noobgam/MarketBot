@@ -10,17 +10,18 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
-using SteamBot.MarketBot.Utility.VK;
 using Utility;
 using System.Collections.Concurrent;
 using System.Collections.Specialized;
 using System.Web;
 using System.Globalization;
-using SteamBot.MarketBot.Utility.MongoApi;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
 using SteamBot;
 using static SteamBot.Configuration;
+using Utility.MongoApi;
+using Utility.VK;
+using Common.Utility;
 
 namespace Server {
     public class Core : IDisposable {
@@ -57,7 +58,7 @@ namespace Server {
                 unstickeredCache.LoadFromArray(File.ReadAllLines(Path.Combine("assets", "emptystickered.txt")));
 
                 logger.Nothing("Starting!");
-                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                ReloadConfig();
                 server.Start();
                 logger.Nothing("Started!");
                 Task.Run((Action)Listen);
@@ -77,26 +78,40 @@ namespace Server {
             }
         }
 
+        public bool ReloadConfig() {
+            try {
+                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                foreach (var bot in coreConfig.Bots) {
+                    TokenCache[bot.Username] = bot.TradeToken;
+                }
+                return true;
+            } catch {
+                logger.Crash("Could not reload config");
+                return false;
+            }
+        }
+
+        private bool PingedRecently(string name) {
+            if (LastPing.TryGetValue(name, out DateTime dt)) {
+                return DateTime.Now.Subtract(dt).TotalSeconds < 120;
+            }
+            return false;
+        }
+
         private void BackgroundCheck() {
             Thread.Sleep(60000);
             while (!disposed) {
                 try {
                     foreach (BotConfig bot in coreConfig.Bots) {
-                        if (LastPing.TryGetValue(bot.Username, out DateTime dt)) {
-                            DateTime temp = DateTime.Now;
-                            if (temp.Subtract(dt).TotalSeconds > 120) {
-                                logger.Warn($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
-                                VK.Alert($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
-                            }
-                        } else {
-                            logger.Warn($"Бот {bot.Username} не пингуется, хотя прописан в конфиге.");
-                            VK.Alert($"Бот {bot.Username} не пингуется, хотя прописан в конфиге.");
+                        if (!PingedRecently(bot.Username)) {
+                            logger.Warn($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
+                            VK.Alert($"Бот {bot.Username} давно не пинговал, видимо, он умер.");
                         }
                     }
                 } catch {
                 }
                 Tasking.WaitForFalseOrTimeout(() => !disposed, 60000).Wait();
-                coreConfig = JsonConvert.DeserializeObject<CoreConfig>(Request.Get(Consts.Endpoints.ServerConfig));
+                ReloadConfig();
             }
         }
 
@@ -126,7 +141,7 @@ namespace Server {
                 logger.Info($"[Request {++requestsServed}] {context.Request.RemoteEndPoint.ToString()} - {context.Request.Url.AbsolutePath}");
                 string Endpoint = context.Request.Url.AbsolutePath;
                 if (Endpoint == Consts.Endpoints.GetBestToken) {
-                    var Forced = coreConfig.Bots.Where(x => x.Force);
+                    var Forced = coreConfig.Bots.Where(x => x.Force && PingedRecently(x.Username));
                     if (Forced.Any()) {
                         BotConfig forcedBot = Forced.First();
                         resp = new JObject {
@@ -135,7 +150,7 @@ namespace Server {
                             ["botname"] = forcedBot.Username,
                         };
                     } else {
-                        var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD);
+                        var Filtered = CurSizes.Where(t => t.Value < Consts.CRITICALTHRESHHOLD && PingedRecently(t.Key));
                         if (!Filtered.Any()) {
                             throw new Exception("All bots are overflowing!");
                         }
@@ -334,6 +349,7 @@ namespace Server {
                         ["ping"] = "pong",
                     };
                 } else if (Endpoint == Consts.Endpoints.SalesHistorySize) {
+                    // deprecated
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
                         throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
@@ -346,16 +362,6 @@ namespace Server {
                         salesHistorySizes[usernames[0]] = new ConcurrentQueue<Pair<DateTime, int>>();
                     }
                     salesHistorySizes[usernames[0]].Enqueue(new Pair<DateTime, int>(DateTime.Now, int.Parse(data[0])));
-                } else if (Endpoint == Consts.Endpoints.PutInventoryCost) {
-                    string[] usernames = context.Request.Headers.GetValues("botname");
-                    if (usernames.Length != 1) {
-                        throw new Exception($"You have to provide 1 username, {usernames.Length} were provided");
-                    }
-                    string[] data = context.Request.Headers.GetValues("data");
-                    if (data.Length != 1) {
-                        throw new Exception($"You have to provide 1 data, {data.Length} were provided");
-                    }
-                    CurInventory[usernames[0]] = double.Parse(data[0]);
                 } else if (Endpoint == Consts.Endpoints.PutTradableCost) {
                     string[] usernames = context.Request.Headers.GetValues("botname");
                     if (usernames.Length != 1) {
@@ -441,18 +447,11 @@ namespace Server {
                         }
                         moneySum += myMoney;
                     }
-                    double usd_inv_sum = 0;
                     foreach (var kvp in CurMedian) {
                         if (kvp.Value == 0) continue;
                         if (extrainfo[kvp.Key] == null)
                             extrainfo[kvp.Key] = new JObject();
                         extrainfo[kvp.Key]["median_sum"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
-                    }
-                    foreach (var kvp in CurInventory) {
-                        if (extrainfo[kvp.Key] == null)
-                            extrainfo[kvp.Key] = new JObject();
-                        extrainfo[kvp.Key]["inventory_usd_cost"] = kvp.Value.ToString("C", new CultureInfo("en-US"));
-                        usd_inv_sum += kvp.Value;
                     }
                     double usd_trade_sum = 0;
                     foreach (var kvp in CurTradable) {
@@ -469,7 +468,6 @@ namespace Server {
                         ["moneysum"] = new JObject() {
                             ["RUB"] = moneySum,
                             ["USD"] = Economy.ConvertCurrency(Economy.Currency.RUB, Economy.Currency.USD, moneySum).ToString("C", new CultureInfo("en-US")),
-                            ["INVUSD"] = usd_inv_sum.ToString("C", new CultureInfo("en-US")),
                             ["TRADE"] = usd_trade_sum.ToString("C", new CultureInfo("en-US"))
                         }
                     };

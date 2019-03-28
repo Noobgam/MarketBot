@@ -15,14 +15,14 @@ namespace SteamTrade.TradeOffer
         private readonly TradeOfferWebAPI webApi;
         private readonly Queue<Offer> unhandledTradeOfferUpdates; 
 
-        public DateTime LastTimeCheckedOffers { get; private set; }
+        public DateTime CutoffCheckedOffers { get; private set; }
 
         public TradeOfferManager(string apiKey, SteamWeb steamWeb)
         {
             if (apiKey == null)
                 throw new ArgumentNullException("apiKey");
 
-            LastTimeCheckedOffers = DateTime.MinValue;
+            CutoffCheckedOffers = DateTime.MinValue;
             webApi = new TradeOfferWebAPI(apiKey, steamWeb);
             session = new OfferSession(webApi, steamWeb);
             unhandledTradeOfferUpdates = new Queue<Offer>();
@@ -39,14 +39,14 @@ namespace SteamTrade.TradeOffer
         {
             DateTime startTime = DateTime.Now;
 
-            if (LastTimeCheckedOffers == DateTime.MinValue)
-                LastTimeCheckedOffers = DateTime.Now - TimeSpan.FromHours(1);
+            if (CutoffCheckedOffers == DateTime.MinValue)
+                CutoffCheckedOffers = DateTime.Now - TimeSpan.FromHours(1);
             //we REALLY don't need that many offers processed
 
-            var offersResponse = webApi.GetAllTradeOffers(GetUnixTimeStamp(LastTimeCheckedOffers).ToString());
+            var offersResponse = webApi.GetAllTradeOffers(GetUnixTimeStamp(CutoffCheckedOffers).ToString());
             AddTradeOffersToQueue(offersResponse);
 
-            LastTimeCheckedOffers = startTime - TimeSpan.FromMinutes(5); //Lazy way to make sure we don't miss any trade offers due to slightly differing clocks
+            CutoffCheckedOffers = startTime - TimeSpan.FromMinutes(5); //Lazy way to make sure we don't miss any trade offers due to slightly differing clocks
         }
 
         private void AddTradeOffersToQueue(OffersResponse offers)

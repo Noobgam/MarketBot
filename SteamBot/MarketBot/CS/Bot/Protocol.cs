@@ -15,15 +15,14 @@ using Newtonsoft.Json;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Runtime.InteropServices;
-using SteamBot.MarketBot.Utility;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
 using Utility;
 using SteamBot.MarketBot.CS;
 using SteamBot.MarketBot.CS.Bot;
-using SteamBot.MarketBot.Utility.VK;
-using SteamBot.MarketBot.Utility.MongoApi;
+using Utility.VK;
+using Utility.MongoApi;
 
 namespace CSGOTM {
     public class Protocol {
@@ -279,8 +278,12 @@ namespace CSGOTM {
             if (!SetToken(token)) {
                 Log.Crash("Steam trade token could not be set");
             }
-            if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
-                Log.Crash("Steam api key could not be set");
+            if (parent.bot.botConfig.SetSteamApiKey) {
+                if (!SetSteamAPIKey(parent.bot.botConfig.ApiKey)) {
+                    Log.Crash("Steam api key could not be set");
+                }
+            } else {
+                Log.Warn("SetSteamApiKey is disabled. Bot will not be able to sell items");
             }
             while (Logic == null || Bot.IsLoggedIn == false)
                 Thread.Sleep(10);
@@ -866,6 +869,10 @@ namespace CSGOTM {
             }
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
+            if (Logic.obsolete_bot && CurrentToken == "")
+            {
+                return false;
+            }
             string response = await ExecuteApiRequestAsync(url, ApiMethod.Buy, ApiLogLevel.LogAll);
             if (response == null) {
                 return false;
@@ -924,6 +931,10 @@ namespace CSGOTM {
             }
             if (CurrentToken != "")
                 url += "&" + CurrentToken; //ugly hack, but nothing else I can do for now
+            if (Logic.obsolete_bot && CurrentToken == "")
+            {
+                return false;
+            }
             string response = ExecuteApiRequest(url, ApiMethod.Buy, ApiLogLevel.LogAll);
             if (response == null) {
                 return false;
@@ -1044,11 +1055,16 @@ namespace CSGOTM {
         private Dictionary<string, int> orders = new Dictionary<string, int>();
 
         public bool SetOrder(long classid, long instanceid, int price) {
-            try {
+            try
+            {
+                if (Logic.obsolete_bot)
+                {
+                    return false;
+                }
 #if CAREFUL
             return false;
 #else
-                string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
+                    string uri = "/api/ProcessOrder/" + classid + "/" + instanceid + "/" + price.ToString() + "/?key=" + Api;
                 if (money < price) {
                     Log.Info("No money to set order, call to url was optimized :" + uri);
                     return false;

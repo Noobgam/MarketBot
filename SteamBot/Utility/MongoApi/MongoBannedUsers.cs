@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace SteamBot.MarketBot.Utility.MongoApi {
+namespace Utility.MongoApi {
     public class MongoBannedUsers : GenericMongoDB<BannedUser> {
 
         public override string GetCollectionName() {

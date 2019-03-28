@@ -7,16 +7,33 @@ using System.Net;
 
 namespace CSGOTM {
     public static class LocalRequest {
+        private static NewMarketLogger Log = new NewMarketLogger("LocalRequest");
+
         private static void VoidRawGet(string endpoint, WebHeaderCollection headers) {
-            Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers);
+            try {
+                Utility.Request.RawGet(Consts.Endpoints.juggler + endpoint, headers);
+            } catch (Exception ex) {
+                Log.Crash($"Local request failed. {ex.Message}");
+                return;
+            }
         }
 
         private static JToken RawGet(string endpoint, WebHeaderCollection headers) {
-            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint, headers));
+            try {
+                return JToken.Parse(Utility.Request.RawGet(Consts.Endpoints.juggler + endpoint, headers));
+            } catch (Exception ex) {
+                Log.Crash($"Local request failed. {ex.Message}");
+                return null;
+            }
         }
 
         private static JToken RawGet(string endpoint) {
-            return JToken.Parse(Utility.Request.Get(Consts.Endpoints.juggler + endpoint));
+            try {
+                return JToken.Parse(Utility.Request.RawGet(Consts.Endpoints.juggler + endpoint));
+            } catch (Exception ex) {
+                Log.Crash($"Local request failed. {ex.Message}");
+                return null;
+            }
         }
 
         public static JToken RawGet(string endpoint, string botname) {
@@ -38,6 +55,10 @@ namespace CSGOTM {
             return (JObject)RawGet(Consts.Endpoints.GetBestToken, botname);
         }
 
+        public static JObject GetEconomy() {
+            return (JObject)RawGet(Consts.Endpoints.GetCurrency);
+        }
+
         public static string GetAuthFile(string botname) {
             return (string)((JObject)RawGet(Consts.Endpoints.GetAuthFile, botname))["data"];
         }
@@ -54,6 +75,11 @@ namespace CSGOTM {
             return (string)(((JObject)RawGet(Consts.Endpoints.GetEmptyStickeredDatabase))["data"]);
         }
 
+        public static bool IsPrimeTime() {
+            var temp = (JObject)RawGet(Consts.Endpoints.Primetime);
+            return (bool)(temp["primetime"]);
+        }
+
         public static void PutInventory(string botname, GenericInventory inv) {
             RawPut(Consts.Endpoints.PutCurrentInventory, botname, inv.items.Count.ToString());
         }
@@ -64,10 +90,6 @@ namespace CSGOTM {
 
         public static void PutMoney(string botname, int money) {
             RawPut(Consts.Endpoints.PutMoney, botname, money.ToString());
-        }
-
-        public static void PutInventoryCost(string botname, double sumprice) {
-            RawPut(Consts.Endpoints.PutInventoryCost, botname, sumprice.ToString());
         }
 
         public static void PutTradableCost(string botname, double sumprice, int untracked) {

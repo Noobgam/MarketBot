@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Concurrent;
 using System.IO;
+using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
+using System.Threading.Tasks;
 using CSGOTM;
 using NDesk.Options;
 using Server;
+using SteamBot.Utility.MongoApi;
 using Utility;
 
 namespace SteamBot
@@ -29,21 +33,66 @@ namespace SteamBot
         public static void Main(string[] args)
         {
 #if CORE
+            Common.Utility.Environment.InitializeScope(true);
             int port = 4345;
             if (args.Length > 0) {
                 port = int.Parse(args[0]);
             }
-            Core core = new Core(port);
+            NewCore core = new NewCore(port);
+            core.Initialize();
             while (true) {
                 string input = Console.ReadLine();
                 if (input == "refresh") {
-                    core.Init();
+                    core.Initialize();
                 }
                 if (input == "exit")
                     return;
             }
 #else
+            Common.Utility.Environment.InitializeScope(false);
+#if CODEFORCES
+            NewCore core = new NewCore(80);
+            core.Initialize();
+            const int AMOUNT = 200;
+            const int BATCH_SIZE = 4;
+            bool[] done = new bool[AMOUNT];
+            Task[] busy = new Task[AMOUNT];
+            int left = AMOUNT;
+            int Busy = 0;
+            FakeFactory._DOMAINS_CACHE = Request.Get(FakeFactory.RAPID_API_DOMAINS_ENDPOINT, new WebHeaderCollection {
+                ["X-RapidAPI-Key"] = FakeFactory.RAPID_API
+            });
+            for (int i = 0; i < AMOUNT; ++i) {
+                busy[i] = null;
+            }
+            while (left > 0) {
+                
+                if (Busy < BATCH_SIZE && Busy < left) {
+                    for (int i = 0; i < AMOUNT; ++i) {
+                        if (!done[i] && busy[i] == null) {
+                            int id = i;
+                            ++Busy;
+                            busy[id] =
+                                Task.Run(() => {
+                                    try {
+                                        FakeFactory.CreateFake();
+                                    } finally {
+                                        --left;
+                                        --Busy;
+                                        done[id] = true;
+                                    }
+                                });
+                        }
+                        if (!(Busy < BATCH_SIZE && Busy < left)) {
+                            break;
+                        }
+                    }
+                }
+                Thread.Sleep(1500);
+            }
 
+            return;
+#endif
             opts.Parse(args);
 
             if (showHelp)
@@ -143,6 +192,10 @@ namespace SteamBot
 
             manager = new BotManager();
             bool loadedOk = false;
+            bool primetime = LocalRequest.IsPrimeTime();
+            if (!primetime) {
+                return;
+            }
             if (!File.Exists("settings.json")) {
                 try {
                     loadedOk = manager.LoadConfigurationFromData(LocalRequest.GetConfig());
@@ -169,7 +222,7 @@ namespace SteamBot
             {
                 if (manager.ConfigObject.UseSeparateProcesses)
                     SetConsoleCtrlHandler(ConsoleCtrlCheck, true);
-                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://steambot.noobgam.me:4345";
+                Consts.Endpoints.juggler = manager.ConfigObject.JugglerEndpoint ?? "http://steambot.noobgam.me";
                 Tasking.Run(manager.Nanny);
 
                 if (manager.ConfigObject.AutoStartAllBots)
