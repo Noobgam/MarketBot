@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Runtime.InteropServices;
 using System.Threading;
@@ -35,9 +36,13 @@ namespace SteamBot
 #if CORE
             Common.Utility.Environment.InitializeScope(true);
             int port = 4345;
-            if (args.Length > 0) {
-                port = int.Parse(args[0]);
+            if (args.Length < 2) {
+                Console.WriteLine("Please provide at least 2 arguments. <port> <MasterConfig>");
+                Console.ReadLine();
+                return;
             }
+            port = int.Parse(args[0]);
+            Consts.Endpoints.ServerConfig = args[1];
             NewCore core = new NewCore(port);
             core.Initialize();
             while (true) {
@@ -93,6 +98,13 @@ namespace SteamBot
 
             return;
 #endif
+            if (args.Length < 1) {
+                Console.WriteLine("Please provide at least 2 arguments. <port> <MasterConfig>");
+                Console.ReadLine();
+                return;
+            }
+            Consts.Endpoints.BotConfig = args[0];
+            args = args.Skip(1).ToArray();
             opts.Parse(args);
 
             if (showHelp)
