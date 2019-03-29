@@ -6,8 +6,6 @@ The project is discontinued
 
 This project was forked from Jessecar96's [SteamBot](https://github.com/Jessecar96/SteamBot), a fully automated trading software made specifically for http://market.csgo.com. 
 
-**SteamBot** is a bot written in C# for the purpose of interacting with Steam Chat and Steam Trade.  As of right now, about 8 contributors have all added to the bot.  The bot is publicly available under the MIT License. Check out [LICENSE] for more details.
-
 ## How to use it?
 
 Ordinary usecase is as follows:
@@ -26,9 +24,11 @@ with no possibility of load-balancing (thus overflowing steam inventory limits).
 Master node domain should either be hard-coded Global config in code or overriden via settings.json.
 `settings.json` should be defined as [follows](https://gist.githubusercontent.com/Noobgam/8aa9b32b6b147b69f2ffc2057f75652e/raw/e545b5db3cd7f9b331832033cc324b3f2ef1330f/full_config.json)
 
-To run master pass arguments in format `<port> <MasterConfigUrl>`
+If `settings.json` is not specified it will be pulled via HTTP request from master node.
 
-To run worker pass arguments in format `<WorkerConfig> <SteamBot default options(optional)>`
+To run master pass arguments in format `<port> <MasterConfigUrl>` [MasterConfig.json](https://gist.githubusercontent.com/Noobgam/8aa9b32b6b147b69f2ffc2057f75652e/raw/e545b5db3cd7f9b331832033cc324b3f2ef1330f/full_config.json)
+
+To run worker pass arguments in format `<WorkerConfigUrl> <SteamBot default options(optional)>` [WorkerConfig.json](https://gist.githubusercontent.com/Noobgam/819841a960112ae85fe8ac61b6bd33e1/raw/97cc2ed7ce38da301369352a4331b7029d31dd05/config.json)
 
 One could potentially run multiple steam accounts from the same machine, yet this is
 not recommendded due to Steam API being highly unreliable and severe restrictions could apply
@@ -57,3 +57,4 @@ SteamBot contributors:
 - [cwhelchel](http://steamcommunity.com/id/cmw69krinkle)
 - [Lagg](http://lagg.me)
 - [BlueRaja](http://steamcommunity.com/id/BlueRaja/)
+- [Noobgam](https://github.com/Noobgam)
